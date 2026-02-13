@@ -1,16 +1,40 @@
-# cryptoarth
+# CryptoArth Mobile App
 
-A new Flutter project.
+AI-powered crypto trading platform mobile application built with Flutter.
 
-## Getting Started
+## Features
+- JWT Authentication
+- Portfolio Management
+- Marketplace
+- Strategy Backtesting
+- Trading Dashboard
+- Broker Integration
 
-This project is a starting point for a Flutter application.
+## Tech Stack
+- Flutter
+- Riverpod (State Management)
+- REST API (JWT Auth)
+- Material 3 UI
 
-A few resources to get you started if this is your first Flutter project:
+## Setup
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Clone project:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+git clone https://github.com/durveshpatil17/cryptoarth.git
+
+Install dependencies:
+
+flutter pub get
+
+Run app:
+
+flutter run
+
+## Project Structure
+
+lib/
+ core/
+ features/
+ shared/
+ app.dart
+ main.dart
