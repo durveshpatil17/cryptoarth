@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 
+import 'package:cryptoarth/features/strategies/screens/backtest_config_screen.dart';
 import 'package:cryptoarth/features/strategies/screens/code_generator_screen.dart';
 import 'package:cryptoarth/features/home/screens/chat_history_screen.dart';
 import 'package:cryptoarth/features/strategies/screens/templates_screen.dart';
@@ -108,7 +109,13 @@ class CustomDrawer extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   children: [
-                    _buildMenuItem(Icons.science_outlined, "Backtest"),
+                    _buildMenuItem(Icons.science_outlined, "Backtest", onTap: () {
+                      Navigator.pop(context); // Close drawer
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const BacktestConfigScreen()),
+                      );
+                    }),
                     _buildMenuItem(Icons.code, "Code Generator", onTap: () {
                       Navigator.pop(context); // Close drawer
                       Navigator.push(

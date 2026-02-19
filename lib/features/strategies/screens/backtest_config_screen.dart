@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
-import 'package:cryptoarth/shared/widgets/custom_button.dart';
 import 'package:cryptoarth/shared/widgets/glass_container.dart';
+import 'package:cryptoarth/shared/widgets/gradient_button.dart';
 import 'backtest_results_screen.dart';
 
 class BacktestConfigScreen extends StatefulWidget {
@@ -12,128 +12,243 @@ class BacktestConfigScreen extends StatefulWidget {
 }
 
 class _BacktestConfigScreenState extends State<BacktestConfigScreen> {
-  String _selectedTimeframe = '1h';
-  String _selectedSymbol = 'BTC/USD';
+  // Form State
+  String _selectedSymbol = 'BTCUSD';
+  String _selectedTimeframe = '15 Minutes';
+  String _selectedLeverage = '10x';
+  String _selectedCapitalPercent = '25%';
+  String _selectedCommission = 'Maker (0.02%)';
+  final TextEditingController _initialCapitalController = TextEditingController(text: '10000');
+
+  // Options
+  final List<String> _symbols = ['BTCUSD', 'ETHUSD', 'SOLUSD', 'XRPUSD'];
+  final List<String> _timeframes = ['1 Minute', '5 Minutes', '15 Minutes', '1 Hour', '4 Hours', '1 Day'];
+  final List<String> _leverages = ['1x', '2x', '5x', '10x', '20x', '50x', '100x'];
+  final List<String> _capitalPercents = ['10%', '25%', '50%', '75%', '100%'];
+  final List<String> _commissionTypes = ['Maker (0.02%)', 'Taker (0.05%)', 'Zero Fee'];
+
+  @override
+  void dispose() {
+    _initialCapitalController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text("Configure Backtest")),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Row(
           children: [
-            _buildSectionHeader("Strategy Settings"),
-            const SizedBox(height: 16),
-            
-            _buildDropdownInput("Symbol", ["BTC/USD", "ETH/USD", "SOL/USD"], _selectedSymbol, (val) {
-              setState(() => _selectedSymbol = val!);
-            }),
-            const SizedBox(height: 12),
-            _buildDropdownInput("Timeframe", ["1m", "5m", "15m", "1h", "4h", "1d"], _selectedTimeframe, (val) {
-              setState(() => _selectedTimeframe = val!);
-            }),
-
-            const SizedBox(height: 24),
-            _buildSectionHeader("Capital Management"),
-            const SizedBox(height: 16),
-            
-            _buildTextInput("Initial Capital", "10000"),
-            const SizedBox(height: 12),
-            _buildTextInput("Order Size (%)", "10"),
-            const SizedBox(height: 12),
-            _buildTextInput("Leverage", "1x"),
-             const SizedBox(height: 12),
-            _buildTextInput("Commission", "0.1%"),
-
-            const SizedBox(height: 32),
-            CustomButton(
-              text: "Run Backtest",
-              icon: Icons.play_arrow,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const BacktestResultsScreen()),
-                );
-              },
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [AppColors.purple, AppColors.cyan],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: const Icon(Icons.settings_outlined, size: 20, color: Colors.white),
             ),
-             const SizedBox(height: 80), 
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Backtest",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  "EMA 9/21 Crossover (signal_based)",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withOpacity(0.5),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
-    );
-  }
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: GlassContainer(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          borderRadius: 24,
+          color: AppColors.cardSurface,
+          opacity: 0.5,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.settings_outlined, color: AppColors.purple, size: 20),
+                      const SizedBox(width: 8),
+                      const Text(
+                        "Backtest\nConfiguration",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white, height: 1.2),
+                      ),
+                    ],
+                  ),
+                  TextButton(
+                    onPressed: () {},
+                    child: const Text(
+                      "Show\nAdvanced",
+                      textAlign: TextAlign.right,
+                      style: TextStyle(color: AppColors.cyan, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
 
-  Widget _buildSectionHeader(String title) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        title,
-        style: const TextStyle(
-          color: AppColors.primary,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.0,
+              // Strategy Info
+              RichText(
+                text: TextSpan(
+                  style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14),
+                  children: const [
+                    TextSpan(text: "Strategy: "),
+                    TextSpan(
+                      text: "EMA 9/21 Crossover •\nsignal_based",
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Form Config
+              _buildDropdownField("Symbol *", _selectedSymbol, _symbols, (val) {
+                setState(() => _selectedSymbol = val!);
+              }),
+              const SizedBox(height: 16),
+              _buildDropdownField("Timeframe *", _selectedTimeframe, _timeframes, (val) {
+                setState(() => _selectedTimeframe = val!);
+              }),
+              const SizedBox(height: 16),
+              _buildTextField("Initial Capital (\$) *", _initialCapitalController),
+              const SizedBox(height: 16),
+              _buildDropdownField("Leverage *", _selectedLeverage, _leverages, (val) {
+                setState(() => _selectedLeverage = val!);
+              }),
+              const SizedBox(height: 16),
+              _buildDropdownField("Capital % *", _selectedCapitalPercent, _capitalPercents, (val) {
+                setState(() => _selectedCapitalPercent = val!);
+              }),
+              const SizedBox(height: 16),
+              _buildDropdownField("Commission Type *", _selectedCommission, _commissionTypes, (val) {
+                setState(() => _selectedCommission = val!);
+              }),
+
+              const SizedBox(height: 32),
+
+              // Date Range Info
+              Text(
+                "Date: 2024-01-10 -> 2026-02-09 (760.82\ndays)",
+                style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13),
+              ),
+              const SizedBox(height: 24),
+
+              // Run Button
+              GradientButton(
+                text: "Run Backtest",
+                icon: Icons.play_arrow,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const BacktestResultsScreen()),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildDropdownInput(String label, List<String> items, String value, Function(String?) onChanged) {
-    return GlassContainer(
-      color: AppColors.cardSurface,
-      opacity: 0.5,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      borderRadius: 12,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: AppColors.textSecondary)),
-          DropdownButton<String>(
-            value: value,
-            dropdownColor: AppColors.cardSurface,
-            underline: Container(),
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.primary),
-            items: items.map((String item) {
-              return DropdownMenuItem<String>(
-                value: item,
-                child: Text(item),
-              );
-            }).toList(),
-            onChanged: onChanged,
+  Widget _buildDropdownField(
+      String label, String value, List<String> items, Function(String?) onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.background.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
           ),
-        ],
-      ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: value,
+              isExpanded: true,
+              dropdownColor: AppColors.cardSurface,
+              icon: Icon(Icons.keyboard_arrow_down, color: Colors.white.withOpacity(0.6)),
+              style: const TextStyle(color: Colors.white, fontSize: 15),
+              items: items.map((String item) {
+                return DropdownMenuItem<String>(
+                  value: item,
+                  child: Text(item),
+                );
+              }).toList(),
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildTextInput(String label, String initialValue) {
-    return GlassContainer(
-      color: AppColors.cardSurface,
-      opacity: 0.5,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      borderRadius: 12,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: AppColors.textSecondary)),
-          SizedBox(
-            width: 100,
-            child: TextField(
-              controller: TextEditingController(text: initialValue),
-              textAlign: TextAlign.right,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                isDense: true,
-              ),
-              keyboardType: TextInputType.number,
-            ),
+  Widget _buildTextField(String label, TextEditingController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.background.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
           ),
-        ],
-      ),
+          child: TextField(
+            controller: controller,
+            style: const TextStyle(color: Colors.white, fontSize: 15),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+            ),
+            keyboardType: TextInputType.number,
+          ),
+        ),
+      ],
     );
   }
 }

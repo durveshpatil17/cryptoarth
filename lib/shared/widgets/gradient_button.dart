@@ -5,10 +5,13 @@ class GradientButton extends StatelessWidget {
   final VoidCallback onPressed;
   final String text;
 
+  final IconData? icon;
+
   const GradientButton({
     super.key,
     required this.onPressed,
     required this.text,
+    this.icon,
   });
 
   @override
@@ -43,8 +46,13 @@ class GradientButton extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(width: 8),
-              const Icon(Icons.rocket_launch, color: Colors.black, size: 20),
+              if (icon != null) ...[
+                const SizedBox(width: 8),
+                Icon(icon, color: Colors.black, size: 20),
+              ] else ...[
+                 const SizedBox(width: 8),
+                const Icon(Icons.rocket_launch, color: Colors.black, size: 20),
+              ]
             ],
           ),
         ),
