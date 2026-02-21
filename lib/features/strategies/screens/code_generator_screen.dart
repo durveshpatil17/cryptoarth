@@ -2,25 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 
-class CodeGeneratorScreen extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cryptoarth/features/strategies/providers/strategy_provider.dart';
+
+class CodeGeneratorScreen extends ConsumerStatefulWidget {
   const CodeGeneratorScreen({super.key});
 
   @override
-  State<CodeGeneratorScreen> createState() => _CodeGeneratorScreenState();
+  ConsumerState<CodeGeneratorScreen> createState() => _CodeGeneratorScreenState();
 }
 
-class _CodeGeneratorScreenState extends State<CodeGeneratorScreen> {
-  String _selectedStrategy = 'MACD Crossover'; // Default value
+class _CodeGeneratorScreenState extends ConsumerState<CodeGeneratorScreen> {
+  String? _selectedStrategy;
   String _selectedLanguage = 'MQL4';
   final TextEditingController _codeController = TextEditingController();
-
-  final List<String> _strategies = [
-    'MACD Crossover',
-    'RSI Oversold/Overbought',
-    'Bollinger Bands Squeeze',
-    'Moving Average Cross',
-    'SuperTrend Strategy'
-  ];
 
   final List<String> _languages = ['AFL', 'Python', 'Pine', 'MQL4'];
 
@@ -140,10 +135,10 @@ if (ta.crossunder(macdLine, signalLine))
           children: [
             const Text(
               'Code Generator',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             Text(
-              'Export your Pine Script using Claude-powered conversions',
+              'Export AI strategies',
               style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(0.6)),
             ),
           ],
@@ -157,241 +152,247 @@ if (ta.crossunder(macdLine, signalLine))
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Strategy Selection
-            const Text(
-              "Strategy",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: AppColors.cardSurface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedStrategy,
-                  dropdownColor: AppColors.cardSurface,
-                  icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
-                  isExpanded: true,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
+            // Compact Strategy Selection
+            ref.watch(strategyProvider).when(
+              data: (strategies) {
+                final List<String> strategyNames = strategies.map((s) => s.strategyName).toList();
+                if (strategyNames.isEmpty) {
+                  return const Text("No strategies available", style: TextStyle(color: Colors.white54));
+                }
+                
+                // Initialize selected strategy if null
+                if (_selectedStrategy == null || !strategyNames.contains(_selectedStrategy)) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
                       setState(() {
-                        _selectedStrategy = newValue;
+                         _selectedStrategy = strategyNames.first;
+                         _updateCode();
+                      });
+                    }
+                  });
+                }
+                
+                return Row(
+                  children: [
+                    const Text("Strategy:", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Container(
+                        height: 36,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardSurface,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.white.withOpacity(0.1)),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedStrategy ?? strategyNames.first,
+                            dropdownColor: AppColors.cardSurface,
+                            icon: const Icon(Icons.keyboard_arrow_down, size: 16, color: AppColors.textSecondary),
+                            isExpanded: true,
+                            style: const TextStyle(color: Colors.white, fontSize: 12),
+                            onChanged: (String? newValue) {
+                              if (newValue != null) {
+                                setState(() {
+                                  _selectedStrategy = newValue;
+                                  _updateCode();
+                                });
+                              }
+                            },
+                            items: strategyNames.map<DropdownMenuItem<String>>((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value, maxLines: 1, overflow: TextOverflow.ellipsis),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
+              error: (e, s) => Center(child: Text("Error: $e", style: const TextStyle(color: Colors.red))),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Compact Language Selection
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _languages.map((lang) {
+                final isSelected = _selectedLanguage == lang;
+                return ChoiceChip(
+                  label: Text(lang, style: TextStyle(
+                    fontSize: 10, 
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected ? Colors.black : Colors.white70
+                  )),
+                  selected: isSelected,
+                  selectedColor: AppColors.gold,
+                  backgroundColor: AppColors.cardSurface,
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                  visualDensity: VisualDensity.compact,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6), 
+                    side: BorderSide(color: isSelected ? AppColors.gold : Colors.white.withOpacity(0.1))
+                  ),
+                  onSelected: (bool selected) {
+                    if (selected) {
+                      setState(() {
+                        _selectedLanguage = lang;
                         _updateCode();
                       });
                     }
                   },
-                  items: _strategies.map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                ),
-              ),
+                );
+              }).toList(),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
-            // Language Selection
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _languages.map((lang) {
-                  final isSelected = _selectedLanguage == lang;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 12.0),
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          _selectedLanguage = lang;
-                          _updateCode();
-                        });
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isSelected 
-                             ? AppColors.primary.withOpacity(0.2) 
-                             : AppColors.cardSurface,
-                          border: Border.all(
-                            color: isSelected ? AppColors.gold : Colors.white.withOpacity(0.1),
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            if (lang == 'AFL' || lang == 'Pine') // Add code icons just for visual variety
-                              const Padding(
-                                 padding: EdgeInsets.only(right: 6),
-                                 child: Icon(Icons.code, size: 16, color: Colors.white70),
-                              ),
-                            Text(
-                              lang,
-                              style: TextStyle(
-                                color: isSelected ? AppColors.gold : Colors.white70,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              ),
-                            ),
-                            if (isSelected)
-                              Container(
-                                 margin: const EdgeInsets.only(left: 6),
-                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                 decoration: BoxDecoration(
-                                   color: AppColors.gold,
-                                   borderRadius: BorderRadius.circular(4),
-                                 ),
-                                 child: const Text('Premium', 
-                                    style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)
-                                 ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Generated Code Section
+            // Code View Header
             Row(
                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                children: [
-                  RichText(
-                    text: const TextSpan(
-                      children: [
-                        WidgetSpan(
-                          child: Padding(
-                            padding: EdgeInsets.only(right: 8.0),
-                            child: Icon(Icons.code, color: AppColors.purple, size: 20),
-                          ),
-                        ),
-                        TextSpan(
-                          text: "Generated Code",
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                      ],
-                    ),
+                  Row(
+                    children: [
+                      const Icon(Icons.code, color: AppColors.purple, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        "Generated Code",
+                        style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
                   Container(
-                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                      decoration: BoxDecoration(
-                        color: AppColors.purple.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.purple),
+                        color: AppColors.purple.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: AppColors.purple.withOpacity(0.3)),
                      ),
                      child: Text(
                         _selectedLanguage,
-                        style: const TextStyle(color: AppColors.purple, fontWeight: FontWeight.bold, fontSize: 12),
+                        style: const TextStyle(color: AppColors.purple, fontWeight: FontWeight.bold, fontSize: 10),
                      ),
                   )
                ],
             ),
             
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             
+            // Code Editor
             Container(
-              height: 300,
+              height: 250,
               decoration: BoxDecoration(
-                color: const Color(0xFF0F1115), // Darker code background
-                borderRadius: BorderRadius.circular(12),
+                color: const Color(0xFF0F1115),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.white.withOpacity(0.1)),
               ),
               child: Column(
                 children: [
                    // Mac-style window controls
                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05))),
                       ),
                       child: Row(
                          children: [
                             _buildWindowDot(const Color(0xFFFF5F57)),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             _buildWindowDot(const Color(0xFFFFBD2E)),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             _buildWindowDot(const Color(0xFF28C840)),
-                            const SizedBox(width: 16),
-                            Text(
-                               '${_selectedStrategy.toLowerCase().replaceAll(' ', '_')}.${_selectedLanguage.toLowerCase()}',
-                               style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 12),
-                            ),
+                            const SizedBox(width: 12),
+                            Expanded(child: Text(
+                               '${(_selectedStrategy ?? "strategy").toLowerCase().replaceAll(' ', '_')}.${_selectedLanguage.toLowerCase()}',
+                               style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10),
+                               overflow: TextOverflow.ellipsis,
+                            )),
                          ],
                       ),
                    ),
                    Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(12.0),
                         child: TextField(
                           controller: _codeController,
                           style: const TextStyle(
                             color: Colors.greenAccent, 
                             fontFamily: 'Courier',
-                            fontSize: 14,
-                            height: 1.4,
+                            fontSize: 11,
+                            height: 1.3,
                           ),
                           maxLines: null,
                           readOnly: true,
                           decoration: const InputDecoration(
                             border: InputBorder.none,
+                            isDense: true,
                           ),
                         ),
                       ),
                    ),
-                   
-                   // Action Buttons Bar
-                   Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                         children: [
-                            ElevatedButton.icon(
-                               onPressed: () {
-                                  Clipboard.setData(ClipboardData(text: _codeController.text));
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Code copied to clipboard!')),
-                                  );
-                               },
-                               icon: const Icon(Icons.copy, size: 18),
-                               label: const Text('Copy'),
-                               style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.purple,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            OutlinedButton.icon(
-                               onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Downloading file...')),
-                                  );
-                               },
-                               icon: const Icon(Icons.download, size: 18),
-                               label: const Text('Download'),
-                               style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.cyan,
-                                  side: const BorderSide(color: AppColors.cyan),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                               ),
-                            ),
-                         ],
-                      ),
-                   ),
                 ],
               ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Action Buttons
+            Row(
+               children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 32,
+                      child: ElevatedButton.icon(
+                         onPressed: () {
+                            Clipboard.setData(ClipboardData(text: _codeController.text));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Code copied!')),
+                            );
+                         },
+                         icon: const Icon(Icons.copy, size: 14),
+                         label: const Text('Copy Code', style: TextStyle(fontSize: 11)),
+                         style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.purple,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                            padding: EdgeInsets.zero,
+                         ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SizedBox(
+                      height: 32,
+                      child: OutlinedButton.icon(
+                         onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Downloading...')),
+                            );
+                         },
+                         icon: const Icon(Icons.download, size: 14),
+                         label: const Text('Download', style: TextStyle(fontSize: 11)),
+                         style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.cyan,
+                            side: const BorderSide(color: AppColors.cyan),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                            padding: EdgeInsets.zero,
+                         ),
+                      ),
+                    ),
+                  ),
+               ],
             ),
           ],
         ),

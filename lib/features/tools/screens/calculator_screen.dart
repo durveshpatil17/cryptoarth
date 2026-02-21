@@ -31,33 +31,21 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text("CryptoArth AI", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text("Calculator", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         backgroundColor: AppColors.background,
-        automaticallyImplyLeading: false,
         elevation: 0,
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none, color: Colors.white)),
+          IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none, size: 20, color: Colors.white)),
           const ProfileAvatar(),
           const SizedBox(width: 16),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Margin Calculator",
-              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "Calculate your trading margin, position size, and risk-reward ratio with precision. Professional-grade calculations for informed trading decisions.",
-              style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14, height: 1.5),
-            ),
-            const SizedBox(height: 24),
-
-            // Trading Parameters Card
+            // Compact Header Card
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -69,172 +57,85 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                    Row(
+                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                      children: [
-                       Icon(Icons.bar_chart, color: AppColors.cyan, size: 20),
-                       const SizedBox(width: 8),
                        const Text(
-                         "Trading Parameters",
-                         style: TextStyle(color: AppColors.cyan, fontWeight: FontWeight.bold, fontSize: 16),
+                         "Margin & Risk",
+                         style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                       ),
+                       Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                             color: AppColors.cyan.withOpacity(0.1),
+                             borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text("BTC/USD", style: TextStyle(color: AppColors.cyan, fontSize: 10, fontWeight: FontWeight.bold)),
                        ),
                      ],
                    ),
+                   const SizedBox(height: 16),
+
+                   // Input Grid
+                   Row(
+                      children: [
+                         Expanded(child: _buildCompactInput("Capital (₹)", _capitalController)),
+                         const SizedBox(width: 12),
+                         Expanded(child: _buildCompactDropdown("Symbol", _selectedSymbol, _symbols)),
+                      ],
+                   ),
+                   const SizedBox(height: 12),
+                   
+                   Row(
+                      children: [
+                         Expanded(child: _buildCompactInput("Leverage (x)", _leverageController)),
+                         const SizedBox(width: 12),
+                         Expanded(child: _buildCompactInput("Capital Used (%)", _capitalUsedController)),
+                      ],
+                   ),
+                   const SizedBox(height: 12),
+
+                   Row(
+                      children: [
+                         Expanded(child: _buildCompactInputWithToggle("Stop Loss", _stopLossController, _stopLossUnit, (v) => setState(() => _stopLossUnit = v))),
+                         const SizedBox(width: 12),
+                         Expanded(child: _buildCompactInputWithToggle("Target", _targetController, _targetUnit, (v) => setState(() => _targetUnit = v))),
+                      ],
+                   ),
+                   const SizedBox(height: 12),
+
+                   Row(
+                      children: [
+                         Expanded(child: _buildCompactInput("Trades / Day", _tradesController)),
+                         const SizedBox(width: 12),
+                         Expanded(child: _buildOrderTypeSelector()),
+                      ],
+                   ),
+                   
                    const SizedBox(height: 20),
-
-                   // Capital Input
-                   _buildLabel("Capital (₹) *"),
-                   _buildTextField(_capitalController, prefix:15, prefixText: "\$ ", hint: "Enter Capial"),
-                   Padding(
-                     padding: const EdgeInsets.only(top: 8, bottom: 16),
-                     child: Text("= \$180.72 USD", style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
-                   ),
-
-                   // Symbol Dropdown
-                   _buildLabel("Symbol *"),
-                   Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withOpacity(0.1)),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedSymbol,
-                          dropdownColor: AppColors.cardSurface,
-                          icon: const Icon(Icons.unfold_more, color: Colors.white70),
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
-                          items: _symbols.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                          onChanged: (val) => setState(() => _selectedSymbol = val!),
-                        ),
-                      ),
-                   ),
-                   const SizedBox(height: 16),
-
-                   // Leverage and Capital Used Row
-                   Row(
-                     children: [
-                       Expanded(
-                         child: Column(
-                           crossAxisAlignment: CrossAxisAlignment.start,
-                           children: [
-                             _buildLabel("Leverage (×) *"),
-                             _buildTextField(_leverageController),
-                           ],
-                         ),
-                       ),
-                       const SizedBox(width: 16),
-                       Expanded(
-                         child: Column(
-                           crossAxisAlignment: CrossAxisAlignment.start,
-                           children: [
-                             _buildLabel("Capital Used (%) *"),
-                             _buildTextField(_capitalUsedController, suffixText: "%"),
-                           ],
-                         ),
-                       ),
-                     ],
-                   ),
-                   const SizedBox(height: 16),
-
-                   // Stop Loss
-                   _buildLabel("Stop Loss *"),
-                   Row(
-                     children: [
-                       Expanded(child: _buildTextField(_stopLossController, suffixText: _stopLossUnit == "%" ? "%" : "")),
-                       const SizedBox(width: 8),
-                       _buildUnitToggle(_stopLossUnit, (val) => setState(() => _stopLossUnit = val)),
-                     ],
-                   ),
-                   const SizedBox(height: 16),
-
-                   // Target
-                   _buildLabel("Target *"),
-                   Row(
-                     children: [
-                       Expanded(child: _buildTextField(_targetController, suffixText: _targetUnit == "%" ? "%" : "")),
-                       const SizedBox(width: 8),
-                       _buildUnitToggle(_targetUnit, (val) => setState(() => _targetUnit = val)),
-                     ],
-                   ),
-                   const SizedBox(height: 16),
-
-                   // Trades per Day and Order Type
-                   Row(
-                     children: [
-                       Expanded(
-                         child: Column(
-                           crossAxisAlignment: CrossAxisAlignment.start,
-                           children: [
-                             _buildLabel("Trades per Day *"),
-                             _buildTextField(_tradesController),
-                           ],
-                         ),
-                       ),
-                       const SizedBox(width: 16),
-                       Expanded(
-                         child: Column(
-                           crossAxisAlignment: CrossAxisAlignment.start,
-                           children: [
-                             _buildLabel("Order Type *"),
-                             Container(
-                               height: 50, // Match text field height roughly
-                               decoration: BoxDecoration(
-                                 color: AppColors.background,
-                                 borderRadius: BorderRadius.circular(12),
-                                 border: Border.all(color: Colors.white.withOpacity(0.1)),
-                               ),
-                               child: Row(
-                                 children: [
-                                   Expanded(child: _buildOrderTypeButton("Maker", "0.02%")),
-                                   Expanded(child: _buildOrderTypeButton("Taker", "0.05%")),
-                                 ],
-                               ),
-                             ),
-                           ],
-                         ),
-                       ),
-                     ],
-                   ),
-
-                   const SizedBox(height: 16),
-                   _buildLabel("USD to INR Rate"),
-                   _buildTextField(_usdRateController),
-                   Padding(
-                     padding: const EdgeInsets.only(top: 8, bottom: 24),
-                     child: Text("You can adjust USD/INR if required", style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
-                   ),
 
                    // Calculate Button
                    SizedBox(
                      width: double.infinity,
-                     height: 50,
+                     height: 40,
                      child: ElevatedButton(
                        onPressed: () {},
                        style: ElevatedButton.styleFrom(
                          backgroundColor: AppColors.primary,
-                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                        ),
-                       child: const Row(
-                         mainAxisAlignment: MainAxisAlignment.center,
-                         children: [
-                           Icon(Icons.calculate_outlined, color: Colors.white),
-                           SizedBox(width: 8),
-                           Text("Calculate Margin", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                         ],
-                       ),
+                       child: const Text("Calculate", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
                      ),
                    ),
                 ],
               ),
             ),
             
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             
-            // Results Section (Empty State)
+            // Results Section
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppColors.cardSurface,
                 borderRadius: BorderRadius.circular(16),
@@ -242,128 +143,176 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
               ),
               child: Column(
                 children: [
-                   Row(
-                     children: [
-                       Icon(Icons.balance, color: AppColors.purple, size: 20),
-                       const SizedBox(width: 8),
-                       const Text(
-                         "Calculation Results",
-                         style: TextStyle(color: AppColors.purple, fontWeight: FontWeight.bold, fontSize: 16),
-                       ),
-                     ],
-                   ),
-                   const SizedBox(height: 40),
-                   Container(
-                     padding: const EdgeInsets.all(16),
-                     decoration: BoxDecoration(
-                       color: Colors.white.withOpacity(0.05),
-                       borderRadius: BorderRadius.circular(16),
-                     ),
-                     child: Icon(Icons.calculate_outlined, size: 40, color: Colors.white.withOpacity(0.3)),
+                   const Text(
+                     "Results Preview",
+                     style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
                    ),
                    const SizedBox(height: 16),
-                   Text(
-                     "Enter your trading parameters and click \"Calculate Margin\" to see results.",
-                     textAlign: TextAlign.center,
-                     style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14),
+                   Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                         _buildResultItem("Margin", "\$180.72", AppColors.cyan),
+                         _buildResultItem("Risk", "\$45.18", Colors.redAccent),
+                         _buildResultItem("Reward", "\$112.95", AppColors.green),
+                      ],
                    ),
-                   const SizedBox(height: 20),
                 ],
               ),
             ),
-            const SizedBox(height: 100), // Bottom padding
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(text, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
-    );
-  }
-
-  Widget _buildTextField(TextEditingController controller, {String? prefixText, String? suffixText, double? prefix, String? hint}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-      ),
-      child: TextField(
-        controller: controller,
-        style: const TextStyle(color: Colors.white),
-        keyboardType: TextInputType.number,
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          prefixText: prefixText,
-          suffixText: suffixText,
-          hintText: hint,
-          hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-          prefixStyle: const TextStyle(color: Colors.white70),
-          suffixStyle: const TextStyle(color: Colors.white70),
+  Widget _buildCompactInput(String label, TextEditingController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 10)),
+        const SizedBox(height: 4),
+        Container(
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+          ),
+          child: TextField(
+            controller: controller,
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.only(left: 10, bottom: 14), 
+              isDense: true,
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildUnitToggle(String current, Function(String) onChanged) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-      ),
-      child: Row(
+  Widget _buildCompactDropdown(String label, String value, List<String> items) {
+     return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildUnitOption("%", current == "%", onChanged),
-          Container(width: 1, height: 20, color: Colors.white.withOpacity(0.1)),
-          _buildUnitOption("\$", current == "\$", onChanged),
+           Text(label, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 10)),
+           const SizedBox(height: 4),
+           Container(
+              height: 36,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                 color: AppColors.background,
+                 borderRadius: BorderRadius.circular(8),
+                 border: Border.all(color: Colors.white.withOpacity(0.1)),
+              ),
+              child: DropdownButtonHideUnderline(
+                 child: DropdownButton<String>(
+                    value: value,
+                    isExpanded: true,
+                    dropdownColor: AppColors.cardSurface,
+                    icon: const Icon(Icons.arrow_drop_down, color: Colors.white54, size: 18),
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                    items: items.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (val) => setState(() => _selectedSymbol = val!),
+                 ),
+              ),
+           ),
         ],
-      ),
-    );
+     );
   }
 
-  Widget _buildUnitOption(String text, bool isSelected, Function(String) onTap) {
-    return GestureDetector(
-      onTap: () => onTap(text),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-        color: isSelected ? Colors.white.withOpacity(0.05) : Colors.transparent,
-        child: Column(
-          children: [
-             Text(text, style: TextStyle(color: isSelected ? Colors.white : Colors.white54, fontWeight: FontWeight.bold)),
-             if (isSelected) 
-               const Icon(Icons.unfold_more, size: 12, color: Colors.white)
-             else
-               const SizedBox(height: 12), // Placeholder for alignment
-          ],
-        ),
-      ),
-    );
+  Widget _buildCompactInputWithToggle(String label, TextEditingController controller, String unit, Function(String) onUnitChanged) {
+     return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+           Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                 Text(label, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 10)),
+                 GestureDetector(
+                    onTap: () => onUnitChanged(unit == "%" ? "\$" : "%"),
+                    child: Text(
+                       unit, 
+                       style: const TextStyle(color: AppColors.cyan, fontSize: 10, fontWeight: FontWeight.bold)
+                    ),
+                 ),
+              ],
+           ),
+           const SizedBox(height: 4),
+           Container(
+              height: 36,
+              decoration: BoxDecoration(
+                 color: AppColors.background,
+                 borderRadius: BorderRadius.circular(8),
+                 border: Border.all(color: Colors.white.withOpacity(0.1)),
+              ),
+              child: TextField(
+                 controller: controller,
+                 style: const TextStyle(color: Colors.white, fontSize: 12),
+                 keyboardType: TextInputType.number,
+                 decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.only(left: 10, bottom: 14),
+                    isDense: true,
+                 ),
+              ),
+           ),
+        ],
+     );
   }
 
-  Widget _buildOrderTypeButton(String type, String rate) {
-    bool isSelected = _orderType == type;
-    return GestureDetector(
-      onTap: () => setState(() => _orderType = type),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white.withOpacity(0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+  Widget _buildOrderTypeSelector() {
+     return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+           Text("Order Type", style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 10)),
+           const SizedBox(height: 4),
+           Container(
+              height: 36,
+              decoration: BoxDecoration(
+                 color: AppColors.background,
+                 borderRadius: BorderRadius.circular(8),
+                 border: Border.all(color: Colors.white.withOpacity(0.1)),
+              ),
+              child: Row(
+                 children: [
+                    Expanded(child: _buildTypeOption("Maker", _orderType == "Maker")),
+                    Container(width: 1, color: Colors.white10),
+                    Expanded(child: _buildTypeOption("Taker", _orderType == "Taker")),
+                 ],
+              ),
+           ),
+        ],
+     );
+  }
+
+  Widget _buildTypeOption(String text, bool isSelected) {
+     return GestureDetector(
+        onTap: () => setState(() => _orderType = text),
+        child: Container(
+           color: isSelected ? Colors.white.withOpacity(0.05) : Colors.transparent,
+           alignment: Alignment.center,
+           child: Text(
+              text, 
+              style: TextStyle(
+                 color: isSelected ? Colors.white : Colors.white54, 
+                 fontSize: 10, 
+                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
+              )
+           ),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(type, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontWeight: FontWeight.bold, fontSize: 12)),
-            const SizedBox(height: 2),
-            Text(rate, style: TextStyle(color: isSelected ? Colors.white : Colors.white54, fontSize: 10)),
-          ],
-        ),
-      ),
-    );
+     );
+  }
+  
+  Widget _buildResultItem(String label, String value, Color color) {
+     return Column(
+        children: [
+           Text(label, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
+           const SizedBox(height: 4),
+           Text(value, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold)),
+        ],
+     );
   }
 }

@@ -1,44 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
+import 'dart:math' as Math;
 
 import 'package:cryptoarth/features/auth/screens/welcome_screen.dart';
 import 'package:cryptoarth/features/settings/screens/profile_settings_screen.dart';
 import 'package:cryptoarth/features/broker/screens/broker_login_screen.dart';
 import 'package:cryptoarth/features/settings/screens/contact_us_screen.dart';
 
-class ProfileAvatar extends StatelessWidget {
-  const ProfileAvatar({super.key});
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
+
+class ProfileAvatar extends ConsumerWidget {
+  final double radius;
+  const ProfileAvatar({super.key, this.radius = 16.0});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authProvider).user;
+    
+    String initials = "U";
+    if (user != null) {
+      if (user.name != null && user.name!.isNotEmpty) {
+        final parts = user.name!.trim().split(' ');
+        if (parts.length > 1) {
+          initials = '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+        } else {
+          initials = parts[0].substring(0, Math.min(2, parts[0].length)).toUpperCase();
+        }
+      } else if (user.phone != null && user.phone!.length >= 2) {
+        initials = user.phone!.substring(user.phone!.length - 2);
+      }
+    }
+
     return PopupMenuButton<String>(
       offset: const Offset(0, 50),
       color: const Color(0xFF0F172A),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        margin: const EdgeInsets.only(right: 16),
-        padding: const EdgeInsets.all(8),
-        decoration: const BoxDecoration(
-          color: Color(0xFF8B5CF6),
-          shape: BoxShape.circle,
-        ),
-        child: const Text(
-          "JD",
+      child: CircleAvatar(
+        radius: radius,
+        backgroundColor: const Color(0xFF8B5CF6),
+        child: Text(
+          initials,
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
-            fontSize: 12,
+            fontSize: radius * 0.75,
           ),
         ),
       ),
       onSelected: (value) {
         if (value == 'logout') {
-          // Navigate to Welcome Screen and clear stack
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => const WelcomeScreen()),
-            (route) => false,
-          );
+          ref.read(authProvider.notifier).logout(context);
         } else if (value == 'profile') {
           Navigator.push(
             context,

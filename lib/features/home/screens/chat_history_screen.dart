@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
+import 'package:cryptoarth/features/home/screens/home_screen.dart';
 
 class ChatHistoryScreen extends StatefulWidget {
   const ChatHistoryScreen({super.key});
@@ -9,30 +10,31 @@ class ChatHistoryScreen extends StatefulWidget {
 }
 
 class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
-  // Mock Data
-  final List<Map<String, dynamic>> _chatSessions = [
-    {
-      "id": 1,
-      "title": "Ema (9/21 EMA) Strategy",
-      "messageCount": 0,
-      "date": "Feb 10 at 06:24 PM",
-      "isActive": false,
-    },
-    {
-      "id": 2,
-      "title": "Ema (9/21 EMA) Backtest Analysis",
-      "messageCount": 3,
-      "date": "Feb 9 at 02:45 PM",
-      "isActive": false,
-    },
-    {
-      "id": 3,
-      "title": "Bollinger Bands Squeeze Setup",
-      "messageCount": 12,
-      "date": "Feb 5 at 01:17 PM",
-      "isActive": true, // Example active state
-    },
-  ];
+  // Use saved sessions from HomeScreen
+  late List<Map<String, dynamic>> _chatSessions;
+
+  @override
+  void initState() {
+    super.initState();
+    _chatSessions = [
+      ...HomeScreen.savedSessions,
+      // Keep some example mock data
+      {
+        "id": 1,
+        "title": "Ema (9/21 EMA) Strategy",
+        "messageCount": 0,
+        "date": "Feb 10 at 06:24 PM",
+        "isActive": false,
+      },
+      {
+        "id": 2,
+        "title": "Bollinger Bands Squeeze Setup",
+        "messageCount": 12,
+        "date": "Feb 5 at 01:17 PM",
+        "isActive": false,
+      },
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {

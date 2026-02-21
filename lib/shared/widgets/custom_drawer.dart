@@ -2,21 +2,23 @@ import 'package:flutter/material.dart';
 
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 
+import 'package:cryptoarth/features/home/screens/main_screen.dart';
 import 'package:cryptoarth/features/strategies/screens/backtest_config_screen.dart';
 import 'package:cryptoarth/features/strategies/screens/code_generator_screen.dart';
 import 'package:cryptoarth/features/home/screens/chat_history_screen.dart';
 import 'package:cryptoarth/features/strategies/screens/templates_screen.dart';
 import 'package:cryptoarth/features/settings/screens/credits_screen.dart';
-import 'package:cryptoarth/features/marketplace/screens/marketplace_screen.dart';
-import 'package:cryptoarth/features/portfolio/screens/pnl_report_screen.dart';
 
 
 
-class CustomDrawer extends StatelessWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
+
+class CustomDrawer extends ConsumerWidget {
   const CustomDrawer({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Drawer(
       backgroundColor: AppColors.background,
       child: Column(
@@ -91,8 +93,12 @@ class CustomDrawer extends StatelessWidget {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 onTap: () {
-                  // Handle New Chat
                   Navigator.pop(context);
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MainScreen()),
+                    (route) => false,
+                  );
                 },
                 // Add left border indicator simulation if needed, or just keep simple for now
                 minLeadingWidth: 20,
@@ -146,16 +152,18 @@ class CustomDrawer extends StatelessWidget {
                     }),
                     _buildMenuItem(Icons.shopping_bag_outlined, "Marketplace", onTap: () {
                       Navigator.pop(context); // Close drawer
-                      Navigator.push(
+                      Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (context) => const MarketplaceScreen()),
+                        MaterialPageRoute(builder: (context) => const MainScreen(initialIndex: 2)),
+                        (route) => false,
                       );
                     }),
-                    _buildMenuItem(Icons.bar_chart, "P&L Report", onTap: () {
+                    _buildMenuItem(Icons.bar_chart, "Portfolio / P&L", onTap: () {
                       Navigator.pop(context); // Close drawer
-                      Navigator.push(
+                      Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (context) => const PnLReportScreen()),
+                        MaterialPageRoute(builder: (context) => const MainScreen(initialIndex: 1)),
+                        (route) => false,
                       );
                     }),
                   ],
@@ -180,8 +188,8 @@ class CustomDrawer extends StatelessWidget {
                   style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
                 ),
                 onTap: () {
-                   // Handle Logout
-                   Navigator.pop(context);
+                   Navigator.pop(context); // Close drawer
+                   ref.read(authProvider.notifier).logout(context);
                 },
               ),
             ),

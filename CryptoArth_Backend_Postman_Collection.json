@@ -1,0 +1,444 @@
+{
+  "info": {
+    "name": "CryptoArth Backend API",
+    "description": "Crypto_Arth_Backend – Auth, Profile, Portfolio, Orders, PnL, Strategies, Backtest, Marketplace, Broker, Dashboard. Use {{base_url}} and {{access_token}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000" },
+    { "key": "access_token", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [ { "key": "token", "value": "{{access_token}}" } ]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/health/",
+            "description": "No auth. Returns ok."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Send OTP",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"9876543210\"\n}"
+            },
+            "url": "{{base_url}}/auth/send-otp/",
+            "description": "Sends OTP to phone. No auth."
+          }
+        },
+        {
+          "name": "Login (Verify OTP)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"9876543210\",\n  \"otp\": \"123456\"\n}"
+            },
+            "url": "{{base_url}}/auth/login/",
+            "description": "Returns access and refresh tokens. Save access_token to collection variable."
+          }
+        },
+        {
+          "name": "Signup",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"9876543210\",\n  \"otp\": \"123456\",\n  \"email\": \"user@example.com\",\n  \"first_name\": \"First\",\n  \"last_name\": \"Last\",\n  \"refercode\": \"\"\n}"
+            },
+            "url": "{{base_url}}/auth/signup/",
+            "description": "New user registration. Returns access and refresh."
+          }
+        },
+        {
+          "name": "Consume OTP",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{base_url}}/auth/consume-otp/",
+            "description": "Call after login to clear OTP. Bearer required."
+          }
+        },
+        {
+          "name": "Session check",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/session/",
+            "description": "Lightweight session info. Bearer required."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile",
+      "item": [
+        {
+          "name": "Get profile",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/profile/",
+            "description": "User profile. Also: GET /auth/user/"
+          }
+        },
+        {
+          "name": "Update profile",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "PATCH",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"First\",\n  \"last_name\": \"Last\",\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": "{{base_url}}/auth/profile/",
+            "description": "Partial update. PATCH /auth/user/ also."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Portfolio",
+      "item": [
+        {
+          "name": "Get user positions (live)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/get_user_positions/"
+          }
+        },
+        {
+          "name": "Get paper positions",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/user/positions/paper/"
+          }
+        },
+        {
+          "name": "Broker balance",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/broker/balance/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders & Trades",
+      "item": [
+        {
+          "name": "Orders (live)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/orders/"
+          }
+        },
+        {
+          "name": "Orders (paper)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/orders/paper/"
+          }
+        },
+        {
+          "name": "Trades (live)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/trades/"
+          }
+        },
+        {
+          "name": "Trades (paper)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/trades/paper/"
+          }
+        },
+        {
+          "name": "User order details",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/userOrderDetails/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "PnL Report",
+      "item": [
+        {
+          "name": "Get PnL summary",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/get_user_pnl/",
+            "description": "Returns today_profit, total_profit, trades."
+          }
+        },
+        {
+          "name": "PnL report PDF",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/pl-report/pdf/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Strategies",
+      "item": [
+        {
+          "name": "User strategies",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/user/strategies/"
+          }
+        },
+        {
+          "name": "Deployed strategies",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/strategies/deployed/"
+          }
+        },
+        {
+          "name": "Deploy strategy",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"strategyid\": 1,\n  \"user_id\": 1,\n  \"broker_id\": 1\n}" },
+            "url": "{{base_url}}/auth/user/strategies/deploy/"
+          }
+        },
+        {
+          "name": "Undeploy strategy",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"strategyid\": 1\n}" },
+            "url": "{{base_url}}/auth/user/strategies/undeploy/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Backtest & Marketplace",
+      "item": [
+        {
+          "name": "Backtest list",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/strategy/backtest/list/",
+            "description": "Query: type=marketplace|my-strategy|shared, lite=1"
+          }
+        },
+        {
+          "name": "Backtest detail",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/strategy/backtest/detail/",
+            "description": "Add query params: backtest_id or strategy_code as per backend."
+          }
+        },
+        {
+          "name": "Backtest result status",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/strategy/backtest/result/"
+          }
+        },
+        {
+          "name": "Dashboard / Marketplace strategies",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/strategy/dashboard/",
+            "description": "Query: lite=1, cards=1 optional."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Broker connection",
+      "item": [
+        {
+          "name": "Connect broker (Delta)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"api_key\": \"your_delta_api_key\",\n  \"api_secret\": \"your_delta_api_secret\"\n}"
+            },
+            "url": "{{base_url}}/auth/broker/connect/",
+            "description": "Saves broker link. Delta Exchange."
+          }
+        },
+        {
+          "name": "Test broker (no save)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"api_key\": \"your_api_key\",\n  \"api_secret\": \"your_api_secret\",\n  \"broker\": \"Coindcx\"\n}"
+            },
+            "url": "{{base_url}}/auth/diagnostic/",
+            "description": "Tests connection without saving. broker: Coindcx or Delta."
+          }
+        },
+        {
+          "name": "Connect CoinDCX",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"api_key\": \"\",\n  \"api_secret\": \"\"\n}" },
+            "url": "{{base_url}}/auth/connect/coindcx/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard (admin)",
+      "item": [
+        {
+          "name": "Dashboard count (POST)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startdate\": \"2025-01-01\",\n  \"enddate\": \"2025-02-21\"\n}"
+            },
+            "url": "{{base_url}}/auth/dashboard/",
+            "description": "Staff only."
+          }
+        },
+        {
+          "name": "Dashboard count (startDate/endDate)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startDate\": \"2025-01-01\",\n  \"endDate\": \"2025-02-21\"\n}"
+            },
+            "url": "{{base_url}}/auth/dashboardcount/",
+            "description": "Staff only."
+          }
+        },
+        {
+          "name": "Today dashboard count",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/today_dashboardcount/",
+            "description": "Staff only."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments & Notifications",
+      "item": [
+        {
+          "name": "Payment balance",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/payment/balance/"
+          }
+        },
+        {
+          "name": "Payment ledger",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/payment/ledger/"
+          }
+        },
+        {
+          "name": "Notifications",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/notifications/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Other",
+      "item": [
+        {
+          "name": "Check phone",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"9876543210\"\n}" },
+            "url": "{{base_url}}/auth/check-phone/"
+          }
+        },
+        {
+          "name": "Watchlist",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/watchlist/"
+          }
+        },
+        {
+          "name": "Referral link",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "method": "GET",
+            "url": "{{base_url}}/auth/get_referal_link/"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 
-class PnLReportScreen extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cryptoarth/features/portfolio/providers/pnl_provider.dart';
+
+class PnLReportScreen extends ConsumerStatefulWidget {
   const PnLReportScreen({super.key});
 
   @override
-  State<PnLReportScreen> createState() => _PnLReportScreenState();
+  ConsumerState<PnLReportScreen> createState() => _PnLReportScreenState();
 }
 
-class _PnLReportScreenState extends State<PnLReportScreen> {
+class _PnLReportScreenState extends ConsumerState<PnLReportScreen> {
   String _selectedTradeCategory = "Live Trades"; // 'Live Trades' or 'Paper Trades'
   String _selectedStrategy = "All Strategies";
   final List<String> _strategies = ["All Strategies", "SuperTrend", "RSI Pro", "Breakout"];
@@ -22,54 +25,46 @@ class _PnLReportScreenState extends State<PnLReportScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'P&L Report (User)',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            Text(
-              'Analyze your profit and loss performance',
-              style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(0.6)),
-            ),
-          ],
-        ),
+        title: const Text("P&L Report", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         backgroundColor: AppColors.background,
-        iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
         actions: [
-           IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none, color: Colors.white))
+           IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none, size: 20, color: Colors.white))
         ],
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Stats Grid
-              LayoutBuilder(
-                 builder: (context, constraints) {
-                    // Responsive Grid: 2 columns on mobile
-                    return Wrap(
-                       spacing: 16,
-                       runSpacing: 16,
-                       children: [
-                          _buildStatCard("TOTAL P&L", "+0.00", AppColors.green, constraints.maxWidth / 2 - 9),
-                          _buildStatCard("TOTAL TRADES", "0", Colors.white, constraints.maxWidth / 2 - 9),
-                          _buildStatCard("WIN RATE", "0.0%", Colors.white, constraints.maxWidth / 2 - 9),
-                          _buildStatCard("AVG P&L", "+0.00", AppColors.green, constraints.maxWidth / 2 - 9),
-                       ],
-                    );
-                 },
+              ref.watch(pnlProvider).when(
+                data: (pnl) {
+                  return LayoutBuilder(
+                     builder: (context, constraints) {
+                        final double itemWidth = (constraints.maxWidth - 12) / 2;
+                        return Wrap(
+                           spacing: 12,
+                           runSpacing: 12,
+                           children: [
+                              _buildStatCard("Total P&L", "\$${pnl.totalProfit.toStringAsFixed(2)}", pnl.totalProfit >= 0 ? AppColors.green : Colors.redAccent, itemWidth),
+                              _buildStatCard("Today P&L", "\$${pnl.todayProfit.toStringAsFixed(2)}", pnl.todayProfit >= 0 ? AppColors.green : Colors.redAccent, itemWidth),
+                              _buildStatCard("Total Trades", "${pnl.trades}", Colors.white, itemWidth),
+                           ],
+                        );
+                     },
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
+                error: (e, s) => Center(child: Text("Error loading P&L: $e", style: const TextStyle(color: Colors.redAccent))),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
-              // Filters Container
+              // Filter Section
               Container(
-                 padding: const EdgeInsets.all(16),
+                 padding: const EdgeInsets.all(12),
                  decoration: BoxDecoration(
                     color: AppColors.cardSurface,
                     borderRadius: BorderRadius.circular(16),
@@ -78,140 +73,84 @@ class _PnLReportScreenState extends State<PnLReportScreen> {
                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                       const Text("Trade Category", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                       const SizedBox(height: 8),
-                       // Live / Paper Toggle Buttons
+                       // Row 1: Filters Title + Live/Paper Toggle
                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                             Expanded(child: _buildToggleButton("Live Trades", _selectedTradeCategory == "Live Trades")),
-                             const SizedBox(width: 12),
-                             Expanded(child: _buildToggleButton("Paper Trades", _selectedTradeCategory == "Paper Trades")),
-                          ],
-                       ),
-                       
-                       const SizedBox(height: 16),
-                       
-                       const Text("Select Strategy", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                       const SizedBox(height: 8),
-                       Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                             color: Colors.white.withOpacity(0.05),
-                             borderRadius: BorderRadius.circular(8),
-                             border: Border.all(color: Colors.white.withOpacity(0.1)),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                             child: DropdownButton<String>(
-                                value: _selectedStrategy,
-                                dropdownColor: AppColors.cardSurface,
-                                isExpanded: true,
-                                icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white70),
-                                style: const TextStyle(color: Colors.white),
-                                items: _strategies.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                                onChanged: (val) => setState(() => _selectedStrategy = val!),
-                             ),
-                          ),
-                       ),
-                       
-                       const SizedBox(height: 16),
-                       
-                       // Date Filters
-                       Row(
-                          children: [
-                             Expanded(
-                                child: Column(
-                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                   children: [
-                                      const Text("Start Date", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                                      const SizedBox(height: 8),
-                                      _buildDatePicker(_startDate),
-                                   ],
+                             const Text("Filters", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                             Container(
+                                height: 32,
+                                decoration: BoxDecoration(
+                                   color: AppColors.background,
+                                   borderRadius: BorderRadius.circular(8),
+                                   border: Border.all(color: Colors.white.withOpacity(0.1)),
                                 ),
-                             ),
-                             const SizedBox(width: 12),
-                             Expanded(
-                                child: Column(
-                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                child: Row(
                                    children: [
-                                      const Text("End Date", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                                      const SizedBox(height: 8),
-                                      _buildDatePicker(_endDate),
+                                      _buildCompactToggle("Live", _selectedTradeCategory == "Live Trades"),
+                                      _buildCompactToggle("Paper", _selectedTradeCategory == "Paper Trades"),
                                    ],
                                 ),
                              ),
                           ],
                        ),
-
-                       const SizedBox(height: 24),
+                       const SizedBox(height: 12),
                        
-                       // Search Button
-                       SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: ElevatedButton(
-                             onPressed: () {},
-                             style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF8B5CF6), // Purple
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                             ),
-                             child: const Text("Search", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          ),
+                       // Row 2: Strategy Dropdown
+                       _buildCompactDropdown(_selectedStrategy, _strategies, (v) => setState(() => _selectedStrategy = v!)),
+                       
+                       const SizedBox(height: 12),
+                       
+                       // Row 3: Dates & Search
+                       Row(
+                          children: [
+                             Expanded(child: _buildCompactDate(_startDate)),
+                             const SizedBox(width: 8),
+                             Expanded(child: _buildCompactDate(_endDate)),
+                             const SizedBox(width: 8),
+                             SizedBox(
+                                height: 36,
+                                width: 36,
+                                child: IconButton(
+                                   onPressed: () {},
+                                   icon: const Icon(Icons.search, size: 18),
+                                   style: IconButton.styleFrom(
+                                      backgroundColor: const Color(0xFF8B5CF6),
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      padding: EdgeInsets.zero,
+                                   ),
+                                ),
+                             )
+                          ],
                        ),
                     ],
                  ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
-              // Orders Table (Placeholder)
-              Container(
-                 width: double.infinity,
-                 padding: const EdgeInsets.only(bottom: 40),
-                 decoration: BoxDecoration(
-                    color: AppColors.cardSurface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.05)),
-                 ),
-                 child: Column(
-                    children: [
-                       // Table Header
-                       SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Container(
-                             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                             color: Colors.black.withOpacity(0.2),
-                             child: Row(
-                                children: [
-                                   _buildHeaderCell("Symbol", 80),
-                                   _buildHeaderCell("Order Id", 100),
-                                   _buildHeaderCell("Buy Price", 80),
-                                   _buildHeaderCell("Sell Price", 80),
-                                   _buildHeaderCell("Quantity", 70),
-                                   _buildHeaderCell("Side", 50),
-                                   _buildHeaderCell("Datetime", 120),
-                                   _buildHeaderCell("Profit", 80),
-                                   _buildHeaderCell("Strategy Name", 120),
-                                ],
-                             ),
-                          ),
-                       ),
-                       
-                       const SizedBox(height: 40),
-                       
-                       // Empty State
-                       Icon(Icons.bar_chart, size: 48, color: Colors.white.withOpacity(0.2)),
-                       const SizedBox(height: 16),
-                       const Text(
-                          "No orders found",
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                       ),
-                       const SizedBox(height: 4),
-                       Text(
-                          "No P&L data available.",
-                          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
-                       ),
-                    ],
-                 ),
+              // P&L List Header
+              Row(
+                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                 children: [
+                    const Text("Trade History", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                    Text("Last 30 Days", style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10)),
+                 ],
+              ),
+              const SizedBox(height: 8),
+
+              // List of Trade Cards (Mock Data)
+              ListView(
+                 shrinkWrap: true,
+                 physics: const NeverScrollableScrollPhysics(),
+                 children: [
+                    _buildTradeCard("BTC/USDT", "BUY", "+ \$125.00", "0.5", "65,200", "65,450", "SuperTrend", true),
+                    const SizedBox(height: 8),
+                    _buildTradeCard("ETH/USDT", "SELL", "- \$45.20", "2.0", "3,400", "3,422", "RSI Pro", false),
+                    const SizedBox(height: 8),
+                     _buildTradeCard("SOL/USDT", "BUY", "+ \$82.10", "15.0", "142.50", "148.00", "Breakout", true),
+                 ],
               ),
             ],
           ),
@@ -223,65 +162,77 @@ class _PnLReportScreenState extends State<PnLReportScreen> {
   Widget _buildStatCard(String title, String value, Color valueColor, double width) {
      return Container(
         width: width,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
            color: AppColors.cardSurface,
-           borderRadius: BorderRadius.circular(16),
+           borderRadius: BorderRadius.circular(12),
            border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
         child: Column(
            crossAxisAlignment: CrossAxisAlignment.start,
            children: [
-              Row(
-                 children: [
-                    Container(
-                       width: 6, height: 6,
-                       decoration: BoxDecoration(
-                          color: valueColor == Colors.white ? const Color(0xFFD946EF) : valueColor, // Pink dot for neutral, Green for success
-                          shape: BoxShape.circle,
-                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(title, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.bold)),
-                 ],
-              ),
-              const SizedBox(height: 12),
+              Text(title, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 10)),
+              const SizedBox(height: 6),
               Text(
                  value,
-                 style: TextStyle(color: valueColor, fontSize: 24, fontWeight: FontWeight.bold),
+                 style: TextStyle(color: valueColor, fontSize: 16, fontWeight: FontWeight.bold),
               ),
            ],
         ),
      );
   }
 
-  Widget _buildToggleButton(String text, bool isSelected) {
+  Widget _buildCompactToggle(String text, bool isSelected) {
      return GestureDetector(
-        onTap: () => setState(() => _selectedTradeCategory = text),
+        onTap: () => setState(() => _selectedTradeCategory = "$text Trades"),
         child: Container(
-           height: 48,
-           decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF8B5CF6) : const Color(0xFF1E293B), // Active Purple, Inactive Slate
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: isSelected ? Colors.transparent : Colors.white.withOpacity(0.1)),
-           ),
+           padding: const EdgeInsets.symmetric(horizontal: 12),
            alignment: Alignment.center,
+           decoration: BoxDecoration(
+              color: isSelected ? const Color(0xFF8B5CF6).withOpacity(0.2) : Colors.transparent,
+              borderRadius: BorderRadius.circular(6),
+           ),
            child: Text(
               text,
               style: TextStyle(
-                 color: isSelected ? Colors.white : Colors.white70,
-                 fontWeight: FontWeight.bold,
+                 color: isSelected ? const Color(0xFF8B5CF6) : Colors.white54,
+                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                 fontSize: 11,
               ),
            ),
         ),
      );
   }
-
-  Widget _buildDatePicker(DateTime date) {
+  
+  Widget _buildCompactDropdown(String value, List<String> items, Function(String?) onChanged) {
      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-           color: Colors.white.withOpacity(0.05),
+           color: AppColors.background,
+           borderRadius: BorderRadius.circular(8),
+           border: Border.all(color: Colors.white.withOpacity(0.1)),
+        ),
+        child: DropdownButtonHideUnderline(
+           child: DropdownButton<String>(
+              value: value,
+              isExpanded: true,
+              dropdownColor: AppColors.cardSurface,
+              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white54, size: 16),
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+              items: items.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+              onChanged: onChanged,
+           ),
+        ),
+     );
+  }
+
+  Widget _buildCompactDate(DateTime date) {
+     return Container(
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+           color: AppColors.background,
            borderRadius: BorderRadius.circular(8),
            border: Border.all(color: Colors.white.withOpacity(0.1)),
         ),
@@ -289,22 +240,69 @@ class _PnLReportScreenState extends State<PnLReportScreen> {
            mainAxisAlignment: MainAxisAlignment.spaceBetween,
            children: [
               Text(
-                 "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}",
-                 style: const TextStyle(color: Colors.white),
+                 "${date.day}/${date.month}/${date.year}",
+                 style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 11),
               ),
-              const Icon(Icons.calendar_today, size: 16, color: Colors.white70),
+              const Icon(Icons.calendar_today, size: 12, color: Colors.white54),
            ],
         ),
      );
   }
-
-  Widget _buildHeaderCell(String text, double width) {
-     return SizedBox(
-        width: width,
-        child: Text(
-           text,
-           style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.bold),
+  
+  Widget _buildTradeCard(String symbol, String side, String pnl, String qty, String entry, String exit, String strategy, bool isProfit) {
+     final Color pnlColor = isProfit ? AppColors.green : Colors.redAccent;
+     return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+           color: AppColors.cardSurface,
+           borderRadius: BorderRadius.circular(12),
+           border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
+        child: Column(
+           children: [
+              Row(
+                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                 children: [
+                    Row(
+                       children: [
+                          Container(
+                             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                             decoration: BoxDecoration(
+                                color: (side == "BUY" ? AppColors.green : Colors.redAccent).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(4),
+                             ),
+                             child: Text(side, style: TextStyle(color: side == "BUY" ? AppColors.green : Colors.redAccent, fontSize: 9, fontWeight: FontWeight.bold)),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(symbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                       ],
+                    ),
+                    Text(pnl, style: TextStyle(color: pnlColor, fontWeight: FontWeight.bold, fontSize: 13)),
+                 ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                 children: [
+                    _buildInfoColumn("Entry", entry),
+                    _buildInfoColumn("Exit", exit),
+                    _buildInfoColumn("Qty", qty),
+                    _buildInfoColumn("Strategy", strategy, alignRight: true),
+                 ],
+              ),
+           ],
+        ),
+     );
+  }
+  
+  Widget _buildInfoColumn(String label, String value, {bool alignRight = false}) {
+     return Column(
+        crossAxisAlignment: alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+           Text(label, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 9)),
+           const SizedBox(height: 2),
+           Text(value, style: const TextStyle(color: Colors.white, fontSize: 11)),
+        ],
      );
   }
 }

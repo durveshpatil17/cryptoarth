@@ -13,7 +13,7 @@ class AuthRepository {
     try {
       final response = await apiClient.post(
         ApiEndpoints.login,
-        data: {
+        {
           "email": email,
           "password": password,
         },

@@ -56,9 +56,9 @@ class _BacktestConfigScreenState extends State<BacktestConfigScreen> {
                   end: Alignment.bottomRight,
                 ),
               ),
-              child: const Icon(Icons.settings_outlined, size: 20, color: Colors.white),
+              child: const Icon(Icons.settings_outlined, size: 16, color: Colors.white),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -71,9 +71,9 @@ class _BacktestConfigScreenState extends State<BacktestConfigScreen> {
                   ),
                 ),
                 Text(
-                  "EMA 9/21 Crossover (signal_based)",
+                  "EMA 9/21 Crossover",
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 10,
                     color: Colors.white.withOpacity(0.5),
                   ),
                 ),
@@ -83,100 +83,113 @@ class _BacktestConfigScreenState extends State<BacktestConfigScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: GlassContainer(
           width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          borderRadius: 24,
+          padding: const EdgeInsets.all(16),
+          borderRadius: 20,
           color: AppColors.cardSurface,
           opacity: 0.5,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
+              // compact header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.settings_outlined, color: AppColors.purple, size: 20),
-                      const SizedBox(width: 8),
-                      const Text(
-                        "Backtest\nConfiguration",
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white, height: 1.2),
-                      ),
-                    ],
+                  const Text(
+                    "Configuration",
+                    style: TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text(
-                      "Show\nAdvanced",
-                      textAlign: TextAlign.right,
-                      style: TextStyle(color: AppColors.cyan, fontSize: 12),
-                    ),
+                  Text(
+                    "Advanced >",
+                    style: TextStyle(color: AppColors.cyan, fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              
+              const SizedBox(height: 16),
 
-              // Strategy Info
-              RichText(
-                text: TextSpan(
-                  style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14),
-                  children: const [
-                    TextSpan(text: "Strategy: "),
-                    TextSpan(
-                      text: "EMA 9/21 Crossover •\nsignal_based",
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              // Form Grid
+              Row(
+                children: [
+                   Expanded(
+                      child: _buildDropdownField("Symbol", _selectedSymbol, _symbols, (v) => setState(() => _selectedSymbol = v!))
+                   ),
+                   const SizedBox(width: 12),
+                   Expanded(
+                      child: _buildDropdownField("Timeframe", _selectedTimeframe, _timeframes, (v) => setState(() => _selectedTimeframe = v!))
+                   ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              Row(
+                 children: [
+                    Expanded(
+                       child: _buildDropdownField("Leverage", _selectedLeverage, _leverages, (v) => setState(() => _selectedLeverage = v!))
                     ),
-                  ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                       child: _buildDropdownField("Capital %", _selectedCapitalPercent, _capitalPercents, (v) => setState(() => _selectedCapitalPercent = v!))
+                    ),
+                 ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              Row(
+                 children: [
+                    Expanded(
+                       child: _buildTextField("Initial Capital", _initialCapitalController)
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                       child: _buildDropdownField("Commission", _selectedCommission, _commissionTypes, (v) => setState(() => _selectedCommission = v!))
+                    ),
+                 ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Date Range Info Compact
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                   color: Colors.white.withOpacity(0.05),
+                   borderRadius: BorderRadius.circular(8),
+                   border: Border.all(color: Colors.white.withOpacity(0.1)),
+                ),
+                child: Row(
+                   children: [
+                      Icon(Icons.calendar_today, size: 12, color: Colors.white.withOpacity(0.6)),
+                      const SizedBox(width: 6),
+                      Text(
+                         "2024-01-10 -> 2026-02-09 (760 days)",
+                         style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11),
+                      ),
+                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              
+              const SizedBox(height: 16),
 
-              // Form Config
-              _buildDropdownField("Symbol *", _selectedSymbol, _symbols, (val) {
-                setState(() => _selectedSymbol = val!);
-              }),
-              const SizedBox(height: 16),
-              _buildDropdownField("Timeframe *", _selectedTimeframe, _timeframes, (val) {
-                setState(() => _selectedTimeframe = val!);
-              }),
-              const SizedBox(height: 16),
-              _buildTextField("Initial Capital (\$) *", _initialCapitalController),
-              const SizedBox(height: 16),
-              _buildDropdownField("Leverage *", _selectedLeverage, _leverages, (val) {
-                setState(() => _selectedLeverage = val!);
-              }),
-              const SizedBox(height: 16),
-              _buildDropdownField("Capital % *", _selectedCapitalPercent, _capitalPercents, (val) {
-                setState(() => _selectedCapitalPercent = val!);
-              }),
-              const SizedBox(height: 16),
-              _buildDropdownField("Commission Type *", _selectedCommission, _commissionTypes, (val) {
-                setState(() => _selectedCommission = val!);
-              }),
-
-              const SizedBox(height: 32),
-
-              // Date Range Info
-              Text(
-                "Date: 2024-01-10 -> 2026-02-09 (760.82\ndays)",
-                style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13),
-              ),
-              const SizedBox(height: 24),
-
-              // Run Button
-              GradientButton(
-                text: "Run Backtest",
-                icon: Icons.play_arrow,
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const BacktestResultsScreen()),
-                  );
-                },
+              // Run Button Compact
+              SizedBox(
+                width: double.infinity,
+                height: 40,
+                child: GradientButton(
+                  text: "Run Backtest",
+                  icon: Icons.play_arrow,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const BacktestResultsScreen(strategyCode: 'MACD_CROSSOVER')),
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -192,14 +205,15 @@ class _BacktestConfigScreenState extends State<BacktestConfigScreen> {
       children: [
         Text(
           label,
-          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13),
+          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: AppColors.background.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.white.withOpacity(0.1)),
           ),
           child: DropdownButtonHideUnderline(
@@ -207,8 +221,8 @@ class _BacktestConfigScreenState extends State<BacktestConfigScreen> {
               value: value,
               isExpanded: true,
               dropdownColor: AppColors.cardSurface,
-              icon: Icon(Icons.keyboard_arrow_down, color: Colors.white.withOpacity(0.6)),
-              style: const TextStyle(color: Colors.white, fontSize: 15),
+              icon: Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.white.withOpacity(0.6)),
+              style: const TextStyle(color: Colors.white, fontSize: 12),
               items: items.map((String item) {
                 return DropdownMenuItem<String>(
                   value: item,
@@ -229,21 +243,23 @@ class _BacktestConfigScreenState extends State<BacktestConfigScreen> {
       children: [
         Text(
           label,
-          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13),
+          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: AppColors.background.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.white.withOpacity(0.1)),
           ),
           child: TextField(
             controller: controller,
-            style: const TextStyle(color: Colors.white, fontSize: 15),
+            style: const TextStyle(color: Colors.white, fontSize: 12),
             decoration: const InputDecoration(
               border: InputBorder.none,
+              contentPadding: EdgeInsets.only(bottom: 14), // Vertically center text in 36 height container
             ),
             keyboardType: TextInputType.number,
           ),

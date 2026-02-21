@@ -3,7 +3,10 @@ import 'package:cryptoarth/shared/theme/app_colors.dart';
 import 'package:cryptoarth/shared/widgets/custom_button.dart';
 import 'package:cryptoarth/features/home/screens/main_screen.dart';
 
-class OtpVerificationScreen extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
+
+class OtpVerificationScreen extends ConsumerStatefulWidget {
 
   final String mobileNumber;
 
@@ -13,12 +16,12 @@ class OtpVerificationScreen extends StatefulWidget {
   });
 
   @override
-  State<OtpVerificationScreen> createState()
+  ConsumerState<OtpVerificationScreen> createState()
       => _OtpVerificationScreenState();
 }
 
 class _OtpVerificationScreenState
-    extends State<OtpVerificationScreen> {
+    extends ConsumerState<OtpVerificationScreen> {
 
   final List<TextEditingController> controllers =
       List.generate(6, (_) => TextEditingController());
@@ -57,13 +60,31 @@ class _OtpVerificationScreenState
       return;
     }
 
-    /// Navigate to main app
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const MainScreen(),
-      ),
-    );
+    verify(otp);
+  }
+
+  Future<void> verify(String otp) async {
+    final success = await ref.read(authProvider.notifier).login(widget.mobileNumber, otp);
+
+    if (!mounted) return;
+
+    if (success) {
+      /// Navigate to main app
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const MainScreen(),
+        ),
+        (route) => false,
+      );
+    } else {
+      final error = ref.read(authProvider).error;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error ?? "Invalid OTP! Try again."),
+        ),
+      );
+    }
   }
 
   @override
@@ -175,10 +196,12 @@ class _OtpVerificationScreenState
 
             const SizedBox(height: 40),
 
-            CustomButton(
-              text: "VERIFY & ACCESS PANEL",
-              onPressed: verifyOtp,
-            ),
+            ref.watch(authProvider).isLoading 
+                ? const Center(child: CircularProgressIndicator())
+                : CustomButton(
+                    text: "VERIFY & ACCESS PANEL",
+                    onPressed: verifyOtp,
+                  ),
           ],
         ),
       ),

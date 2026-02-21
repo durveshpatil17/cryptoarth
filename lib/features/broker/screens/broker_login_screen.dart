@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 
-class BrokerLoginScreen extends StatelessWidget {
+import 'package:cryptoarth/features/broker/widgets/broker_connection_dialog.dart';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cryptoarth/features/broker/providers/broker_provider.dart';
+
+class BrokerLoginScreen extends ConsumerWidget {
   const BrokerLoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final brokerState = ref.watch(brokerProvider);
+    final connectedBrokerName = brokerState.value?.brokerName;
+    final isDeltaConnected = connectedBrokerName == 'Delta Exchange';
+    final isCoinDCXConnected = connectedBrokerName == 'CoinDCX';
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -31,24 +40,24 @@ class BrokerLoginScreen extends StatelessWidget {
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
-        children: const [
+        children: [
           BrokerCard(
             name: "Delta Exchange",
             rating: 4.5,
             userCount: "500K+",
             description: "Leading crypto derivatives exchange offering futures, options, and perpetual swaps with advanced trading.",
-            tags: ["Futures", "Options", "Perpetual Swaps", "High Liquidity"],
-            isConnected: false,
+            tags: const ["Futures", "Options", "Perpetual Swaps", "High Liquidity"],
+            isConnected: isDeltaConnected,
             logoColor: Colors.blueAccent, // Placeholder for logo
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           BrokerCard(
             name: "CoinDCX",
             rating: 4.7,
             userCount: "1M+",
             description: "India's largest and most secure cryptocurrency exchange with advanced trading tools and high liquidity.",
-            tags: ["Spot Trading", "Futures", "High Security", "24/7 Support"],
-            isConnected: false,
+            tags: const ["Spot Trading", "Futures", "High Security", "24/7 Support"],
+            isConnected: isCoinDCXConnected,
             logoColor: Colors.blueGrey, // Placeholder for logo
           ),
         ],
@@ -56,6 +65,7 @@ class BrokerLoginScreen extends StatelessWidget {
     );
   }
 }
+
 
 class BrokerCard extends StatelessWidget {
   final String name;
@@ -158,7 +168,12 @@ class BrokerCard extends StatelessWidget {
             children: [
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => BrokerConnectionDialog(brokerName: name),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.cyan,
                     foregroundColor: Colors.black,

@@ -14,22 +14,28 @@ class CustomBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassContainer(
-      borderRadius: 30, // Rounded pill shape
-      color: AppColors.cardSurface,
-      opacity: 0.8,
-      blur: 20,
-      margin: const EdgeInsets.all(24),
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(0, Icons.home_filled, "Home"),
-          _buildNavItem(1, Icons.work_outline, "Portfolio"),
-          _buildNavItem(2, Icons.shopping_bag_outlined, "Market"),
-          _buildNavItem(3, Icons.receipt_long_outlined, "Orders"),
-          _buildNavItem(4, Icons.calculate_outlined, "Calc"),
-        ],
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A), // Dark solid color for bottom nav separation
+        border: Border(
+           top: BorderSide(color: AppColors.cyan.withOpacity(0.3), width: 1.0), // Clear separation
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(0, Icons.home_filled, "Home"),
+              _buildNavItem(1, Icons.work_outline, "Portfolio"),
+              _buildNavItem(2, Icons.shopping_bag_outlined, "Market"),
+              _buildNavItem(3, Icons.receipt_long_outlined, "Orders"),
+              _buildNavItem(4, Icons.calculate_outlined, "Calc"),
+            ],
+          ),
+        ),
       ),
     );
   }

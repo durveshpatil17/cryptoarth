@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:cryptoarth/shared/widgets/custom_bottom_nav_bar.dart';
+import 'package:cryptoarth/shared/widgets/custom_drawer.dart';
 
 import 'package:cryptoarth/features/home/screens/home_screen.dart';
 import 'package:cryptoarth/features/portfolio/screens/portfolio_screen.dart';
@@ -9,14 +10,21 @@ import 'package:cryptoarth/features/orders/screens/orders_screen.dart';
 import 'package:cryptoarth/features/tools/screens/calculator_screen.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final int initialIndex;
+  const MainScreen({super.key, this.initialIndex = 0});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
 
   final List<Widget> _screens = [
     const HomeScreen(),
@@ -29,7 +37,8 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
+      extendBody: false,
+      drawer: const CustomDrawer(),
       body: _screens[_currentIndex],
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: _currentIndex,

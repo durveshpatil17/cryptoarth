@@ -4,12 +4,15 @@ import 'package:cryptoarth/shared/widgets/custom_button.dart';
 import 'package:cryptoarth/shared/widgets/custom_text_field.dart';
 import 'package:cryptoarth/features/auth/screens/otp_verification_screen.dart';
 
-class LoginScreen extends StatelessWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
+
+class LoginScreen extends ConsumerWidget {
   LoginScreen({super.key});
 
   final TextEditingController mobileController = TextEditingController();
 
-  void _sendOtp(BuildContext context) {
+  void _sendOtp(BuildContext context, WidgetRef ref) async {
     final mobile = mobileController.text.trim();
 
     if (mobile.isEmpty || mobile.length != 10) {
@@ -21,18 +24,30 @@ class LoginScreen extends StatelessWidget {
       return;
     }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => OtpVerificationScreen(
-          mobileNumber: mobile,
+    try {
+      await ref.read(authProvider.notifier).sendOtp(mobile);
+      if (!context.mounted) return;
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OtpVerificationScreen(
+            mobileNumber: mobile,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to send OTP: $e")),
+      );
+    }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
 
@@ -140,11 +155,13 @@ class LoginScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               /// Button
-              CustomButton(
-                text: "SEND OTP",
-                icon: Icons.bolt,
-                onPressed: () => _sendOtp(context),
-              ),
+              authState.isLoading 
+                ? const Center(child: CircularProgressIndicator()) 
+                : CustomButton(
+                    text: "SEND OTP",
+                    icon: Icons.bolt,
+                    onPressed: () => _sendOtp(context, ref),
+                  ),
 
               const Spacer(),
 
