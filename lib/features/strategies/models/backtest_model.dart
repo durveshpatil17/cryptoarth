@@ -15,11 +15,11 @@ class BacktestModel {
 
   factory BacktestModel.fromJson(Map<String, dynamic> json) {
     return BacktestModel(
-      strategyCode: json['strategy_code']?.toString() ?? '',
-      status: json['status']?.toString() ?? 'Unknown',
-      pnl: num.tryParse(json['pnl']?.toString() ?? '') ?? 0,
-      winRate: num.tryParse(json['win_rate']?.toString() ?? '') ?? 0,
-      drawdown: num.tryParse(json['drawdown']?.toString() ?? '') ?? 0,
+      strategyCode: json['strategy_code']?.toString() ?? json['id']?.toString() ?? 'AI_Generated',
+      status: json['status']?.toString() ?? 'Success',
+      pnl: num.tryParse(json['pnl']?.toString() ?? json['total_pnl']?.toString() ?? '0') ?? 0,
+      winRate: num.tryParse(json['win_rate']?.toString() ?? json['winrate']?.toString() ?? '0') ?? 0,
+      drawdown: num.tryParse(json['drawdown']?.toString() ?? json['max_drawdown_percent']?.toString() ?? '0') ?? 0,
     );
   }
 

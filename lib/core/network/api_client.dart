@@ -68,6 +68,9 @@ class ApiClient {
       if (data.containsKey('data') && data['data'] is Map) {
          return Map<String, dynamic>.from(data['data']);
       }
+      if (data.containsKey('balance')) {
+         return Map<String, dynamic>.from(data);
+      }
       return Map<String, dynamic>.from(data);
     }
 
@@ -123,10 +126,13 @@ class ApiClient {
             message = "Network Error: Please check your connection and try again.";
           } else if (error.response?.data is Map && error.response?.data['detail'] != null) {
             message = error.response?.data['detail'];
+          } else if (error.response?.data is Map && error.response?.data['error'] != null) {
+            message = error.response?.data['error'];
+          } else if (error.response?.data is Map && error.response?.data['message'] != null) {
+            message = error.response?.data['message'];
           } else if (error.response?.statusMessage != null) {
             message = error.response!.statusMessage!;
           }
-
           final customError = DioException(
             requestOptions: error.requestOptions,
             response: error.response,
@@ -186,6 +192,15 @@ class ApiClient {
       return await _dio.put(endpoint, data: data);
     } catch (e) {
       throw Exception("PUT error: $e");
+    }
+  }
+
+  // PATCH
+  Future<Response> patch(String endpoint, dynamic data) async {
+    try {
+      return await _dio.patch(endpoint, data: data);
+    } catch (e) {
+      throw Exception("PATCH error: $e");
     }
   }
 

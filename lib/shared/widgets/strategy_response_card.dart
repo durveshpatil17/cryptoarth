@@ -10,7 +10,6 @@ class StrategyResponseCard extends StatefulWidget {
   final String profitFactor;
   final String? codeSnippet;
   final VoidCallback onBacktest;
-  final VoidCallback onDeploy;
 
   const StrategyResponseCard({
     super.key,
@@ -20,7 +19,6 @@ class StrategyResponseCard extends StatefulWidget {
     required this.profitFactor,
     this.codeSnippet,
     required this.onBacktest,
-    required this.onDeploy,
   });
 
   @override
@@ -131,37 +129,19 @@ class _StrategyResponseCardState extends State<StrategyResponseCard> {
             // Actions
             Padding(
                padding: const EdgeInsets.all(20),
-               child: Row(
-                 children: [
-                   Expanded(
-                     child: OutlinedButton.icon(
-                       onPressed: widget.onBacktest,
-                       icon: const Icon(Icons.science_outlined, size: 18),
-                       label: const Text("Run Backtest"),
-                       style: OutlinedButton.styleFrom(
-                         foregroundColor: AppColors.cyan,
-                         side: BorderSide(color: AppColors.cyan.withOpacity(0.5)),
-                         padding: const EdgeInsets.symmetric(vertical: 14),
-                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                       ),
-                     ),
+               child: SizedBox(
+                 width: double.infinity,
+                 child: OutlinedButton.icon(
+                   onPressed: widget.onBacktest,
+                   icon: const Icon(Icons.science_outlined, size: 18),
+                   label: const Text("Run Backtest"),
+                   style: OutlinedButton.styleFrom(
+                     foregroundColor: AppColors.cyan,
+                     side: BorderSide(color: AppColors.cyan.withOpacity(0.5)),
+                     padding: const EdgeInsets.symmetric(vertical: 14),
+                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                    ),
-                   const SizedBox(width: 12),
-                   Expanded(
-                     child: ElevatedButton.icon(
-                       onPressed: widget.onDeploy,
-                       icon: const Icon(Icons.rocket_launch, size: 18),
-                       label: const Text("Deploy to Live"),
-                       style: ElevatedButton.styleFrom(
-                         backgroundColor: AppColors.cyan,
-                         foregroundColor: Colors.black,
-                         elevation: 0, 
-                         padding: const EdgeInsets.symmetric(vertical: 14),
-                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                       ),
-                     ),
-                   ),
-                 ],
+                 ),
                ),
             ),
           ],

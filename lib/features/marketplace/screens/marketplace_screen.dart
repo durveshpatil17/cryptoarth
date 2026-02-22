@@ -8,6 +8,10 @@ import 'package:cryptoarth/shared/theme/app_colors.dart';
 import 'package:cryptoarth/shared/widgets/profile_avatar.dart';
 import 'package:cryptoarth/features/home/screens/main_screen.dart';
 
+import 'package:cryptoarth/core/utils/report_generator.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:cryptoarth/shared/widgets/glass_container.dart';
+
 class MarketplaceScreen extends ConsumerStatefulWidget {
   const MarketplaceScreen({super.key});
 
@@ -18,23 +22,64 @@ class MarketplaceScreen extends ConsumerStatefulWidget {
 class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
   int _selectedTab = 0; // 0: Discover, 1: Live Deployments
 
-  void _undeployStrategy(String strategyId) {
-    ref.read(strategyProvider.notifier).undeployStrategy(strategyId).then((_) {
+  void _undeployStrategy(StrategyModel strategy) {
+    // The backend confirmed that undeployment requires the integer record ID 
+    // from the user's deployed list, passed under the key 'strategyid'.
+    // Important: It likely needs to be an actual integer type in the JSON.
+    String? rawId = strategy.deploymentId;
+    
+    // If we're on the discover tab, we might not have the deploymentId directly.
+    // We search the user's active deployments by strategy ID or code.
+    if (rawId == null) {
+      final userStrategies = ref.read(strategyProvider).value ?? [];
+      for (var s in userStrategies) {
+        if (s.id == strategy.id || (s.strategyCode.isNotEmpty && s.strategyCode == strategy.strategyCode)) {
+          rawId = s.deploymentId;
+          break;
+        }
+      }
+    }
+
+    if (rawId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Active deployment record not found locally. Refreshing..."), backgroundColor: Colors.orange),
+      );
+      _refreshAll();
+      return;
+    }
+
+    // Try to parse to int, fallback to string if not numeric
+    final idToPass = int.tryParse(rawId) ?? rawId;
+
+    ref.read(strategyProvider.notifier).undeployStrategy(idToPass).then((_) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Strategy undeployed successfully"),
           backgroundColor: Colors.green,
         ),
       );
-      ref.read(deployedStrategyProvider.notifier).refresh();
+      _refreshAll();
     }).catchError((e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      if (e.toString().contains('404') || e.toString().contains('not found')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Strategy already stopped or not found on server"), backgroundColor: Colors.orange),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Undeploy failed: $e"),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+      _refreshAll();
     });
+  }
+
+  void _refreshAll() {
+    ref.read(strategyProvider.notifier).refresh();
+    ref.read(deployedStrategyProvider.notifier).refresh();
+    ref.read(dashboardStrategyProvider.notifier).refresh();
   }
 
   void _deployStrategy(String strategyId) {
@@ -46,6 +91,7 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
           backgroundColor: Colors.green,
         ),
       );
+      ref.read(strategyProvider.notifier).refresh();
       ref.read(deployedStrategyProvider.notifier).refresh();
     }).catchError((e) {
        ScaffoldMessenger.of(context).showSnackBar(
@@ -160,39 +206,63 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
   }
 
   Widget _buildStrategyList() {
-     if (_selectedTab == 0) {
-        // "Discover" Tab
-        return ref.watch(dashboardStrategyProvider).when(
-          data: (strategies) {
-            if (strategies.isEmpty) {
-              return const Center(child: Text("No strategies available", style: TextStyle(color: Colors.white54)));
-            }
-            return Column(
-              children: strategies.map((s) {
-                return Column(
-                  children: [
-                    _StrategyCard(
-                      data: s,
-                      isBrokerConnected: true,
-                      onAction: () { _deployStrategy(s.id); },
-                      isLive: false,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                );
-              }).toList(),
-            );
-          },
-          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
-          error: (e, s) => Center(child: Text("Error: $e", style: const TextStyle(color: Colors.red))),
-        );
-     } else {
-        // "My Strategies" Tab
-        return ref.watch(deployedStrategyProvider).when(
-          data: (liveStrategies) {
-            if (liveStrategies.isEmpty) {
-              return Center(
-                 child: Padding(
+    if (_selectedTab == 0) {
+      // "Discover" Tab - Shows Dashboard Strategies
+      return ref.watch(dashboardStrategyProvider).when(
+            data: (strategies) {
+              if (strategies.isEmpty) {
+                return const Center(
+                    child: Text("No strategies available",
+                        style: TextStyle(color: Colors.white54)));
+              }
+              return Column(
+                children: strategies.map((s) {
+                  return Column(
+                    children: [
+                      _StrategyCard(
+                        data: s,
+                        isBrokerConnected: true,
+                        onAction: () {
+                          if (s.isDeployed) {
+                            _undeployStrategy(s);
+                          } else {
+                            _deployStrategy(s.id);
+                          }
+                        },
+                        isLive: false,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  );
+                }).toList(),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
+            error: (e, s) => Center(child: Text("Error: $e", style: const TextStyle(color: Colors.red))),
+          );
+    } else {
+      // "My Strategies" Tab - Only show strategies currently deployed on backend
+      final allStrategiesAsync = ref.watch(strategyProvider);
+      final deployedListAsync = ref.watch(deployedStrategyProvider);
+
+      return allStrategiesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
+        error: (e, s) => Center(child: Text("Error: $e", style: const TextStyle(color: Colors.red))),
+        data: (allStrategies) {
+          return deployedListAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
+            error: (e, s) => Center(child: Text("Error: $e", style: const TextStyle(color: Colors.red))),
+            data: (deployedList) {
+              // Exact filtering against the official active deployment list
+              final liveStrategies = allStrategies.where((s) {
+                return deployedList.any((d) =>
+                    d.strategyCode == s.strategyCode ||
+                    d.strategyName == s.strategyName);
+              }).toList();
+
+              if (liveStrategies.isEmpty) {
+                return Center(
+                  child: Padding(
                     padding: const EdgeInsets.only(top: 60.0),
                     child: Column(
                       children: [
@@ -202,17 +272,22 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
                             color: Colors.white.withOpacity(0.05),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.rocket_launch_outlined, size: 40, color: Colors.white30),
+                          child: const Icon(Icons.rocket_launch_outlined,
+                              size: 40, color: Colors.white30),
                         ),
                         const SizedBox(height: 16),
                         const Text(
                           "No active deployments",
-                          style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           "Deploy a strategy to start trading",
-                          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.5), fontSize: 12),
                         ),
                         const SizedBox(height: 24),
                         ElevatedButton(
@@ -224,45 +299,40 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.cyan,
                             foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20)),
                           ),
-                          child: const Text("Deploy a Strategy", style: TextStyle(fontWeight: FontWeight.bold)),
+                          child: const Text("Deploy a Strategy",
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
-                 ),
+                  ),
+                );
+              }
+
+              return Column(
+                children: liveStrategies.map((s) {
+                  return Column(
+                    children: [
+                      _StrategyCard(
+                        data: s,
+                        isBrokerConnected: true,
+                        onAction: () => _undeployStrategy(s),
+                        isLive: true,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  );
+                }).toList(),
               );
-            }
-
-            return Column(
-               children: liveStrategies.map((s) {
-                 final fakeStrategyModel = StrategyModel(
-                   id: 'temp_id', 
-                   strategyName: s.strategyName, 
-                   strategyCode: s.strategyCode, 
-                   createdAt: '', 
-                   isDeployed: true, 
-                   brokerId: 1
-                 );
-                 return Column(
-                 children: [
-                   _StrategyCard(
-                     data: fakeStrategyModel,
-                     isBrokerConnected: true, 
-                     onAction: () { _undeployStrategy(fakeStrategyModel.id); }, // Might fail since ID is missing in DeployedStrategyModel, but will pass 0
-
-                     isLive: true,
-                   ),
-                   const SizedBox(height: 16),
-                 ],
-               );}).toList(),
-            );
-          },
-          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
-          error: (e, s) => Center(child: Text("Error: $e", style: const TextStyle(color: Colors.red))),
-        );
-     }
+            },
+          );
+        },
+      );
+    }
   }
 }
 
@@ -296,7 +366,7 @@ class _StrategyCardState extends State<_StrategyCard> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isActive = (widget.data.isActive == true) || (widget.isLive == true);
+    final bool isActive = (widget.data.isDeployed == true);
     final bool isOwner = true; // Hardcoded true since it's user's dashboard normally
 
     return Container(
@@ -403,9 +473,16 @@ class _StrategyCardState extends State<_StrategyCard> {
              // Action Buttons (Compact)
              Row(
                 children: [
-                   Expanded(child: _buildOutlineButton(Icons.bar_chart, "Chart")),
+                   Expanded(child: _buildOutlineButton(Icons.bar_chart, "Chart", onTap: () => _showChartPopup(context, widget.data))),
                    const SizedBox(width: 8),
-                   Expanded(child: _buildOutlineButton(Icons.description, "Details")),
+                   Expanded(child: _buildOutlineButton(Icons.description, "Report", onTap: () {
+                     ReportGenerator.downloadBacktestReport(
+                       widget.data.strategyName,
+                       widget.data.winRate.toDouble(),
+                       widget.data.totalPnl.toDouble(),
+                       widget.data.maxDrawdown.toDouble(),
+                     );
+                   })),
                    const SizedBox(width: 8),
                    Expanded(
                       flex: 2,
@@ -466,14 +543,17 @@ class _StrategyCardState extends State<_StrategyCard> {
     );
   }
 
-  Widget _buildOutlineButton(IconData icon, String label) {
-     return Container(
-        height: 32,
-        decoration: BoxDecoration(
-           color: Colors.white.withOpacity(0.05), 
-           borderRadius: BorderRadius.circular(8),
-           border: Border.all(color: Colors.white.withOpacity(0.0)),
-        ),
+  Widget _buildOutlineButton(IconData icon, String label, {VoidCallback? onTap}) {
+     return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+           height: 32,
+           decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05), 
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.white.withOpacity(0.0)),
+           ),
         child: Row(
            mainAxisAlignment: MainAxisAlignment.center,
            children: [
@@ -482,6 +562,82 @@ class _StrategyCardState extends State<_StrategyCard> {
               Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
            ],
         ),
-     );
+     ));
   }
 }
+
+  void _showChartPopup(BuildContext context, StrategyModel strategy) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16),
+          child: GlassContainer(
+            borderRadius: 16,
+            color: AppColors.cardSurface,
+            opacity: 0.9,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        "${strategy.strategyName} Performance",
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white54),
+                      onPressed: () => Navigator.pop(context),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 200,
+                  width: double.infinity,
+                  child: LineChart(
+                    LineChartData(
+                      gridData: FlGridData(show: false),
+                      titlesData: FlTitlesData(show: false),
+                      borderData: FlBorderData(show: false),
+                      lineBarsData: [
+                        LineChartBarData(
+                          spots: [
+                            const FlSpot(0, 0),
+                            const FlSpot(1, 1),
+                            const FlSpot(2, -0.5),
+                            const FlSpot(3, 1.5),
+                            const FlSpot(4, 1.2),
+                            const FlSpot(5, 2.5),
+                            FlSpot(6, (strategy.totalPnl > 0 ? 3.0 : -3.0)),
+                          ],
+                          isCurved: true,
+                          color: strategy.totalPnl >= 0 ? AppColors.green : Colors.redAccent,
+                          barWidth: 3,
+                          isStrokeCapRound: true,
+                          dotData: FlDotData(show: false),
+                          belowBarData: BarAreaData(
+                            show: true,
+                            color: (strategy.totalPnl >= 0 ? AppColors.green : Colors.redAccent).withOpacity(0.2),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }

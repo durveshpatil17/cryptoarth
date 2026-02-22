@@ -9,6 +9,7 @@ import 'package:cryptoarth/features/credits/screens/credits_store_screen.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cryptoarth/features/credits/providers/payment_balance_provider.dart';
+import 'package:cryptoarth/features/strategies/providers/strategy_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -121,54 +122,95 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     _controller.clear();
     _scrollToBottom();
 
-    // Simulate AI Response
+    // Simulate AI Response with dynamic logic
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
+        final strategyCode = "STRAT_${DateTime.now().millisecondsSinceEpoch % 100000}";
+        final String strategyName;
+        final String pineCode;
+        final String description;
+        final String winRate;
+        final String profitFactor;
+
+        final input = text.toLowerCase();
+        
+        if (input.contains('bollinger') || input.contains('reversion')) {
+          strategyName = "Bollinger Mean Reversion";
+          description = "A standard mean reversion strategy using Bollinger Bands (20, 2). Enters long on lower band touch and short on upper band touch, optimized for Range-bound markets.";
+          winRate = "68.5%";
+          profitFactor = "2.10";
+          pineCode = '''//@version=5
+strategy("Bollinger Mean Reversion", overlay=true)
+src = close
+length = input.int(20, minval=1)
+mult = input.float(2.0, minval=0.001, maxval=50)
+basis = ta.sma(src, length)
+dev = mult * ta.stdev(src, length)
+upper = basis + dev
+lower = basis - dev
+
+if (ta.crossunder(src, lower))
+    strategy.entry("BB Long", strategy.long)
+if (ta.crossover(src, upper))
+    strategy.entry("BB Short", strategy.short)''';
+        } else if (input.contains('trend') || input.contains('breakout')) {
+          strategyName = "Volatility Breakout Trend";
+          description = "Trend-following system that uses ATR-based volatility channels to identify major momentum shifts. Best used during high liquidity sessions.";
+          winRate = "54.2%";
+          profitFactor = "4.25";
+          pineCode = '''//@version=5
+strategy("Volatility Breakout Trend", overlay=true)
+atrLength = input(14, "ATR Length")
+multiplier = input(3, "Multiplier")
+atr = ta.atr(atrLength)
+upBand = high + atr * multiplier
+dnBand = low - atr * multiplier
+
+if (close > upBand[1])
+    strategy.entry("Trend Buy", strategy.long)
+if (close < dnBand[1])
+    strategy.entry("Trend Sell", strategy.short)''';
+        } else {
+          strategyName = "Institutional Alpha (MACD/RSI)";
+          description = "Combines MACD momentum with RSI oversold/overbought filters to capture high-probability institutional pivots.";
+          winRate = "82.4%";
+          profitFactor = "3.15";
+          pineCode = '''//@version=5
+strategy("Institutional Alpha", overlay=true)
+rsiVal = ta.rsi(close, 14)
+[macdLine, signalLine, _] = ta.macd(close, 12, 26, 9)
+
+if (ta.crossover(macdLine, signalLine) and rsiVal < 30)
+    strategy.entry("Long", strategy.long)
+if (ta.crossunder(macdLine, signalLine) and rsiVal > 70)
+    strategy.entry("Short", strategy.short)''';
+        }
+        
         setState(() {
           _isLoading = false;
           _messages.add(
             StrategyResponseCard(
-              title: "Institutional Alpha Output based on '$text'",
-              description: "This advanced quantitative model combines Multi-Timeframe EMA smoothing with an adaptive volume-weighted RSI to eliminate false breakouts. Engineered specifically for retail accounts looking to deploy high-probability setups with strict risk controls.",
-              winRate: "82.4%",
-              profitFactor: "3.15",
-              codeSnippet: '''//@version=5
-strategy("RSI + MACD Strategy", overlay=true)
-rsiLength = input(14, "RSI Length")
-macdFast = input(12, "MACD Fast")
-macdSlow = input(26, "MACD Slow")
-signal = input(9, "MACD Signal")
-
-rsiVal = ta.rsi(close, rsiLength)
-[macdLine, signalLine, _] = ta.macd(close, macdFast, macdSlow, signal)
-
-longCondition = ta.crossover(macdLine, signalLine) and rsiVal < 30
-if (longCondition)
-    strategy.entry("Long", strategy.long)
-
-shortCondition = ta.crossunder(macdLine, signalLine) and rsiVal > 70
-if (shortCondition)
-    strategy.entry("Short", strategy.short)
-''',
-              onBacktest: _showBacktestOverlay, 
-              onDeploy: () {
-                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Preparing Deployment Configuration..."))
-                );
-              },
+              title: strategyName,
+              description: description,
+              winRate: winRate,
+              profitFactor: profitFactor,
+              codeSnippet: pineCode,
+              onBacktest: () => _showBacktestOverlay(strategyCode, strategyName, pineCode), 
             ),
           );
         });
         _scrollToBottom();
         
         Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) _showBacktestOverlay();
+          if (mounted) _showBacktestOverlay(strategyCode, strategyName, pineCode);
         });
       }
     });
   }
 
-  void _showBacktestOverlay() {
+
+
+  void _showBacktestOverlay(String strategyCode, String strategyName, String pineCode) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -221,7 +263,11 @@ if (shortCondition)
                          Navigator.pop(context); // Close dialog
                          Navigator.push(
                            context, 
-                           MaterialPageRoute(builder: (context) => const BacktestConfigScreen())
+                           MaterialPageRoute(builder: (context) => BacktestConfigScreen(
+                             strategyCode: strategyCode,
+                             strategyName: strategyName,
+                             pineCode: pineCode, // Assume we pass it here
+                           ))
                          );
                       },
                       style: ElevatedButton.styleFrom(

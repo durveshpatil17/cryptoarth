@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cryptoarth/features/strategies/models/strategy_model.dart';
 import 'package:cryptoarth/features/strategies/services/strategy_service.dart';
+import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
 
 final strategyServiceProvider = Provider<StrategyService>((ref) {
   return StrategyService();
@@ -24,15 +25,16 @@ class StrategyNotifier extends AsyncNotifier<List<StrategyModel>> {
 
   Future<void> deployStrategy(String strategyId, int brokerId) async {
     try {
+      final user = ref.read(authProvider).user;
       final service = ref.read(strategyServiceProvider);
-      await service.deployStrategy(strategyId, brokerId);
+      await service.deployStrategy(strategyId, brokerId, userId: user?.id);
       ref.invalidateSelf(); // refresh list
     } catch (e) {
       throw Exception('Deploy failed: $e');
     }
   }
 
-  Future<void> undeployStrategy(String strategyId) async {
+  Future<void> undeployStrategy(dynamic strategyId) async {
     try {
       final service = ref.read(strategyServiceProvider);
       await service.undeployStrategy(strategyId);
@@ -56,7 +58,7 @@ class DashboardStrategyNotifier extends AsyncNotifier<List<StrategyModel>> {
 
   Future<List<StrategyModel>> _fetchDashboardStrategies() async {
     final service = ref.read(strategyServiceProvider);
-    return await service.fetchDashboardStrategies();
+    return await service.fetchDashboardStrategies(cards: true, lite: false);
   }
 
   Future<void> refresh() async {

@@ -4,6 +4,8 @@ class UserModel {
   final String? email;
   final String? name;
   final int? credits;
+  final String? dob;
+  final String? location;
 
   UserModel({
     required this.id,
@@ -11,6 +13,8 @@ class UserModel {
     this.email,
     this.name,
     this.credits,
+    this.dob,
+    this.location,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -20,6 +24,8 @@ class UserModel {
       email: json['email']?.toString(),
       name: json['name']?.toString() ?? json['first_name']?.toString(),
       credits: int.tryParse(json['credits']?.toString() ?? ''),
+      dob: json['dob']?.toString() ?? json['date_of_birth']?.toString(),
+      location: json['location']?.toString() ?? json['address']?.toString(),
     );
   }
 
@@ -30,6 +36,8 @@ class UserModel {
       'email': email,
       'name': name,
       'credits': credits,
+      'dob': dob,
+      'location': location,
     };
   }
 }

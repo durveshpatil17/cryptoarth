@@ -22,8 +22,41 @@ class BacktestNotifier extends AsyncNotifier<List<BacktestModel>> {
     final service = ref.read(strategyServiceProvider);
     return await service.fetchBacktestDetail(strategyCode);
   }
+
+  Future<Map<String, dynamic>> fetchBacktestResult(String backtestId) async {
+    final service = ref.read(strategyServiceProvider);
+    return await service.fetchBacktestResult(backtestId);
+  }
+
+  Future<Map<String, dynamic>> fetchBacktestChart(String backtestId) async {
+    final service = ref.read(strategyServiceProvider);
+    return await service.fetchBacktestChart(backtestId);
+  }
+
+  Future<Map<String, dynamic>> fetchBacktestReport(String backtestId) async {
+    final service = ref.read(strategyServiceProvider);
+    return await service.fetchBacktestReport(backtestId);
+  }
+
+  Future<Map<String, dynamic>?> checkUserPhone(String phone) async {
+    final service = ref.read(strategyServiceProvider);
+    return await service.checkUserPhone(phone);
+  }
+
+  Future<void> updateStrategyAccess(String strategyCode, String accessType, List<String> sharedWith) async {
+    final service = ref.read(strategyServiceProvider);
+    await service.updateStrategyAccess(strategyCode, accessType, sharedWith);
+    // Refresh to update UI if necessary
+    refresh();
+  }
 }
 
 final backtestProvider = AsyncNotifierProvider<BacktestNotifier, List<BacktestModel>>(() {
   return BacktestNotifier();
 });
+
+final backtestSymbolsProvider = FutureProvider<List<dynamic>>((ref) async {
+  final service = ref.read(strategyServiceProvider);
+  return await service.fetchBacktestSymbols();
+});
+

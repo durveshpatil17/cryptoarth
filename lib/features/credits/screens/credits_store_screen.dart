@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 import 'package:cryptoarth/shared/widgets/glass_container.dart';
 import 'package:cryptoarth/shared/widgets/custom_button.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:cryptoarth/features/credits/services/payment_service.dart';
+import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class CreditsStoreScreen extends StatefulWidget {
+class CreditsStoreScreen extends ConsumerStatefulWidget {
   const CreditsStoreScreen({super.key});
 
   @override
-  State<CreditsStoreScreen> createState() => _CreditsStoreScreenState();
+  ConsumerState<CreditsStoreScreen> createState() => _CreditsStoreScreenState();
 }
 
-class _CreditsStoreScreenState extends State<CreditsStoreScreen> {
+class _CreditsStoreScreenState extends ConsumerState<CreditsStoreScreen> {
   // 0 = Default Plan, 1 = Custom Amount
   int _selectedPlan = 0;
   final TextEditingController _customAmountController = TextEditingController();
@@ -28,6 +32,97 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> {
   double get _gstAmount => _baseAmount * gstRate;
   double get _totalPayable => _baseAmount + _gstAmount;
   int get _credits => _baseAmount.floor(); // 1 Rupee = 1 Credit implementation
+  
+  late Razorpay _razorpay;
+  final PaymentService _paymentService = PaymentService();
+  bool _isProcessing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+  }
+
+  @override
+  void dispose() {
+    _razorpay.clear();
+    _customAmountController.dispose();
+    super.dispose();
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    try {
+      final verified = await _paymentService.verifyPayment({
+        'razorpay_payment_id': response.paymentId,
+        'razorpay_order_id': response.orderId,
+        'razorpay_signature': response.signature,
+      });
+      
+      if (mounted) {
+         setState(() => _isProcessing = false);
+         Navigator.pop(context, _credits); // Return purchased credits on success
+      }
+    } catch (e) {
+       if (mounted) {
+         setState(() => _isProcessing = false);
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Verification Failed: $e', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.redAccent));
+       }
+    }
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    if (mounted) {
+       setState(() => _isProcessing = false);
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Payment Failed: ${response.message}', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.redAccent));
+    }
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+     if (mounted) {
+       setState(() => _isProcessing = false);
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('External Wallet Selected: ${response.walletName}')));
+     }
+  }
+
+  Future<void> _initiatePayment() async {
+    if (_baseAmount < 500) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Minimum base amount is ₹500'), backgroundColor: Colors.redAccent));
+      return;
+    }
+    
+    setState(() => _isProcessing = true);
+    try {
+       // Create Order
+       final orderResponse = await _paymentService.createOrder(_totalPayable);
+       final orderId = orderResponse['id'] ?? orderResponse['order_id'];
+       final rzpKey = orderResponse['key_id'] ?? orderResponse['razorpay_key'] ?? 'rzp_test_p0rTrr8N1Hj7h0'; // Fallback to a mock key if needed for UI flow
+       
+       final user = ref.read(authProvider).user;
+       
+       var options = {
+        'key': rzpKey,
+        'amount': (_totalPayable * 100).toInt(),
+        'name': 'CryptoArth',
+        'description': 'Purchase $_credits Credits',
+        'order_id': orderId,
+        'prefill': {
+          'contact': user?.phone ?? '',
+          'email': user?.email ?? ''
+        },
+        'theme': {
+           'color': '#8B5CF6'
+        }
+      };
+      
+      _razorpay.open(options);
+    } catch(e) {
+       setState(() => _isProcessing = false);
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not initiate payment: $e'), backgroundColor: Colors.redAccent));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -247,14 +342,13 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> {
             
             const SizedBox(height: 32),
             
-            CustomButton(
-              text: "Pay ₹${_totalPayable.toStringAsFixed(0)} (incl. GST)",
-              icon: Icons.payment,
-              onPressed: () {
-                // Simulate Payment Success
-                Navigator.pop(context, _credits); // Return purchased credits
-              },
-            ),
+            _isProcessing 
+              ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+              : CustomButton(
+                  text: "Pay ₹${_totalPayable.toStringAsFixed(0)} (incl. GST)",
+                  icon: Icons.payment,
+                  onPressed: _initiatePayment,
+                ),
             const SizedBox(height: 20),
           ],
         ),

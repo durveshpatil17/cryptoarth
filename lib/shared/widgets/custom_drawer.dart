@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cryptoarth/features/strategies/screens/execution_history_screen.dart';
 
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 
@@ -134,6 +135,13 @@ class CustomDrawer extends ConsumerWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const ChatHistoryScreen()),
+                      );
+                    }),
+                    _buildMenuItem(Icons.analytics_outlined, "Execution History", onTap: () {
+                      Navigator.pop(context); // Close drawer
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ExecutionHistoryScreen()),
                       );
                     }),
                     _buildMenuItem(Icons.bookmark_border, "Templates", onTap: () {

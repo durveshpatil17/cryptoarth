@@ -3,6 +3,8 @@ import 'package:cryptoarth/shared/theme/app_colors.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cryptoarth/features/portfolio/providers/pnl_provider.dart';
+import 'package:cryptoarth/features/orders/providers/order_provider.dart';
+import 'package:cryptoarth/core/utils/report_generator.dart';
 
 class PnLReportScreen extends ConsumerStatefulWidget {
   const PnLReportScreen({super.key});
@@ -14,7 +16,7 @@ class PnLReportScreen extends ConsumerStatefulWidget {
 class _PnLReportScreenState extends ConsumerState<PnLReportScreen> {
   String _selectedTradeCategory = "Live Trades"; // 'Live Trades' or 'Paper Trades'
   String _selectedStrategy = "All Strategies";
-  final List<String> _strategies = ["All Strategies", "SuperTrend", "RSI Pro", "Breakout"];
+  final List<String> _strategies = ["All Strategies"];
   
   // Mock Dates
   final DateTime _startDate = DateTime.now();
@@ -29,6 +31,15 @@ class _PnLReportScreenState extends ConsumerState<PnLReportScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         actions: [
+           IconButton(
+             onPressed: () {
+               final pnlState = ref.read(pnlProvider);
+               pnlState.whenData((pnl) {
+                 ReportGenerator.downloadPnLReport(pnl.totalProfit.toDouble(), pnl.todayProfit.toDouble(), pnl.trades);
+               });
+             }, 
+             icon: const Icon(Icons.download_rounded, size: 20, color: Colors.white)
+           ),
            IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none, size: 20, color: Colors.white))
         ],
       ),
@@ -140,17 +151,39 @@ class _PnLReportScreenState extends ConsumerState<PnLReportScreen> {
               ),
               const SizedBox(height: 8),
 
-              // List of Trade Cards (Mock Data)
-              ListView(
-                 shrinkWrap: true,
-                 physics: const NeverScrollableScrollPhysics(),
-                 children: [
-                    _buildTradeCard("BTC/USDT", "BUY", "+ \$125.00", "0.5", "65,200", "65,450", "SuperTrend", true),
-                    const SizedBox(height: 8),
-                    _buildTradeCard("ETH/USDT", "SELL", "- \$45.20", "2.0", "3,400", "3,422", "RSI Pro", false),
-                    const SizedBox(height: 8),
-                     _buildTradeCard("SOL/USDT", "BUY", "+ \$82.10", "15.0", "142.50", "148.00", "Breakout", true),
-                 ],
+              // List of Trade Cards (Real Data)
+              ref.watch(orderProvider).when(
+                data: (orders) {
+                  final closedOrders = orders.where((o) => o.status.toUpperCase() == 'FILLED' || o.status.toUpperCase() == 'COMPLETED' || o.status.toUpperCase() == 'CLOSED').toList();
+                  if (closedOrders.isEmpty) {
+                     return const Padding(
+                       padding: EdgeInsets.only(top: 24),
+                       child: Center(child: Text("No trade history available", style: TextStyle(color: Colors.white54))),
+                     );
+                  }
+                  return ListView(
+                     shrinkWrap: true,
+                     physics: const NeverScrollableScrollPhysics(),
+                     children: closedOrders.take(15).map((o) {
+                        final bool isBuy = o.quantity > 0;
+                        return Padding(
+                           padding: const EdgeInsets.only(bottom: 8.0),
+                           child: _buildTradeCard(
+                             o.symbol, 
+                             isBuy ? "BUY" : "SELL", 
+                             "-", // PnL placeholder since orders don't store individual PnL
+                             o.quantity.abs().toString(), 
+                             o.price.toStringAsFixed(2), 
+                             o.price.toStringAsFixed(2), 
+                             "AI Trade", 
+                             isBuy // mock profit color fallback
+                           )
+                        );
+                     }).toList(),
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
+                error: (e,s) => const SizedBox.shrink(),
               ),
             ],
           ),

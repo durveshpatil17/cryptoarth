@@ -9,16 +9,24 @@ class AuthService {
 
   Future<void> sendOtp(String phone) async {
     final normalizedPhone = PhoneUtils.normalize(phone);
-
-    print("FINAL PHONE FORMAT → $normalizedPhone");
-    print("SEND OTP REQUEST → $normalizedPhone");
-
     final Response response = await _apiClient.post(
       ApiEndpoints.sendOtp,
       { "phone": normalizedPhone },
     );
 
-    print("SEND OTP RESPONSE → ${response.data}");
+  }
+
+  Future<bool> checkPhone(String phone) async {
+    final normalizedPhone = PhoneUtils.normalize(phone);
+    try {
+      final Response response = await _apiClient.post(
+        ApiEndpoints.checkPhone,
+        { "phone": normalizedPhone },
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<bool> login(String phone, String otp) async {
@@ -38,16 +46,57 @@ class AuthService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.data;
-
         if (data != null && data["access"] != null) {
           await TokenStorage.saveToken(data["access"]);
-          print("TOKEN SAVED SUCCESSFULLY");
+          // Fire and forget consume OTP immediately after successful login
+          _consumeOtp();
           return true;
         }
       }
     } catch (_) {}
 
     return false;
+  }
+
+  Future<void> _consumeOtp() async {
+    try {
+      await _apiClient.post(ApiEndpoints.consumeOtp, {});
+    } catch (_) {}
+  }
+
+  Future<bool> signup(String phone, String otp, String email, String firstName, String lastName, {String refercode = ""}) async {
+    final normalizedPhone = PhoneUtils.normalize(phone);
+    try {
+      final Response response = await _apiClient.post(
+        ApiEndpoints.signup,
+        {
+          "phone": normalizedPhone,
+          "otp": otp,
+          "email": email,
+          "first_name": firstName,
+          "last_name": lastName,
+          "refercode": refercode,
+        },
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        if (data != null && data["access"] != null) {
+          await TokenStorage.saveToken(data["access"]);
+          _consumeOtp();
+          return true;
+        }
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<Map<String, dynamic>?> checkSession() async {
+    try {
+      final Response response = await _apiClient.get(ApiEndpoints.session);
+      return ApiClient.extractMap(response.data);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<Map<String, dynamic>> fetchProfile() async {
@@ -57,8 +106,35 @@ class AuthService {
 
       return ApiClient.extractMap(response.data);
     } catch (e) {
-      print("PROFILE ERROR → $e");
       throw Exception("Failed to fetch profile");
+    }
+  }
+
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> updates) async {
+    try {
+      final Response response = await _apiClient.patch(ApiEndpoints.profile, updates);
+      return ApiClient.extractMap(response.data);
+    } catch (e) {
+      throw Exception("Failed to update profile: $e");
+    }
+  }
+
+  Future<List<dynamic>> fetchNotifications() async {
+    try {
+      final Response response = await _apiClient.get(ApiEndpoints.notifications);
+      return ApiClient.extractList(response.data);
+    } catch (e) {
+      throw Exception("Failed to fetch notifications: $e");
+    }
+  }
+
+  Future<String> fetchReferralLink() async {
+    try {
+      final Response response = await _apiClient.get(ApiEndpoints.referralLink);
+      final data = ApiClient.extractMap(response.data);
+      return data['referal_link'] ?? data['link'] ?? data['url'] ?? '';
+    } catch (e) {
+      throw Exception("Failed to fetch referral link: $e");
     }
   }
 }

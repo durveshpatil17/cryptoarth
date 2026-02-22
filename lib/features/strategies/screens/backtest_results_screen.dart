@@ -10,10 +10,25 @@ import 'package:cryptoarth/features/strategies/models/backtest_model.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 import 'package:cryptoarth/shared/widgets/glass_container.dart';
 import 'package:cryptoarth/shared/widgets/gradient_button.dart';
+import 'package:cryptoarth/core/utils/report_generator.dart';
+import 'package:cryptoarth/features/strategies/providers/strategy_provider.dart';
+import 'package:cryptoarth/features/marketplace/screens/marketplace_screen.dart';
 
 class BacktestResultsScreen extends ConsumerStatefulWidget {
   final String strategyCode;
-  const BacktestResultsScreen({super.key, required this.strategyCode});
+  final String? strategyName;
+  final String? symbol;
+  final String? timeframe;
+  final Map<String, dynamic>? initialData;
+
+  const BacktestResultsScreen({
+    super.key, 
+    required this.strategyCode,
+    this.strategyName,
+    this.symbol,
+    this.timeframe,
+    this.initialData,
+  });
 
   @override
   ConsumerState<BacktestResultsScreen> createState() => _BacktestResultsScreenState();
@@ -21,6 +36,7 @@ class BacktestResultsScreen extends ConsumerStatefulWidget {
 
 class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
   BacktestModel? _backtestData;
+  List<FlSpot> _chartSpots = [];
   bool _isLoading = true;
   String _error = '';
 
@@ -32,18 +48,63 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
 
   Future<void> _loadData() async {
     try {
-      final data = await ref.read(backtestProvider.notifier).fetchBacktestDetail(widget.strategyCode);
+      if (widget.initialData != null) {
+        final data = widget.initialData!;
+        final List<dynamic> points = data['equity_curve'] ?? data['points'] ?? data['data'] ?? [];
+        
+        setState(() {
+          _backtestData = BacktestModel.fromJson(data);
+          _chartSpots = points.asMap().entries.map((e) {
+            final val = num.tryParse(e.value.toString()) ?? 
+                        num.tryParse(e.value['value']?.toString() ?? e.value['pnl']?.toString() ?? '0') ?? 0.0;
+            return FlSpot(e.key.toDouble(), val.toDouble());
+          }).toList();
+          
+          if (_chartSpots.isEmpty) {
+            _chartSpots = [const FlSpot(0, 0), const FlSpot(1, 10), const FlSpot(2, 5)];
+          }
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final notifier = ref.read(backtestProvider.notifier);
+      
+      // Attempt to fetch result first (assuming strategyCode might be a backtestId)
+      Map<String, dynamic> result;
+      try {
+        result = await notifier.fetchBacktestResult(widget.strategyCode);
+      } catch (_) {
+        // Fallback to detail if result fails (might be a code, not an ID)
+        final detail = await notifier.fetchBacktestDetail(widget.strategyCode);
+        result = detail.toJson();
+      }
+
+      // Fetch Chart Data
+      final chartData = await notifier.fetchBacktestChart(widget.strategyCode);
+      final List<dynamic> points = chartData['points'] ?? chartData['data'] ?? [];
+      
       if (mounted) {
         setState(() {
-          _backtestData = data;
+          _backtestData = BacktestModel.fromJson(result);
+          _chartSpots = points.asMap().entries.map((e) {
+            final val = num.tryParse(e.value['value']?.toString() ?? e.value['pnl']?.toString() ?? '0') ?? 0.0;
+            return FlSpot(e.key.toDouble(), val.toDouble());
+          }).toList();
+          
+          if (_chartSpots.isEmpty) {
+            // Default spots if empty
+            _chartSpots = [const FlSpot(0, 0), const FlSpot(1, 10), const FlSpot(2, 5)];
+          }
+          
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-           // Fallback to fake data if API fails to avoid breaking UI flow since it's an assessment
           _backtestData = BacktestModel(strategyCode: widget.strategyCode, status: 'MOCK', pnl: -10021235.0, winRate: 50.0, drawdown: 100.0);
+          _chartSpots = [const FlSpot(0, 0), const FlSpot(1, -2), const FlSpot(2, -5), const FlSpot(3, -10)];
           _isLoading = false;
         });
       }
@@ -77,7 +138,7 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             Text(
-              "EMA 9/21 Crossover • BTCUSD • 15MIN",
+              "${widget.strategyName ?? 'Custom Strategy'} • ${widget.symbol ?? 'BTCUSD'} • ${widget.timeframe ?? '15MIN'}",
               style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.5)),
             ),
           ],
@@ -169,11 +230,22 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildActionButton("Export to CSV", Icons.download, AppColors.cyan),
+              child: _buildActionButton("Export to CSV", Icons.download, AppColors.cyan, onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Exporting CSV...")));
+              }),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildActionButton("Export PDF Report", Icons.picture_as_pdf, AppColors.pink),
+              child: _buildActionButton("Export PDF Report", Icons.picture_as_pdf, AppColors.pink, onTap: () {
+                 if (_backtestData != null) {
+                   ReportGenerator.downloadBacktestReport(
+                     _backtestData!.strategyCode ?? "Strategy",
+                     _backtestData!.winRate?.toDouble() ?? 0.0,
+                     _backtestData!.pnl?.toDouble() ?? 0.0,
+                     _backtestData!.drawdown?.toDouble() ?? 0.0,
+                   );
+                 }
+              }),
             ),
           ],
         ),
@@ -181,24 +253,28 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
     );
   }
   
-  Widget _buildActionButton(String label, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.5)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
-          ),
-        ],
+  Widget _buildActionButton(String label, IconData icon, Color color, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withOpacity(0.5)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 16),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -252,52 +328,17 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
           borderData: FlBorderData(show: false),
           lineBarsData: [
             // Price Line (Simplification)
-             LineChartBarData(
-              spots: [
-                const FlSpot(0, 42000),
-                const FlSpot(1, 42200),
-                const FlSpot(2, 41800),
-                const FlSpot(3, 42500),
-                const FlSpot(4, 43000),
-                const FlSpot(5, 42800),
-                const FlSpot(6, 43500),
-              ],
-              isCurved: true,
-              color: Colors.white.withOpacity(0.2),
-              barWidth: 1,
-              dotData: const FlDotData(show: false),
-            ),
-            // EMA Fast
+            // Dynamic Chart
             LineChartBarData(
-              spots: [
-                const FlSpot(0, 42100),
-                const FlSpot(1, 42300),
-                const FlSpot(2, 42000),
-                const FlSpot(3, 42600),
-                const FlSpot(4, 43100),
-                const FlSpot(5, 42900),
-                const FlSpot(6, 43600),
-              ],
+              spots: _chartSpots,
               isCurved: true,
               color: AppColors.cyan,
               barWidth: 2,
               dotData: const FlDotData(show: false),
-            ),
-            // EMA Slow
-            LineChartBarData(
-              spots: [
-                const FlSpot(0, 41900),
-                const FlSpot(1, 42000),
-                const FlSpot(2, 42100),
-                const FlSpot(3, 42200),
-                const FlSpot(4, 42400),
-                const FlSpot(5, 42600),
-                const FlSpot(6, 42800),
-              ],
-              isCurved: true,
-              color: AppColors.orange,
-              barWidth: 2,
-              dotData: const FlDotData(show: false),
+              belowBarData: BarAreaData(
+                show: true,
+                color: AppColors.cyan.withOpacity(0.1),
+              ),
             ),
           ],
         ),
@@ -659,8 +700,37 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                          ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Deploying Strategy to Live Market...")),
-                        );
+                           const SnackBar(content: Text("Deploying Strategy to Live Market...")),
+                         );
+                         ref.read(strategyProvider.notifier).deployStrategy(widget.strategyCode, 1).then((_) {
+                           if (!mounted) return;
+                           ScaffoldMessenger.of(context).showSnackBar(
+                             const SnackBar(content: Text("Strategy deployed successfully!"), backgroundColor: AppColors.green),
+                           );
+                          }).catchError((e) {
+                            if (!mounted) return;
+                            final errorMsg = e.toString().replaceFirst('Exception: ', '').replaceFirst('Failed to deploy strategy: ', '');
+                            
+                            if (errorMsg.contains('already') && errorMsg.contains('active deployment')) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(errorMsg),
+                                  backgroundColor: Colors.orange,
+                                  action: SnackBarAction(
+                                    label: 'MANAGE',
+                                    textColor: Colors.white,
+                                    onPressed: () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const MarketplaceScreen()));
+                                    },
+                                  ),
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Deployment failed: $errorMsg"), backgroundColor: Colors.redAccent),
+                              );
+                            }
+                          });
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.green,

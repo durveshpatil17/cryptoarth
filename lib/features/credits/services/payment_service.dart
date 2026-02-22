@@ -65,7 +65,7 @@ class PaymentService {
       final Response response = await _apiClient.post(ApiEndpoints.paymentCreateOrder, {
         "amount": amount,
       });
-      if (response.statusCode == 200 && response.data != null) {
+      if ((response.statusCode == 200 || response.statusCode == 201) && response.data != null) {
         return response.data;
       }
       throw Exception('Failed to create order');

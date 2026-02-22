@@ -2,20 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 import 'package:cryptoarth/shared/widgets/custom_text_field.dart';
 
-class ProfileSettingsScreen extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
+
+class ProfileSettingsScreen extends ConsumerStatefulWidget {
   const ProfileSettingsScreen({super.key});
 
   @override
-  State<ProfileSettingsScreen> createState() => _ProfileSettingsScreenState();
+  ConsumerState<ProfileSettingsScreen> createState() => _ProfileSettingsScreenState();
 }
 
-class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
+class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
   // Controllers
-  final _nameController = TextEditingController(text: "John Doe");
-  final _emailController = TextEditingController(text: "john.doe@example.com");
-  final _phoneController = TextEditingController(text: "+1 (555) 123-4567");
-  final _locationController = TextEditingController(text: "New York, USA");
-  final _dobController = TextEditingController(text: "01/01/1990");
+  late final TextEditingController _nameController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _locationController;
+  late final TextEditingController _dobController;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = ref.read(authProvider).user;
+    _nameController = TextEditingController(text: user?.name ?? "");
+    _emailController = TextEditingController(text: user?.email ?? "");
+    _phoneController = TextEditingController(text: user?.phone ?? "");
+    _locationController = TextEditingController(text: user?.location ?? "");
+    _dobController = TextEditingController(text: user?.dob ?? "");
+  }
 
   @override
   void dispose() {
@@ -62,9 +76,19 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                  shape: BoxShape.circle,
                ),
                alignment: Alignment.center,
-               child: const Text( // Static Small Avatar for AppBar
-                 "JD", // Initials
-                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+               child: Consumer(
+                 builder: (context, ref, child) {
+                   final user = ref.watch(authProvider).user;
+                   String initials = "U";
+                   if (user != null && user.name != null && user.name!.isNotEmpty) {
+                     final parts = user.name!.trim().split(' ');
+                     initials = parts.length > 1 ? '${parts[0][0]}${parts[1][0]}'.toUpperCase() : parts[0].substring(0, 1).toUpperCase();
+                   }
+                   return Text(
+                     initials,
+                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                   );
+                 }
                ),
              ),
            ),
@@ -103,9 +127,19 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       ],
                     ),
                     alignment: Alignment.center,
-                    child: const Text(
-                      "JD",
-                      style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                    child: Consumer(
+                      builder: (context, ref, child) {
+                        final user = ref.watch(authProvider).user;
+                        String initials = "U";
+                        if (user != null && user.name != null && user.name!.isNotEmpty) {
+                          final parts = user.name!.trim().split(' ');
+                          initials = parts.length > 1 ? '${parts[0][0]}${parts[1][0]}'.toUpperCase() : parts[0].substring(0, 1).toUpperCase();
+                        }
+                        return Text(
+                          initials,
+                          style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                        );
+                      }
                     ),
                   ),
                   const SizedBox(width: 20),
@@ -256,7 +290,28 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () async {
+                        try {
+                          await ref.read(authProvider.notifier).updateProfile({
+                            "first_name": _nameController.text.split(' ').first,
+                            "last_name": _nameController.text.split(' ').length > 1 ? _nameController.text.split(' ').last : '',
+                            "email": _emailController.text,
+                            "location": _locationController.text,
+                            "dob": _dobController.text,
+                          });
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Profile updated successfully!"), backgroundColor: AppColors.green),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Update failed: $e"), backgroundColor: Colors.redAccent),
+                            );
+                          }
+                        }
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
