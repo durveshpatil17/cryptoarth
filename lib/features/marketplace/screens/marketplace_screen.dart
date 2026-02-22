@@ -135,7 +135,7 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
   Widget _buildTabButton(int index, String title, String count, Gradient? activeGradient) {
      final bool isSelected = _selectedTab == index;
      return GestureDetector(
-        onTap: () => setState(() => _selectedTab = index),
+        onTap: () { setState(() { _selectedTab = index; }); },
         child: Container(
            padding: const EdgeInsets.symmetric(vertical: 12),
            decoration: BoxDecoration(
@@ -168,17 +168,19 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
               return const Center(child: Text("No strategies available", style: TextStyle(color: Colors.white54)));
             }
             return Column(
-              children: strategies.map((s) => Column(
-                children: [
-                  _StrategyCard(
-                    data: s,
-                    isBrokerConnected: true,
-                    onAction: () => _deployStrategy(s.id),
-                    isLive: false,
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              )).toList(),
+              children: strategies.map((s) {
+                return Column(
+                  children: [
+                    _StrategyCard(
+                      data: s,
+                      isBrokerConnected: true,
+                      onAction: () { _deployStrategy(s.id); },
+                      isLive: false,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              }).toList(),
             );
           },
           loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
@@ -248,7 +250,8 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
                    _StrategyCard(
                      data: fakeStrategyModel,
                      isBrokerConnected: true, 
-                     onAction: () => _undeployStrategy(fakeStrategyModel.id), // Might fail since ID is missing in DeployedStrategyModel, but will pass 0
+                     onAction: () { _undeployStrategy(fakeStrategyModel.id); }, // Might fail since ID is missing in DeployedStrategyModel, but will pass 0
+
                      isLive: true,
                    ),
                    const SizedBox(height: 16),
@@ -293,7 +296,7 @@ class _StrategyCardState extends State<_StrategyCard> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isActive = widget.isLive;
+    final bool isActive = (widget.data.isActive == true) || (widget.isLive == true);
     final bool isOwner = true; // Hardcoded true since it's user's dashboard normally
 
     return Container(
@@ -302,7 +305,7 @@ class _StrategyCardState extends State<_StrategyCard> {
           color: AppColors.cardSurface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isOwner ? AppColors.primary.withOpacity(0.3) : Colors.white.withOpacity(0.05),
+            color: (isOwner == true) ? AppColors.primary.withOpacity(0.3) : Colors.white.withOpacity(0.05),
             width: 1,
           ),
        ),
@@ -316,8 +319,8 @@ class _StrategyCardState extends State<_StrategyCard> {
                 children: [
                     CircleAvatar(
                        radius: 12,
-                       backgroundColor: isOwner ? AppColors.primary : Colors.blueGrey,
-                       child: Icon(isOwner ? Icons.person : Icons.public, size: 14, color: Colors.white),
+                       backgroundColor: (isOwner == true) ? AppColors.primary : Colors.blueGrey,
+                       child: Icon((isOwner == true) ? Icons.person : Icons.public, size: 14, color: Colors.white),
                     ),
                    const SizedBox(width: 8),
                    Expanded(
@@ -342,13 +345,13 @@ class _StrategyCardState extends State<_StrategyCard> {
                    Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                         color: isActive ? AppColors.green.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+                         color: (isActive == true) ? AppColors.green.withOpacity(0.1) : Colors.white.withOpacity(0.05),
                          borderRadius: BorderRadius.circular(4),
-                         border: Border.all(color: isActive ? AppColors.green.withOpacity(0.3) : Colors.white.withOpacity(0.1)),
+                         border: Border.all(color: (isActive == true) ? AppColors.green.withOpacity(0.3) : Colors.white.withOpacity(0.1)),
                       ),
                       child: Text(
-                        isActive ? "ACTIVE" : "DRAFT", 
-                        style: TextStyle(color: isActive ? AppColors.green : Colors.white70, fontSize: 9, fontWeight: FontWeight.bold)
+                        (isActive == true) ? "ACTIVE" : "DRAFT", 
+                        style: TextStyle(color: (isActive == true) ? AppColors.green : Colors.white70, fontSize: 9, fontWeight: FontWeight.bold)
                       ),
                    ),
                 ],
@@ -366,19 +369,19 @@ class _StrategyCardState extends State<_StrategyCard> {
                child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                     _buildCompactStat("Win Rate", "N/A", AppColors.cyan),
+                     _buildCompactStat("Win Rate", "${widget.data.winRate.toStringAsFixed(1)}%", AppColors.cyan),
                      Container(width: 1, height: 20, color: Colors.white10),
-                     _buildCompactStat("Real P&L", "N/A", AppColors.green),
+                     _buildCompactStat("Total P&L", "\$${widget.data.totalPnl.toStringAsFixed(2)}", (widget.data.totalPnl >= 0) ? AppColors.green : Colors.redAccent),
                      Container(width: 1, height: 20, color: Colors.white10),
-                     _buildCompactStat("Max DD", "N/A", Colors.redAccent),
-                  ],
+                     _buildCompactStat("Max DD", "\$${widget.data.maxDrawdown.toStringAsFixed(1)}", Colors.redAccent),
+                   ],
                ),
              ),
 
              const SizedBox(height: 12),
 
              // Toggle (Visible only if not active)
-             if (!isActive)
+             if (isActive != true)
              Padding(
                padding: const EdgeInsets.only(bottom: 12.0),
                child: Container(
@@ -390,8 +393,8 @@ class _StrategyCardState extends State<_StrategyCard> {
                  ),
                  child: Row(
                    children: [
-                     Expanded(child: _buildModeOptionCompact("Paper", !_isLiveMode, AppColors.cyan, () => setState(() => _isLiveMode = false))),
-                     Expanded(child: _buildModeOptionCompact("Live", _isLiveMode, Colors.redAccent, () => setState(() => _isLiveMode = true))),
+                     Expanded(child: _buildModeOptionCompact("Paper", !_isLiveMode, AppColors.cyan, () { setState(() { _isLiveMode = false; }); })),
+                     Expanded(child: _buildModeOptionCompact("Live", _isLiveMode, Colors.redAccent, () { setState(() { _isLiveMode = true; }); })),
                    ],
                  ),
                ),
@@ -409,18 +412,18 @@ class _StrategyCardState extends State<_StrategyCard> {
                       child: SizedBox(
                         height: 32,
                         child: ElevatedButton(
-                          onPressed: widget.isBrokerConnected ? widget.onAction : () {
+                          onPressed: (widget.isBrokerConnected == true) ? widget.onAction : () {
                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please connect broker first!")));
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: isActive ? Colors.redAccent : (_isLiveMode ? Colors.redAccent : AppColors.cyan),
+                            backgroundColor: (isActive == true) ? Colors.redAccent : ((_isLiveMode == true) ? Colors.redAccent : AppColors.cyan),
                              foregroundColor: Colors.white,
                              padding: EdgeInsets.zero,
                              elevation: 0,
                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
                           child: Text(
-                             isActive ? "Stop" : "Deploy",
+                             (isActive == true) ? "Stop" : "Deploy",
                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                           ),
                         ),

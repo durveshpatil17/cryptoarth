@@ -9,7 +9,7 @@ class PaymentService {
 
   Future<PaymentBalanceModel> fetchPaymentBalance() async {
     try {
-      final Response response = await _apiClient.get(ApiEndpoints.paymentBalance);
+      final Response response = await _apiClient.get(ApiEndpoints.paymentLedger);
       if (response.statusCode == 200 && response.data != null) {
         final Map<String, dynamic> data = ApiClient.extractMap(response.data);
         return PaymentBalanceModel.fromJson(data);
