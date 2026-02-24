@@ -65,4 +65,12 @@ class PortfolioService {
       return []; // Return empty list on error to keep UI clean instead of throw Exception
     }
   }
+
+  Future<void> openPosition(Map<String, dynamic> data) async {
+    try {
+      await _apiClient.post(ApiEndpoints.openPosition, data);
+    } catch (e) {
+      throw Exception('Failed to open position: $e');
+    }
+  }
 }

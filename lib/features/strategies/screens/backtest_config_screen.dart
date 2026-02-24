@@ -318,15 +318,18 @@ class _BacktestConfigScreenState extends ConsumerState<BacktestConfigScreen> {
       if (!mounted) return;
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) => BacktestResultsScreen(
-            strategyCode: backtestId,
-            strategyName: widget.strategyName,
-            symbol: _selectedSymbolName,
-            timeframe: _selectedTimeframe,
-            initialData: Map<String, dynamic>.from(resultsData is Map ? resultsData : {}),
-          ),
-        ),
+                MaterialPageRoute(
+                  builder: (context) => BacktestResultsScreen(
+                    strategyCode: widget.strategyCode,
+                    backtestId: uuid,
+                    strategyName: "AI Strategy", // or from response
+                    symbol: _selectedSymbolName,
+                    timeframe: _selectedTimeframe,
+                    leverage: _selectedLeverage,
+                    capital: _initialCapitalController.text,
+                    initialData: Map<String, dynamic>.from(resultsData is Map ? resultsData : {}), // Pass the full response for immediate display
+                  ),
+                ),
       );
     } catch (e) {
       // Fallback UI test for mock assessment completion

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cryptoarth/features/credits/providers/payment_balance_provider.dart';
 import 'package:cryptoarth/features/credits/providers/payment_ledger_provider.dart';
 import 'package:cryptoarth/features/credits/screens/credits_store_screen.dart';
+import 'package:cryptoarth/core/utils/time_utils.dart';
 
 class CreditsScreen extends ConsumerStatefulWidget {
   const CreditsScreen({super.key});
@@ -36,6 +37,13 @@ class _CreditsScreenState extends ConsumerState<CreditsScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, size: 20, color: Colors.white70),
+            onPressed: () {
+              ref.read(paymentBalanceProvider.notifier).refresh();
+              ref.read(paymentLedgerProvider.notifier).refresh();
+            },
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: SizedBox(
@@ -82,7 +90,7 @@ class _CreditsScreenState extends ConsumerState<CreditsScreen> {
                   return ListView(
                     scrollDirection: Axis.horizontal,
                     children: [
-                      _buildCompactBalanceCard("TOTAL CREDITS", "${balance.toStringAsFixed(2)}", AppColors.green),
+                      _buildCompactBalanceCard("AVAILABLE CREDITS", "${balance.toStringAsFixed(2)}", AppColors.green),
                     ],
                   );
                 },
@@ -110,9 +118,10 @@ class _CreditsScreenState extends ConsumerState<CreditsScreen> {
                      final isCredit = item.transactionType.toUpperCase() == "CREDIT";
                      final amountStr = isCredit ? "+${item.amount}" : "-${item.amount}";
                      final amountColor = isCredit ? AppColors.green : Colors.redAccent;
+
                      return _buildTransactionItem(
                        item.description.isNotEmpty ? item.description : item.transactionType,
-                       item.createdAt,
+                       TimeUtils.formatRelativeTime(item.createdAt),
                        amountStr,
                        amountColor,
                        item.status,

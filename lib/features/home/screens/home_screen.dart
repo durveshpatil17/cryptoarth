@@ -10,12 +10,15 @@ import 'package:cryptoarth/features/credits/screens/credits_store_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cryptoarth/features/credits/providers/payment_balance_provider.dart';
 import 'package:cryptoarth/features/strategies/providers/strategy_provider.dart';
+import 'package:cryptoarth/features/strategies/providers/copilot_provider.dart';
+import 'package:cryptoarth/features/portfolio/providers/pnl_provider.dart';
+import 'package:cryptoarth/features/portfolio/providers/watchlist_provider.dart';
+import 'package:cryptoarth/core/utils/time_utils.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   // Persisted Chat History (Static for simple cross-screen access)
-  static List<Map<String, dynamic>> savedSessions = [];
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -24,26 +27,14 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAliveClientMixin {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<Widget> _messages = [];
-  bool _isChatActive = false;
-  bool _isLoading = false;
   
   String? _currentSessionTitle;
 
   // Credit System State
-  static const int _strategyCost = 20;
 
   // Ticker State
   Timer? _tickerTimer;
   int _currentTickerIndex = 0;
-  double _livePnL = 154.50; 
-  List<Map<String, dynamic>> _tickerData = [
-    {"symbol": "BTC", "price": 42350.00, "change": 1.2},
-    {"symbol": "ETH", "price": 2240.50, "change": -0.5},
-    {"symbol": "SOL", "price": 98.75, "change": 2.4},
-    {"symbol": "BNB", "price": 305.20, "change": 0.1},
-    {"symbol": "AXG", "price": 1305.50, "change": 5.1},
-  ];
 
   @override
   bool get wantKeepAlive => true; // Prevent disposal on tab switch
@@ -64,17 +55,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
   }
 
   void _saveCurrentSession() {
-    if (_messages.isNotEmpty) {
-      // Add current session to history
-      final now = DateTime.now();
-      HomeScreen.savedSessions.insert(0, {
-        "id": now.millisecondsSinceEpoch,
-        "title": _currentSessionTitle ?? "New Strategy Session",
-        "date": "${_getMonth(now.month)} ${now.day} at ${now.hour}:${now.minute.toString().padLeft(2, '0')}", // e.g. Feb 19 at 14:30
-        "messageCount": _messages.length,
-        "isActive": false, // Mark as inactive when saved
-      });
-    }
+    // Note: Backend handles session history now.
+    // Local static list in HomeScreen is deprecated but keeping for now as per navigation logic if needed.
   }
 
   String _getMonth(int month) {
@@ -83,17 +65,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
   }
 
   void _startLiveTicker() {
-    _tickerTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+    _tickerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (mounted) {
-        setState(() {
-          _currentTickerIndex = (_currentTickerIndex + 1) % _tickerData.length;
-          for (var item in _tickerData) {
-            double change = (DateTime.now().millisecond % 10 - 5) / 10;
-            item["price"] += change;
-            item["change"] += change / 100;
-          }
-          _livePnL += (DateTime.now().millisecond % 20 - 10) / 10;
-        });
+        final watchlist = ref.read(watchlistProvider).value ?? [];
+        if (watchlist.isNotEmpty) {
+          setState(() {
+            _currentTickerIndex = (_currentTickerIndex + 1) % watchlist.length;
+          });
+        }
       }
     });
   }
@@ -102,110 +81,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
-    final _credits = ref.read(paymentBalanceProvider).value?.balance.floor() ?? 0;
-
-    if (_credits < _strategyCost) {
-      _showLowCreditsDialog();
-      return;
-    }
-
-    if (_messages.isEmpty) {
-       _currentSessionTitle = text; // Use first message as title
-    }
-
-    setState(() {
-      _isChatActive = true;
-      _messages.add(_buildUserMessage(text));
-      _isLoading = true;
-    });
-
+    ref.read(copilotProvider.notifier).sendMessage(text);
     _controller.clear();
     _scrollToBottom();
-
-    // Simulate AI Response with dynamic logic
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        final strategyCode = "STRAT_${DateTime.now().millisecondsSinceEpoch % 100000}";
-        final String strategyName;
-        final String pineCode;
-        final String description;
-        final String winRate;
-        final String profitFactor;
-
-        final input = text.toLowerCase();
-        
-        if (input.contains('bollinger') || input.contains('reversion')) {
-          strategyName = "Bollinger Mean Reversion";
-          description = "A standard mean reversion strategy using Bollinger Bands (20, 2). Enters long on lower band touch and short on upper band touch, optimized for Range-bound markets.";
-          winRate = "68.5%";
-          profitFactor = "2.10";
-          pineCode = '''//@version=5
-strategy("Bollinger Mean Reversion", overlay=true)
-src = close
-length = input.int(20, minval=1)
-mult = input.float(2.0, minval=0.001, maxval=50)
-basis = ta.sma(src, length)
-dev = mult * ta.stdev(src, length)
-upper = basis + dev
-lower = basis - dev
-
-if (ta.crossunder(src, lower))
-    strategy.entry("BB Long", strategy.long)
-if (ta.crossover(src, upper))
-    strategy.entry("BB Short", strategy.short)''';
-        } else if (input.contains('trend') || input.contains('breakout')) {
-          strategyName = "Volatility Breakout Trend";
-          description = "Trend-following system that uses ATR-based volatility channels to identify major momentum shifts. Best used during high liquidity sessions.";
-          winRate = "54.2%";
-          profitFactor = "4.25";
-          pineCode = '''//@version=5
-strategy("Volatility Breakout Trend", overlay=true)
-atrLength = input(14, "ATR Length")
-multiplier = input(3, "Multiplier")
-atr = ta.atr(atrLength)
-upBand = high + atr * multiplier
-dnBand = low - atr * multiplier
-
-if (close > upBand[1])
-    strategy.entry("Trend Buy", strategy.long)
-if (close < dnBand[1])
-    strategy.entry("Trend Sell", strategy.short)''';
-        } else {
-          strategyName = "Institutional Alpha (MACD/RSI)";
-          description = "Combines MACD momentum with RSI oversold/overbought filters to capture high-probability institutional pivots.";
-          winRate = "82.4%";
-          profitFactor = "3.15";
-          pineCode = '''//@version=5
-strategy("Institutional Alpha", overlay=true)
-rsiVal = ta.rsi(close, 14)
-[macdLine, signalLine, _] = ta.macd(close, 12, 26, 9)
-
-if (ta.crossover(macdLine, signalLine) and rsiVal < 30)
-    strategy.entry("Long", strategy.long)
-if (ta.crossunder(macdLine, signalLine) and rsiVal > 70)
-    strategy.entry("Short", strategy.short)''';
-        }
-        
-        setState(() {
-          _isLoading = false;
-          _messages.add(
-            StrategyResponseCard(
-              title: strategyName,
-              description: description,
-              winRate: winRate,
-              profitFactor: profitFactor,
-              codeSnippet: pineCode,
-              onBacktest: () => _showBacktestOverlay(strategyCode, strategyName, pineCode), 
-            ),
-          );
-        });
-        _scrollToBottom();
-        
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) _showBacktestOverlay(strategyCode, strategyName, pineCode);
-        });
-      }
-    });
   }
 
 
@@ -407,6 +285,14 @@ if (ta.crossunder(macdLine, signalLine) and rsiVal > 70)
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
+    final chatState = ref.watch(copilotProvider);
+    
+    ref.listen(copilotProvider, (prev, next) {
+      if (next.hasValue && prev?.value?.length != next.value?.length) {
+        _scrollToBottom();
+      }
+    });
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -426,6 +312,8 @@ if (ta.crossunder(macdLine, signalLine) and rsiVal > 70)
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          Center(child: _buildCreditBalance()),
+          const SizedBox(width: 12),
           Center(child: _buildLivePnL()),
           const SizedBox(width: 8),
           const Padding(
@@ -437,20 +325,26 @@ if (ta.crossunder(macdLine, signalLine) and rsiVal > 70)
       body: SafeArea(
         child: Column(
           children: [
-             // Minimal Header Row (Credits)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-              child: Row(
-                children: [
-                   _buildCreditBalance(),
-                ],
-              ),
-            ),
-
             Expanded(
-              child: _messages.isEmpty 
-                ? _buildWelcomeCenter() 
-                : _buildChatList(),
+              child: chatState.when(
+                data: (messages) => messages.isEmpty 
+                  ? _buildWelcomeCenter() 
+                  : _buildChatList(messages, false),
+                loading: () {
+                   return const Center(child: CircularProgressIndicator(color: AppColors.cyan));
+                },
+                error: (err, stack) => Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
+                      const SizedBox(height: 16),
+                      Text("Failed to send message: $err", style: const TextStyle(color: Colors.white70)),
+                      TextButton(onPressed: () => ref.invalidate(copilotProvider), child: const Text("Retry")),
+                    ],
+                  ),
+                ),
+              ),
             ),
 
             // Persistent Input Area (Always Visible)
@@ -461,20 +355,110 @@ if (ta.crossunder(macdLine, signalLine) and rsiVal > 70)
     );
   }
 
-  Widget _buildChatList() {
+  Widget _buildChatList(List<Map<String, dynamic>> messages, bool isActuallyLoading) {
     return ListView.builder(
        controller: _scrollController,
        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-       itemCount: _messages.length + (_isLoading ? 1 : 0),
+       itemCount: messages.length + (ref.watch(copilotProvider).isLoading ? 1 : 0),
        itemBuilder: (context, index) {
-         if (index == _messages.length) {
+         if (index == messages.length) {
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 24.0),
               child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.cyan)),
             );
          }
-         return _messages[index];
+         final message = messages[index];
+         final bool isUser = message['role'] == 'user';
+         
+         if (isUser) {
+           return _buildUserMessage(message['content'] ?? '');
+         } else {
+           return _buildAssistantMessage(message);
+         }
        },
+    );
+  }
+
+  Widget _buildAssistantMessage(Map<String, dynamic> message) {
+    final String text = message['content'] ?? '';
+    final String? python = message['python'];
+    final String? pineScript = message['pine_script'];
+    final dynamic strategyJson = message['strategy_json'];
+    final dynamic metrics = message['metrics'];
+
+    final String? codeSnippet = (python != null && python.isNotEmpty) ? python : pineScript;
+
+    // If structured data exists (synced from history), use StrategyResponseCard
+    if (codeSnippet != null && codeSnippet.isNotEmpty) {
+      String title = "AI Strategy";
+      String description = text;
+      String winRate = "Analyzing...";
+      String profitFactor = "--";
+
+      // Try to extract from strategy_json first
+      if (strategyJson is Map) {
+        title = strategyJson['name'] ?? strategyJson['strategy_name'] ?? title;
+        description = strategyJson['description'] ?? strategyJson['strategy_description'] ?? text;
+        winRate = strategyJson['win_rate']?.toString() ?? winRate;
+        profitFactor = strategyJson['profit_factor']?.toString() ?? profitFactor;
+      } 
+      
+      // Fallback or supplement with metrics field
+      if (metrics is Map) {
+        winRate = metrics['win_rate']?.toString() ?? winRate;
+        profitFactor = metrics['profit_factor']?.toString() ?? profitFactor;
+      }
+
+      return StrategyResponseCard(
+        title: title,
+        description: description,
+        winRate: winRate,
+        profitFactor: profitFactor,
+        codeSnippet: codeSnippet,
+        onBacktest: () => _showBacktestOverlay(
+          "STRAT_${DateTime.now().millisecondsSinceEpoch}", 
+          title, 
+          codeSnippet
+        ),
+      );
+    }
+
+    // Fallback detection for pure text responses that contain strategy code
+    if (text.contains('strategy(') && text.contains('//@version=')) {
+      return StrategyResponseCard(
+        title: "AI Strategy",
+        description: "Generated strategy based on your prompt.",
+        winRate: "Analyzing...",
+        profitFactor: "--",
+        codeSnippet: text,
+        onBacktest: () => _showBacktestOverlay(
+          "STRAT_${DateTime.now().millisecondsSinceEpoch}", 
+          "AI Strategy", 
+          text
+        ),
+      );
+    }
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E293B),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(4),
+            topRight: Radius.circular(16),
+            bottomLeft: Radius.circular(16),
+            bottomRight: Radius.circular(16),
+          ),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.5),
+        ),
+      ),
     );
   }
 
@@ -687,8 +671,7 @@ if (ta.crossunder(macdLine, signalLine) and rsiVal > 70)
   }
 
   Widget _buildCreditBalance() {
-    final balanceModel = ref.watch(paymentBalanceProvider).value;
-    final _credits = balanceModel?.balance.floor() ?? 0;
+    final balanceAsync = ref.watch(paymentBalanceProvider);
 
     return GestureDetector(
       onTap: () async {
@@ -700,22 +683,61 @@ if (ta.crossunder(macdLine, signalLine) and rsiVal > 70)
           ref.read(paymentBalanceProvider.notifier).refresh();
         }
       },
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.monetization_on_outlined, size: 16, color: AppColors.gold.withOpacity(0.8)),
-          const SizedBox(width: 6),
-          Text(
-            "$_credits Credits",
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
-              fontWeight: FontWeight.w600,
-              fontSize: 13,
-            ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.1)),
+        ),
+        child: balanceAsync.when(
+          data: (balanceModel) {
+            final int credits = balanceModel?.balance.floor() ?? 0;
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.monetization_on_outlined, size: 14, color: AppColors.gold.withOpacity(0.8)),
+                const SizedBox(width: 6),
+                Text(
+                  "Available: $credits",
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(Icons.add_circle_outline, size: 10, color: AppColors.cyan.withOpacity(0.6)),
+              ],
+            );
+          },
+          loading: () => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 10,
+                height: 10,
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold.withOpacity(0.5)),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                "Loading...",
+                style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11),
+              ),
+            ],
           ),
-          const SizedBox(width: 4),
-          Icon(Icons.add_circle_outline, size: 12, color: AppColors.cyan.withOpacity(0.6)),
-        ],
+          error: (e, s) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 12, color: Colors.redAccent),
+              const SizedBox(width: 4),
+              Text(
+                "Error",
+                style: TextStyle(color: Colors.redAccent.withOpacity(0.8), fontSize: 11),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -752,13 +774,16 @@ if (ta.crossunder(macdLine, signalLine) and rsiVal > 70)
   }
 
   Widget _buildLivePnL() {
+    final pnlModel = ref.watch(pnlProvider).value;
+    final double livePnL = (pnlModel?.todayProfit ?? 0.0).toDouble();
+
     return Container(
        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
        decoration: BoxDecoration(
-         color: _livePnL >= 0 ? AppColors.green.withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
+         color: livePnL >= 0 ? AppColors.green.withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
          borderRadius: BorderRadius.circular(12),
          border: Border.all(
-           color: _livePnL >= 0 ? AppColors.green.withOpacity(0.5) : Colors.redAccent.withOpacity(0.5),
+           color: livePnL >= 0 ? AppColors.green.withOpacity(0.5) : Colors.redAccent.withOpacity(0.5),
            width: 1
          ),
        ),
@@ -766,17 +791,17 @@ if (ta.crossunder(macdLine, signalLine) and rsiVal > 70)
          mainAxisSize: MainAxisSize.min,
          children: [
            Icon(
-             _livePnL >= 0 ? Icons.trending_up : Icons.trending_down, 
+             livePnL >= 0 ? Icons.trending_up : Icons.trending_down, 
              size: 12, 
-             color: _livePnL >= 0 ? AppColors.green : Colors.redAccent
+             color: livePnL >= 0 ? AppColors.green : Colors.redAccent
            ),
            const SizedBox(width: 4),
            Text(
-             "${_livePnL >= 0 ? '+' : ''}\$${_livePnL.toStringAsFixed(2)}",
+             "${livePnL >= 0 ? '+' : ''}\$${livePnL.toStringAsFixed(2)}",
              style: TextStyle(
                fontWeight: FontWeight.bold,
                fontSize: 10,
-               color: _livePnL >= 0 ? AppColors.green : Colors.redAccent,
+               color: livePnL >= 0 ? AppColors.green : Colors.redAccent,
              ),
            ),
          ],
@@ -785,8 +810,15 @@ if (ta.crossunder(macdLine, signalLine) and rsiVal > 70)
   }
 
   Widget _buildAnimatedCoinTicker() {
-    final data = _tickerData[_currentTickerIndex];
-    final double change = data['change'];
+    final watchlist = ref.watch(watchlistProvider).value ?? [];
+    if (watchlist.isEmpty) {
+      return const Text("CryptoArth", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16));
+    }
+
+    final data = watchlist[_currentTickerIndex % watchlist.length];
+    final String symbol = data['symbol'] ?? data['name'] ?? 'UNKNOWN';
+    final double price = num.tryParse(data['ltp']?.toString() ?? '0')?.toDouble() ?? 0.0;
+    final double change = num.tryParse(data['change']?.toString() ?? '0')?.toDouble() ?? 0.0;
     final bool isPositive = change >= 0;
 
     return AnimatedSwitcher(
@@ -795,7 +827,7 @@ if (ta.crossunder(macdLine, signalLine) and rsiVal > 70)
         return FadeTransition(opacity: animation, child: ScaleTransition(scale: animation, child: child));
       },
       child: Container(
-        key: ValueKey<String>(data['symbol']),
+        key: ValueKey<String>(symbol),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: const Color(0xFF1E293B).withOpacity(0.6),
@@ -806,7 +838,7 @@ if (ta.crossunder(macdLine, signalLine) and rsiVal > 70)
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              data['symbol'],
+              symbol,
               style: const TextStyle(
                 color: AppColors.cyan, 
                 fontSize: 12, 
@@ -815,7 +847,7 @@ if (ta.crossunder(macdLine, signalLine) and rsiVal > 70)
             ),
             const SizedBox(width: 6),
             Text(
-              "\$${data['price'].toStringAsFixed(2)}",
+              "\$${price.toStringAsFixed(2)}",
               style: const TextStyle(color: Colors.white, fontSize: 12),
             ),
             const SizedBox(width: 4),

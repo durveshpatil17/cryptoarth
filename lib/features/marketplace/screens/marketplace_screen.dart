@@ -11,6 +11,9 @@ import 'package:cryptoarth/features/home/screens/main_screen.dart';
 import 'package:cryptoarth/core/utils/report_generator.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cryptoarth/shared/widgets/glass_container.dart';
+import 'package:cryptoarth/features/strategies/widgets/strategy_detailed_report.dart';
+import 'package:cryptoarth/features/strategies/screens/backtest_results_screen.dart';
+import 'package:cryptoarth/features/strategies/widgets/technical_chart_screen.dart';
 
 class MarketplaceScreen extends ConsumerStatefulWidget {
   const MarketplaceScreen({super.key});
@@ -473,9 +476,28 @@ class _StrategyCardState extends State<_StrategyCard> {
              // Action Buttons (Compact)
              Row(
                 children: [
-                   Expanded(child: _buildOutlineButton(Icons.bar_chart, "Chart", onTap: () => _showChartPopup(context, widget.data))),
+                   Expanded(child: _buildOutlineButton(Icons.show_chart_outlined, "Chart", onTap: () {
+                     showDialog(
+                       context: context,
+                        builder: (context) => TechnicalChartScreen(
+                          strategyCode: widget.data.strategyCode,
+                          strategyName: widget.data.strategyName,
+                          backtestId: widget.data.id,
+                        ),
+                     );
+                   })),
                    const SizedBox(width: 8),
-                   Expanded(child: _buildOutlineButton(Icons.description, "Report", onTap: () {
+                   Expanded(child: _buildOutlineButton(Icons.description_outlined, "Report", onTap: () {
+                     showDialog(
+                       context: context,
+                        builder: (context) => StrategyDetailedReport(
+                          strategyCode: widget.data.strategyCode,
+                          backtestId: widget.data.id,
+                        ),
+                     );
+                   })),
+                   const SizedBox(width: 8),
+                   Expanded(child: _buildOutlineButton(Icons.picture_as_pdf_outlined, "PDF", onTap: () {
                      ReportGenerator.downloadBacktestReport(
                        widget.data.strategyName,
                        widget.data.winRate.toDouble(),
@@ -544,100 +566,35 @@ class _StrategyCardState extends State<_StrategyCard> {
   }
 
   Widget _buildOutlineButton(IconData icon, String label, {VoidCallback? onTap}) {
-     return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-           height: 32,
-           decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05), 
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.white.withOpacity(0.0)),
-           ),
-        child: Row(
-           mainAxisAlignment: MainAxisAlignment.center,
-           children: [
-              Icon(icon, color: Colors.white70, size: 14),
-              const SizedBox(width: 4),
-              Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
-           ],
+    bool isSmallMobile = MediaQuery.of(context).size.width < 380;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        height: 32,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
-     ));
-  }
-}
-
-  void _showChartPopup(BuildContext context, StrategyModel strategy) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16),
-          child: GlassContainer(
-            borderRadius: 16,
-            color: AppColors.cardSurface,
-            opacity: 0.9,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        "${strategy.strategyName} Performance",
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white54),
-                      onPressed: () => Navigator.pop(context),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white70, size: 14),
+            if (!isSmallMobile) ...[
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  label,
+                  style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 200,
-                  width: double.infinity,
-                  child: LineChart(
-                    LineChartData(
-                      gridData: FlGridData(show: false),
-                      titlesData: FlTitlesData(show: false),
-                      borderData: FlBorderData(show: false),
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: [
-                            const FlSpot(0, 0),
-                            const FlSpot(1, 1),
-                            const FlSpot(2, -0.5),
-                            const FlSpot(3, 1.5),
-                            const FlSpot(4, 1.2),
-                            const FlSpot(5, 2.5),
-                            FlSpot(6, (strategy.totalPnl > 0 ? 3.0 : -3.0)),
-                          ],
-                          isCurved: true,
-                          color: strategy.totalPnl >= 0 ? AppColors.green : Colors.redAccent,
-                          barWidth: 3,
-                          isStrokeCapRound: true,
-                          dotData: FlDotData(show: false),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            color: (strategy.totalPnl >= 0 ? AppColors.green : Colors.redAccent).withOpacity(0.2),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
+}

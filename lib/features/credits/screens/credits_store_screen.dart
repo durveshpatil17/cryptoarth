@@ -6,6 +6,7 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:cryptoarth/features/credits/services/payment_service.dart';
 import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cryptoarth/features/credits/providers/payment_balance_provider.dart';
 
 class CreditsStoreScreen extends ConsumerStatefulWidget {
   const CreditsStoreScreen({super.key});
@@ -126,6 +127,8 @@ class _CreditsStoreScreenState extends ConsumerState<CreditsStoreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final balanceAsync = ref.watch(paymentBalanceProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -142,6 +145,72 @@ class _CreditsStoreScreenState extends ConsumerState<CreditsStoreScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Current Balance Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              margin: const EdgeInsets.only(bottom: 24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.purple.withOpacity(0.2), AppColors.cyan.withOpacity(0.1)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withOpacity(0.1)),
+              ),
+              child: balanceAsync.when(
+                data: (balanceModel) {
+                  final totalCredits = balanceModel?.balance.floor() ?? 0;
+                  return Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.gold.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.monetization_on_outlined, color: AppColors.gold, size: 24),
+                      ),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Available Credits",
+                            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                          ),
+                          Text(
+                            "$totalCredits Credits",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
+                loading: () => const Center(
+                  child: CircularProgressIndicator(color: AppColors.gold),
+                ),
+                error: (e, s) => Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.redAccent, size: 32),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        "Failed to load balance",
+                        style: TextStyle(color: Colors.redAccent.withOpacity(0.8), fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
             const Text(
               "Add credits to continue using AI Strategy Builder and Backtesting features.",
               style: TextStyle(

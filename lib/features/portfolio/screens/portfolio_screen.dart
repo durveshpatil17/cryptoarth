@@ -13,6 +13,7 @@ import 'package:cryptoarth/features/orders/providers/trade_history_provider.dart
 import 'package:cryptoarth/features/portfolio/providers/trading_mode_provider.dart';
 import 'package:cryptoarth/features/strategies/providers/strategy_provider.dart';
 import 'package:cryptoarth/features/strategies/providers/backtest_provider.dart';
+import 'package:cryptoarth/core/utils/report_generator.dart';
 
 class PortfolioScreen extends ConsumerStatefulWidget {
   const PortfolioScreen({super.key});
@@ -628,8 +629,30 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
                           );
                        },
                     ),
-                    const SizedBox(height: 16),
-                    const Text("Performance Breakdown", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                    Row(
+                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                       children: [
+                          const Text("Performance Breakdown", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                          TextButton.icon(
+                             onPressed: () async {
+                                try {
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading P&L Report...")));
+                                  final url = await ref.read(portfolioServiceProvider).fetchPnlReportPdfUrl();
+                                  if (url != null) {
+                                    // Use ReportGenerator to download from URL
+                                    await ReportGenerator.downloadPdfFromUrl(url, "cryptoarth_pnl_report.pdf");
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to download report: $e"), backgroundColor: Colors.redAccent));
+                                  }
+                                }
+                             },
+                             icon: const Icon(Icons.picture_as_pdf_outlined, size: 16, color: AppColors.cyan),
+                             label: const Text("Download Report", style: TextStyle(color: AppColors.cyan, fontSize: 11, fontWeight: FontWeight.bold)),
+                          ),
+                       ],
+                    ),
                     const SizedBox(height: 8),
                     ref.watch(orderProvider).when(
                       data: (orders) {

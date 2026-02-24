@@ -14,6 +14,8 @@ import 'package:cryptoarth/features/settings/screens/credits_screen.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
+import 'package:cryptoarth/features/credits/providers/payment_balance_provider.dart';
+import 'package:cryptoarth/features/strategies/providers/copilot_provider.dart';
 
 class CustomDrawer extends ConsumerWidget {
   const CustomDrawer({super.key});
@@ -61,11 +63,18 @@ class CustomDrawer extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      "AI-Powered Trading",
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 10,
+                    ref.watch(paymentBalanceProvider).when(
+                      data: (balance) => Text(
+                        "Credits: ${balance?.balance.floor() ?? 0}",
+                        style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
+                      ),
+                      loading: () => Text(
+                        "Loading credits...",
+                        style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10),
+                      ),
+                      error: (_, __) => Text(
+                        "Error loading credits",
+                        style: TextStyle(color: Colors.redAccent.withOpacity(0.5), fontSize: 10),
                       ),
                     ),
                   ],
@@ -94,6 +103,7 @@ class CustomDrawer extends ConsumerWidget {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 onTap: () {
+                  ref.read(copilotProvider.notifier).clearChat();
                   Navigator.pop(context);
                   Navigator.pushAndRemoveUntil(
                     context,

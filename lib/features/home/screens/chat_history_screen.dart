@@ -1,43 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
-import 'package:cryptoarth/features/home/screens/home_screen.dart';
+import 'package:cryptoarth/features/strategies/providers/copilot_provider.dart';
 
-class ChatHistoryScreen extends StatefulWidget {
+import 'package:cryptoarth/core/utils/time_utils.dart';
+
+class ChatHistoryScreen extends ConsumerWidget {
   const ChatHistoryScreen({super.key});
 
   @override
-  State<ChatHistoryScreen> createState() => _ChatHistoryScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final historyAsync = ref.watch(chatHistoryProvider);
 
-class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
-  // Use saved sessions from HomeScreen
-  late List<Map<String, dynamic>> _chatSessions;
-
-  @override
-  void initState() {
-    super.initState();
-    _chatSessions = [
-      ...HomeScreen.savedSessions,
-      // Keep some example mock data
-      {
-        "id": 1,
-        "title": "Ema (9/21 EMA) Strategy",
-        "messageCount": 0,
-        "date": "Feb 10 at 06:24 PM",
-        "isActive": false,
-      },
-      {
-        "id": 2,
-        "title": "Bollinger Bands Squeeze Setup",
-        "messageCount": 12,
-        "date": "Feb 5 at 01:17 PM",
-        "isActive": false,
-      },
-    ];
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -72,84 +46,82 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Header Stats
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardSurface,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
-                  ),
-                  child: Text(
-                    "Total Sessions: ${_chatSessions.length + 4}", // Mock total
-                    style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Text(
-                  "Click any chat to continue",
-                  style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          
-          const Divider(color: Colors.white10),
-          
-          // Chat List
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16.0),
-              itemCount: _chatSessions.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 16),
-              itemBuilder: (context, index) {
-                final session = _chatSessions[index];
-                final bool isActive = session['isActive'];
-                
-                return InkWell(
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Opening '${session['title']}'...")),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardSurface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isActive 
-                            ? AppColors.purple 
-                            : Colors.white.withOpacity(0.05),
-                        width: isActive ? 1.5 : 1,
+      body: historyAsync.when(
+        data: (sessions) {
+          if (sessions.isEmpty) {
+            return const Center(child: Text("No chat history found", style: TextStyle(color: Colors.white54)));
+          }
+
+          return Column(
+            children: [
+              // Header Stats
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardSurface,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white.withOpacity(0.1)),
                       ),
-                      boxShadow: isActive ? [
-                        BoxShadow(
-                          color: AppColors.purple.withOpacity(0.1),
-                          blurRadius: 10,
-                          spreadRadius: 0,
-                        )
-                      ] : [],
+                      child: Text(
+                        "Total Sessions: ${sessions.length}",
+                        style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                    Text(
+                      "Click any chat to continue",
+                      style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const Divider(color: Colors.white10),
+              
+              // Chat List
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(16.0),
+                  itemCount: sessions.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 16),
+                  itemBuilder: (context, index) {
+                    final session = sessions[index];
+                    final String title = session['title'] ?? session['summary'] ?? "Untitled Chat";
+                    final String date = TimeUtils.formatRelativeTime(session['created_at']?.toString());
+                    
+                    return InkWell(
+                      onTap: () {
+                        final String? sessionId = session['session_id']?.toString() ?? session['id']?.toString();
+                        if (sessionId != null) {
+                          ref.read(copilotProvider.notifier).loadSession(sessionId);
+                          Navigator.pop(context); // Go back to Home / AI Chat
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Error: Session ID missing")),
+                          );
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardSurface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white.withOpacity(0.05)),
+                        ),
+                        child: Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(10),
+                              padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.05),
+                                color: AppColors.purple.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.chat_bubble_outline, color: AppColors.textSecondary, size: 20),
+                              child: const Icon(Icons.chat_bubble_outline, color: AppColors.purple, size: 24),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -157,95 +129,62 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    session['title'],
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
+                                    title,
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.message, size: 12, color: AppColors.textSecondary),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        "${session['messageCount']} messages",
-                                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      const Icon(Icons.access_time, size: 12, color: AppColors.textSecondary),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        session['date'],
-                                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                                      ),
-                                    ],
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "Session ID: ${session['session_id'] ?? 'N/A'}",
+                                    style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11),
                                   ),
                                 ],
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0E1117), // Darker inner bg
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            "Click to continue this conversation",
-                            style: TextStyle(color: Colors.white38, fontSize: 13),
-                          ),
-                        ),
-                        
-                        if (isActive)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 12.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
-                                  "Click to continue chat",
-                                  style: TextStyle(color: AppColors.purple.withOpacity(0.8), fontSize: 12, fontWeight: FontWeight.bold),
+                                  date,
+                                  style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10),
                                 ),
-                                const SizedBox(width: 4),
-                                const Icon(Icons.arrow_forward, size: 14, color: AppColors.purple),
+                                const SizedBox(height: 4),
+                                const Icon(Icons.chevron_right, color: Colors.white24, size: 16),
                               ],
                             ),
-                          ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          
-          // Pagination Controls
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildPaginationButton("Prev", Icons.chevron_left, false),
-                const Text(
-                  "Page 1 of 3",
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
-                _buildPaginationButton("Next", Icons.chevron_right, true),
-              ],
-            ),
-          ),
-        ],
+              ),
+
+              // Pagination Controls
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildPaginationButton("Prev", Icons.chevron_left, false),
+                    const Text(
+                      "Page 1 of 1",
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                    _buildPaginationButton("Next", Icons.chevron_right, true),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
+        error: (e, s) => Center(child: Text("Error: $e", style: const TextStyle(color: Colors.redAccent))),
       ),
     );
   }

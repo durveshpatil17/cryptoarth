@@ -12,6 +12,7 @@ class ApiEndpoints {
   static const String userPositions = "/auth/get_user_positions/";
   static const String userPositionsPaper = "/auth/user/positions/paper/";
   static const String userPnL = "/auth/get_user_pnl/";
+  static const String openPosition = "/auth/user/open_position/";
   static const String pnlReportPdf = "/auth/pl-report/pdf/";
   static const String watchlist = "/auth/watchlist/";
 
@@ -49,4 +50,56 @@ class ApiEndpoints {
 
   static const String notifications = "/auth/notifications/";
   static const String referralLink = "/auth/get_referal_link/";
+
+  // Execution History Actions
+  static const String backtestEdit = "/auth/strategy/backtest/edit/";
+  static const String backtestPine = "/auth/strategy/backtest/pine-code/";
+  static const String backtestShare = "/auth/strategy/backtest/share/";
+  static const String strategyImprove = "/auth/strategy/improve/";
+  static const String strategyDeepThink = "/auth/strategy/deep-think-optimize-v2/";
+  static const String strategyDelete = "/auth/strategy/delete/";
+  
+  // Backtest / Copilot
+  static const String copilotChat = "/auth/strategy/copilot/chat/";
+  static const String copilotHistory = "/auth/strategy/copilot/history/";
+  static const String copilotSave = "/auth/strategy/copilot/save-strategy/";
+
+  // Missing or Newly identified endpoints
+  static const String backtestRerun = "/auth/strategy/rerun-backtest/";
+  static const String backtestReportPdf = "/auth/strategy/backtest/report/"; // Needs backtest_id
+  static const String backtestIndicators = "/auth/strategy/backtest/indicators/";
+  static const String backtestValidate = "/auth/strategy/backtest/validate/";
+  static const String backtestTradeMode = "/auth/strategy/backtest/trade-mode/";
+  static const String deepThinkStatus = "/auth/strategy/deep-think-optimize-v2/status/";
+  static const String deepThinkSync = "/auth/strategy/deep-think-optimize-v2/sync/";
+
+  // Signals
+  static const String signalProcess = "/auth/signal/";
+  static const String signalCopy = "/auth/copy-signal/";
+  static const String signalSet = "/auth/setSignal/";
+  static const String signalDelete = "/auth/deleteSignal/";
+  static const String signalEditActive = "/auth/editActiveSignal/";
+  static const String signalEditPending = "/auth/edidPendingSignal/";
+  static const String signalClose = "/auth/closeSignal/";
+  static const String signalList = "/auth/signal-list/";
+  static const String copyStrategyShow = "/auth/copystrategyshow/";
+
+  // Tutorials
+  static const String tutorialsList = "/auth/tutorials/";
+  static const String tutorialAiFetch = "/auth/tutorial-ai/";
+  static const String tutorialAiGenerate = "/auth/tutorial-ai/generate/";
+  static const String tutorialAiGenerateAll = "/auth/tutorial-ai/generate-all/";
+  static const String getTutorial = "/auth/get_tutorial/";
+
+  // Additional Strategy/Copilot
+  static const String strategyImproveQuote = "/auth/strategy/improve/quote/";
+  static const String strategyDeepThinkV1 = "/auth/strategy/deep-think-optimize/";
+  static const String copilotStream = "/auth/strategy/copilot/stream/";
+  static const String copilotConversions = "/auth/strategy/copilot/fetch-conversions/";
+  static const String checkOpenPosition = "/auth/strategy/backtest/check-open-position/";
+
+  // Payments / Admin / System
+  static const String invoiceDownload = "/auth/payment/invoice/"; // Needs ID
+  static const String adminStrategyList = "/auth/get_admin_strategy_list/";
+  static const String systemPerformance = "/auth/system/performance/";
 }

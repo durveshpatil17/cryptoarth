@@ -29,7 +29,11 @@ class ApiClient {
 
     if (data is List) return data;
     if (data is Map) {
-      final keys = ['ledger', 'data', 'results', 'transactions', 'strategies', 'deployed_strategies', 'backtests', 'positions', 'orders'];
+      final keys = [
+        'ledger', 'data', 'results', 'transactions', 'strategies', 
+        'deployed_strategies', 'backtests', 'positions', 'orders',
+        'signals', 'signal_list', 'copy_strategies', 'tutorials', 'tutorial_list'
+      ];
       for (var key in keys) {
         if (data.containsKey(key) && data[key] is List) return data[key];
       }
@@ -81,8 +85,9 @@ class ApiClient {
     _dio = Dio(
       BaseOptions(
         baseUrl: ApiEndpoints.baseUrl,
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
+        connectTimeout: const Duration(minutes: 2),
+        receiveTimeout: const Duration(minutes: 2),
+        sendTimeout: const Duration(minutes: 2),
         headers: {
           "Content-Type": "application/json",
         },
@@ -164,11 +169,12 @@ class ApiClient {
   }
 
   // POST
-  Future<Response> post(String path, Map<String, dynamic> body) async {
+  Future<Response> post(String path, Map<String, dynamic> body, {Options? options}) async {
     try {
       final response = await _dio.post(
         path,
         data: body,
+        options: options,
       );
       return response;
     } on DioException catch (e) {
@@ -205,9 +211,9 @@ class ApiClient {
   }
 
   // DELETE
-  Future<Response> delete(String endpoint) async {
+  Future<Response> delete(String endpoint, [Map<String, dynamic>? data]) async {
     try {
-      return await _dio.delete(endpoint);
+      return await _dio.delete(endpoint, data: data);
     } catch (e) {
       throw Exception("DELETE error: $e");
     }

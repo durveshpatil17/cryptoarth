@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 import 'package:cryptoarth/shared/widgets/glass_container.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,10 @@ import 'package:cryptoarth/features/strategies/screens/code_generator_screen.dar
 import 'package:cryptoarth/core/utils/report_generator.dart';
 import 'package:cryptoarth/features/strategies/providers/strategy_provider.dart';
 import 'package:cryptoarth/features/marketplace/screens/marketplace_screen.dart';
+import 'package:cryptoarth/features/strategies/widgets/strategy_detailed_report.dart';
+import 'package:cryptoarth/features/strategies/widgets/technical_chart_screen.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:cryptoarth/core/utils/time_utils.dart';
 
 class ExecutionHistoryScreen extends ConsumerStatefulWidget {
   const ExecutionHistoryScreen({super.key});
@@ -45,6 +50,19 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.sync, color: AppColors.cyan),
+            onPressed: () async {
+              try {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Syncing AI strategies...")));
+                await ref.read(backtestProvider.notifier).syncDeepThink();
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Sync completed!"), backgroundColor: AppColors.green));
+              } catch (e) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Sync failed: $e"), backgroundColor: Colors.redAccent));
+              }
+            },
+            tooltip: "Sync AI Strategies",
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white70),
             onPressed: () => ref.read(backtestProvider.notifier).refresh(),
           ),
@@ -53,13 +71,24 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
       ),
       body: ref.watch(backtestProvider).when(
         data: (results) {
-          final items = results.isEmpty ? _getMockData() : results;
+          if (results.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                   Icon(Icons.history, color: Colors.white.withOpacity(0.1), size: 64),
+                   const SizedBox(height: 16),
+                   Text("No execution history found", style: TextStyle(color: Colors.white.withOpacity(0.3))),
+                ],
+              ),
+            );
+          }
           
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: items.length,
+            itemCount: results.length,
             itemBuilder: (context, index) {
-              final result = items[index];
+              final result = results[index];
               return _buildExecutionCard(result);
             },
           );
@@ -89,12 +118,13 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
     ];
   }
 
-  void _showShareWithPhoneDialog(BuildContext outerContext, BacktestModel strategy, Function(String) onShared) {
+  void _showShareWithPhoneDialog(BuildContext outerContext, BacktestModel strategy, Function(Map<String, dynamic>) onShared) {
     final phoneController = TextEditingController();
     bool isSearching = false;
     bool isFound = false;
     String searchedPhone = "";
     String searchedUserName = "";
+    Map<String, dynamic>? foundUser;
 
     showDialog(
       context: outerContext,
@@ -134,6 +164,7 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
                     ],
                   ),
                 ),
+                // Tabs
                 Row(
                   children: [
                     Expanded(
@@ -143,7 +174,6 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
                           border: Border(
                             top: BorderSide(color: AppColors.cyan, width: 2),
                             right: BorderSide(color: Colors.white.withOpacity(0.05)),
-                            bottom: const BorderSide(color: Colors.transparent),
                           ),
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
@@ -151,12 +181,12 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
                             colors: [AppColors.cyan.withOpacity(0.1), Colors.transparent],
                           ),
                         ),
-                        child: Row(
+                        child: const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.person_add_outlined, color: AppColors.cyan, size: 16),
-                            const SizedBox(width: 8),
-                            const Text("Add User", style: TextStyle(color: AppColors.cyan, fontSize: 13, fontWeight: FontWeight.bold)),
+                            Icon(Icons.person_add_outlined, color: AppColors.cyan, size: 16),
+                            SizedBox(width: 8),
+                            Text("Add User", style: TextStyle(color: AppColors.cyan, fontSize: 13, fontWeight: FontWeight.bold)),
                           ],
                         ),
                       ),
@@ -172,9 +202,9 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.list, color: Colors.white.withOpacity(0.4), size: 16),
+                            Icon(Icons.list_alt_outlined, color: Colors.white.withOpacity(0.4), size: 16),
                             const SizedBox(width: 8),
-                            Text("Access List (0)", style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13)),
+                            Text("Access List", style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13)),
                           ],
                         ),
                       ),
@@ -186,20 +216,20 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("Mobile Number", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500)),
-                      const SizedBox(height: 8),
+                      const Text("Find user by phone number", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 12),
                       Row(
                         children: [
                           Container(
                             height: 48,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.05),
                               borderRadius: const BorderRadius.only(topLeft: Radius.circular(8), bottomLeft: Radius.circular(8)),
                               border: Border.all(color: Colors.white.withOpacity(0.1)),
                             ),
-                            child: const Text("+91", style: TextStyle(color: Colors.white, fontSize: 14)),
+                            child: const Center(child: Text("+91", style: TextStyle(color: Colors.white, fontSize: 14))),
                           ),
                           Expanded(
                             child: Container(
@@ -237,6 +267,7 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
                                 setDialogState(() {
                                   isSearching = false;
                                   isFound = userMap != null;
+                                  foundUser = userMap;
                                   searchedPhone = phoneController.text;
                                   if (userMap != null) {
                                     searchedUserName = userMap['name']?.toString() ?? userMap['username']?.toString() ?? userMap['first_name']?.toString() ?? "CryptoArth User";
@@ -303,7 +334,9 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
                               ),
                               ElevatedButton(
                                 onPressed: () {
-                                  onShared(searchedPhone);
+                                  if (foundUser != null) {
+                                    onShared(foundUser!);
+                                  }
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.green,
@@ -429,9 +462,9 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
                         (val) {
                           setDialogState(() => accessType = val!);
                           if (val == "Shared") {
-                            _showShareWithPhoneDialog(context, strategy, (phone) {
+                            _showShareWithPhoneDialog(context, strategy, (userMap) {
                               setDialogState(() {
-                                sharedWith.add(phone);
+                                sharedWith.add(userMap['phone']?.toString() ?? userMap['username']?.toString() ?? "User");
                               });
                             });
                           }
@@ -448,16 +481,28 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text("Shared with:", style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10)),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 8),
                           Wrap(
                             spacing: 8,
-                            children: sharedWith.map((phone) => Chip(
-                              label: Text(phone, style: const TextStyle(fontSize: 10, color: Colors.white)),
-                              backgroundColor: Colors.white.withOpacity(0.1),
-                              deleteIcon: const Icon(Icons.close, size: 10, color: Colors.white54),
-                              onDeleted: () => setDialogState(() => sharedWith.remove(phone)),
-                              padding: EdgeInsets.zero,
-                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            runSpacing: 8,
+                            children: sharedWith.map((phone) => Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(phone, style: const TextStyle(color: Colors.white, fontSize: 10)),
+                                  const SizedBox(width: 4),
+                                  InkWell(
+                                    onTap: () => setDialogState(() => sharedWith.remove(phone)),
+                                    child: Icon(Icons.close, color: Colors.white.withOpacity(0.5), size: 12),
+                                  ),
+                                ],
+                              ),
                             )).toList(),
                           ),
                         ],
@@ -468,7 +513,7 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
                   
                   Row(
                     children: [
-                      Expanded(child: _buildDialogDropdown("Trading Type", tradingType, ["Automatic", "Manual"], (val) => setDialogState(() => tradingType = val!))),
+                      Expanded(child: _buildDialogDropdown("Trading Type", tradingType, ["Automatic", "Manual", "Semi-Auto"], (val) => setDialogState(() => tradingType = val!))),
                       const SizedBox(width: 12),
                       Expanded(child: _buildDialogTextField("Leverage", leverageController)),
                     ],
@@ -477,24 +522,15 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
                   
                   Row(
                     children: [
-                      Expanded(child: _buildDialogTextField("Capital %", capitalPercentController)),
+                      Expanded(child: _buildDialogTextField("Capital % per Trade", capitalPercentController)),
                       const SizedBox(width: 12),
-                      Expanded(child: _buildDialogDropdown("Commission Type", commissionType, ["Maker", "Taker"], (val) => setDialogState(() => commissionType = val!))),
+                      Expanded(child: _buildDialogDropdown("Commission Type", commissionType, ["Maker", "Taker", "Fixed"], (val) => setDialogState(() => commissionType = val!))),
                     ],
                   ),
                   const SizedBox(height: 16),
                   
-                  Row(
-                    children: [
-                      Expanded(child: _buildDialogTextField("Commission %", commissionPercentController)),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildDialogDropdown("Deploy Status", deployStatus, ["Not Deployed", "Deployed"], (val) => setDialogState(() => deployStatus = val!))),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  _buildDialogDropdown("Trade Mode", tradeMode, ["Paper", "Live"], (val) => setDialogState(() => tradeMode = val!)),
-                  const SizedBox(height: 32),
+                  _buildDialogTextField("Commission Value", commissionPercentController),
+                  const SizedBox(height: 24),
                   
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -513,20 +549,23 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
                           onPressed: () async {
                             try {
                               String mode = accessType.split(" ").first; // "Limited", "Public", "Shared"
-                              await ref.read(backtestProvider.notifier).updateStrategyAccess(
+                              
+                              // Use editStrategy for full updates
+                              await ref.read(backtestProvider.notifier).editStrategy(
                                 strategy.strategyCode,
-                                mode,
-                                sharedWith,
+                                {
+                                  "strategy_name": nameController.text,
+                                  "description": descController.text,
+                                  "access_type": mode,
+                                  "capital": capitalController.text,
+                                  "leverage": leverageController.text,
+                                  "capital_percent": capitalPercentController.text,
+                                }
                               );
                               
                               if (context.mounted) {
                                 Navigator.pop(context);
                                 String msg = "Strategy updated successfully!";
-                                if (accessType == "Shared" && sharedWith.isNotEmpty) {
-                                  msg = "Strategy updated and shared with ${sharedWith.length} users!";
-                                } else if (accessType == "Public") {
-                                  msg = "Strategy is now Public!";
-                                }
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text(msg), backgroundColor: AppColors.green),
                                 );
@@ -623,83 +662,45 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
   }
 
   Widget _buildExecutionCard(BacktestModel result) {
-    // Determine status color
-    final Color statusColor = result.status.toLowerCase() == 'success' ? AppColors.green : Colors.redAccent;
-    final bool isProfit = result.pnl >= 0;
-
+    bool isMobile = MediaQuery.of(context).size.width < 600;
+    bool isProfit = result.pnl >= 0;
+    final String timeStr = TimeUtils.formatRelativeTime(result.createdAt);
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       child: GlassContainer(
-        borderRadius: 20,
-        color: const Color(0xFF0F172A), // Deeper navy for premium feel
-        opacity: 0.8,
         padding: const EdgeInsets.all(20),
+        borderRadius: 24,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Text(
-                            "BTCUSD Strategy", // Fallback name
-                            style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(width: 8),
-                          InkWell(
-                            onTap: () => _showEditStrategyDialog(result),
-                            child: const Icon(Icons.edit_outlined, color: Colors.white38, size: 12)
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "${result.strategyCode}  •  BTCUSD  •  15MIN",
-                        style: const TextStyle(color: AppColors.purple, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5),
-                      ),
-                    ],
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      result.strategyCode,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Text(
+                          "COMPLETED",
+                          style: TextStyle(color: AppColors.green, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "• $timeStr",
+                          style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
                 ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Activating Strategy...")),
-                    );
-                    ref.read(strategyProvider.notifier).deployStrategy(result.strategyCode, 1).then((_) {
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Strategy Activated successfully!"), backgroundColor: AppColors.green),
-                      );
-                    }).catchError((e) {
-                      if (!mounted) return;
-                      final errorMsg = e.toString().replaceFirst('Exception: ', '').replaceFirst('Failed to deploy strategy: ', '');
-                      
-                      if (errorMsg.contains('already') && errorMsg.contains('active deployment')) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(errorMsg),
-                            backgroundColor: Colors.orange,
-                            action: SnackBarAction(
-                              label: 'MANAGE',
-                              textColor: Colors.white,
-                              onPressed: () {
-                                Navigator.push(context, MaterialPageRoute(builder: (context) => const MarketplaceScreen()));
-                              },
-                            ),
-                          ),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Activation failed: $errorMsg"), backgroundColor: Colors.redAccent),
-                        );
-                      }
-                    });
-                  },
+                  onPressed: () => _showDeployDialog(result),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.green.withOpacity(0.1),
                     foregroundColor: AppColors.green,
@@ -728,7 +729,7 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildStatItem("82", "TRADES"),
+                _buildStatItem(result.totalTrades.toString(), "TRADES"),
                 _buildStatItem("${result.winRate.toStringAsFixed(1)}%", "WIN RATE", color: AppColors.green),
                 _buildStatItem("${isProfit ? '+' : ''}${result.pnl.toStringAsFixed(2)}%", "RETURN", color: isProfit ? AppColors.green : Colors.redAccent),
                 _buildStatItem("${result.drawdown.toStringAsFixed(1)}%", "MAX DD", color: Colors.orangeAccent),
@@ -741,39 +742,136 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
             
             // Action Grid
             GridView.count(
-              crossAxisCount: 5,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 16,
+              crossAxisCount: isMobile ? 4 : 5,
+              mainAxisSpacing: 8,
               crossAxisSpacing: 8,
-              childAspectRatio: 1.1,
+              childAspectRatio: 1.0, // Forced equal dimensions
               children: [
-                _buildActionItem(Icons.science_outlined, "Backtest", const Color(0xFFFFB800), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BacktestConfigScreen()))),
-                _buildActionItem(Icons.show_chart_outlined, "Chart", AppColors.cyan, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => BacktestResultsScreen(strategyCode: result.strategyCode)))),
+                _buildActionItem(Icons.science_outlined, "Backtest", const Color(0xFFFFB800), onTap: () => _showBacktestOptions(result)),
+                _buildActionItem(Icons.show_chart_outlined, "Chart", AppColors.cyan, onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => TechnicalChartScreen(
+                      strategyCode: result.strategyCode,
+                      strategyName: result.strategyCode, // Falling back to code if name not in BacktestModel
+                      backtestId: result.id,
+                    ),
+                  );
+                }),
                 _buildActionItem(Icons.edit_outlined, "Edit", const Color(0xFFFFB800), onTap: () => _showEditStrategyDialog(result)),
-                _buildActionItem(Icons.code, "Pine", const Color(0xFF10B981), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CodeGeneratorScreen()))),
-                _buildActionItem(Icons.insert_chart_outlined, "Report", const Color(0xFF8B5CF6), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => BacktestResultsScreen(strategyCode: result.strategyCode)))),
+                _buildActionItem(Icons.code, "Pine", const Color(0xFF10B981), onTap: () async {
+                   try {
+                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Fetching Pine script...")));
+                     final code = await ref.read(backtestProvider.notifier).fetchPineCode(result.strategyCode);
+                     if (mounted) {
+                       await ReportGenerator.downloadTextFile(
+                         code, 
+                         "${result.strategyCode.replaceAll(' ', '_')}.pine"
+                       );
+                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Pine script ready to save!"), backgroundColor: AppColors.green));
+                     }
+                   } catch (e) {
+                     if (mounted) {
+                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to fetch Pine code: $e"), backgroundColor: Colors.redAccent));
+                     }
+                   }
+                }),
+                _buildActionItem(Icons.insert_chart_outlined, "Report", const Color(0xFF8B5CF6), onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => StrategyDetailedReport(
+                      strategyCode: result.strategyCode,
+                      backtestId: result.id,
+                    ),
+                  );
+                }),
                 _buildActionItem(Icons.share_outlined, "Share", AppColors.cyan, onTap: () {
-                  _showShareWithPhoneDialog(context, result, (phone) async {
+                  _showShareWithPhoneDialog(context, result, (userMap) async {
                     try {
-                      await ref.read(backtestProvider.notifier).updateStrategyAccess(result.strategyCode, "Shared", [phone]);
+                      final userId = userMap['id'] ?? userMap['user_id'];
+                      if (userId == null) throw "User ID not found";
+                      
+                      await ref.read(backtestProvider.notifier).shareStrategy(result.strategyCode, userId is int ? userId : int.parse(userId.toString()));
+                      
                       if (mounted) {
                         Navigator.pop(context); // Close the dialog
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Strategy Shared Successfully!"), backgroundColor: AppColors.green));
                       }
                     } catch (e) {
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to share strategy."), backgroundColor: Colors.redAccent));
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to share strategy: $e"), backgroundColor: Colors.redAccent));
                       }
                     }
                   });
                 }),
-                _buildActionItem(Icons.auto_awesome_outlined, "Improve", const Color(0xFF8B5CF6), onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("AI Improvement started...")))),
-                _buildActionItem(Icons.psychology_outlined, "Deep Think", const Color(0xFF8B5CF6), onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Deep Think analyzing...")))),
-                _buildActionItem(Icons.picture_as_pdf_outlined, "PDF", const Color(0xFFEF4444), onTap: () => ReportGenerator.downloadBacktestReport(result.strategyCode, result.winRate.toDouble(), result.pnl.toDouble(), result.drawdown.toDouble())),
-                _buildActionItem(Icons.delete_outline, "Delete", const Color(0xFFEF4444), onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Deleting strategy...")));
-                  // Add delete logic here
+                _buildActionItem(Icons.auto_awesome_outlined, "Improve", const Color(0xFF8B5CF6), onTap: () async {
+                  try {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Starting AI Improvement...")));
+                    await ref.read(backtestProvider.notifier).improveStrategy(result.strategyCode);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Improvement task submitted!"), backgroundColor: AppColors.green));
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to start improvement: $e"), backgroundColor: Colors.redAccent));
+                    }
+                  }
+                }),
+                _buildActionItem(Icons.psychology_outlined, "Deep Think", const Color(0xFF8B5CF6), onTap: () async {
+                  try {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Starting Deep Think Optimization...")));
+                    await ref.read(backtestProvider.notifier).deepThinkOptimizeV2(result.strategyCode);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Deep Think task submitted!"), backgroundColor: AppColors.green));
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to start Deep Think: $e"), backgroundColor: Colors.redAccent));
+                    }
+                  }
+                }),
+                _buildActionItem(Icons.picture_as_pdf_outlined, "PDF", const Color(0xFFEF4444), onTap: () async {
+                  if (result.id != null) {
+                    try {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Fetching PDF report from server...")));
+                      final url = await ref.read(backtestProvider.notifier).fetchBacktestReportPdfUrl(result.id!);
+                      await ReportGenerator.downloadPdfFromUrl(url, "backtest_report_${result.strategyCode}.pdf");
+                    } catch (e) {
+                      // Fallback to local generation if backend fails
+                      ReportGenerator.downloadBacktestReport(result.strategyCode, result.winRate.toDouble(), result.pnl.toDouble(), result.drawdown.toDouble());
+                    }
+                  } else {
+                    ReportGenerator.downloadBacktestReport(result.strategyCode, result.winRate.toDouble(), result.pnl.toDouble(), result.drawdown.toDouble());
+                  }
+                }),
+                _buildActionItem(Icons.delete_outline, "Delete", const Color(0xFFEF4444), onTap: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: const Color(0xFF0F172A),
+                      title: const Text("Delete Strategy", style: TextStyle(color: Colors.white)),
+                      content: const Text("Are you sure you want to delete this strategy from history?", style: TextStyle(color: Colors.white70)),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+                        TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Delete", style: TextStyle(color: Colors.redAccent))),
+                      ],
+                    ),
+                  );
+                  
+                  if (confirmed == true) {
+                    try {
+                      await ref.read(backtestProvider.notifier).deleteStrategy(result.strategyCode);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Strategy deleted successfully!"), backgroundColor: AppColors.green));
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to delete strategy: $e"), backgroundColor: Colors.redAccent));
+                      }
+                    }
+                  }
                 }),
               ],
             ),
@@ -784,6 +882,7 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
   }
 
   Widget _buildStatItem(String value, String label, {Color? color}) {
+    bool isMobile = MediaQuery.of(context).size.width < 600;
     return Expanded(
       child: Column(
         children: [
@@ -791,7 +890,7 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
             value,
             style: TextStyle(
               color: color ?? Colors.white,
-              fontSize: 15,
+              fontSize: isMobile ? 13 : 15,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.5,
             ),
@@ -801,7 +900,7 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
             label,
             style: TextStyle(
               color: Colors.white.withOpacity(0.4),
-              fontSize: 8,
+              fontSize: 7,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
             ),
@@ -814,21 +913,163 @@ class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen>
   Widget _buildActionItem(IconData icon, String label, Color color, {VoidCallback? onTap}) {
     return InkWell(
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
-              fontSize: 8,
-              fontWeight: FontWeight.w500,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.1)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<FlSpot> _getSpotsFromData(dynamic data) {
+    if (data == null || data is! List) {
+      // Return a flat line as fallback if no data
+      return [const FlSpot(0, 0), const FlSpot(10, 0)];
+    }
+    
+    final List<FlSpot> spots = [];
+    for (int i = 0; i < data.length; i++) {
+       final item = data[i];
+       if (item is Map) {
+         final x = num.tryParse(item['x']?.toString() ?? item['trade_no']?.toString() ?? i.toString())?.toDouble() ?? i.toDouble();
+         final y = num.tryParse(item['y']?.toString() ?? item['balance']?.toString() ?? item['value']?.toString() ?? '0')?.toDouble() ?? 0.0;
+         spots.add(FlSpot(x, y));
+       } else if (item is num) {
+         spots.add(FlSpot(i.toDouble(), item.toDouble()));
+       }
+    }
+    return spots.isEmpty ? [const FlSpot(0, 0), const FlSpot(1, 0)] : spots;
+  }
+
+  void _showDeployDialog(BacktestModel result) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        title: const Text("Deploy Strategy", style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Choose trading mode:", style: TextStyle(color: Colors.white70)),
+            const SizedBox(height: 16),
+            _buildDialogButton(
+              "Paper Trading", 
+              Icons.science_outlined, 
+              AppColors.cyan,
+              () async {
+                Navigator.pop(context);
+                try {
+                  await ref.read(backtestProvider.notifier).setBacktestTradeMode(result.strategyCode, "Paper");
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Strategy deployed for Paper Trading!"), backgroundColor: AppColors.green));
+                } catch (e) {
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Deployment failed: $e"), backgroundColor: Colors.redAccent));
+                }
+              }
+            ),
+            const SizedBox(height: 12),
+            _buildDialogButton(
+              "Live Trading", 
+              Icons.bolt, 
+              AppColors.green,
+              () async {
+                Navigator.pop(context);
+                try {
+                  await ref.read(backtestProvider.notifier).setBacktestTradeMode(result.strategyCode, "Live");
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Strategy deployed for Live Trading!"), backgroundColor: AppColors.green));
+                } catch (e) {
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Deployment failed: $e"), backgroundColor: Colors.redAccent));
+                }
+              }
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showBacktestOptions(BacktestModel result) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        title: const Text("Backtest Options", style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildDialogButton(
+              "Rerun with Current Config", 
+              Icons.refresh, 
+              const Color(0xFFFFB800),
+              () async {
+                Navigator.pop(context);
+                try {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Rerunning backtest...")));
+                  await ref.read(backtestProvider.notifier).rerunBacktest(result.strategyCode);
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Backtest completed!"), backgroundColor: AppColors.green));
+                } catch (e) {
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Backtest failed: $e"), backgroundColor: Colors.redAccent));
+                }
+              }
+            ),
+            const SizedBox(height: 12),
+            _buildDialogButton(
+              "Custom Configuration", 
+              Icons.settings_suggest_outlined, 
+              AppColors.purple,
+              () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => BacktestConfigScreen(
+                  strategyCode: result.strategyCode,
+                  strategyName: result.strategyCode, // Use code as name if specific name not in BacktestModel
+                )));
+              }
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDialogButton(String label, IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 12),
+            Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ],
+        ),
       ),
     );
   }

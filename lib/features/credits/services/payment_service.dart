@@ -9,13 +9,31 @@ class PaymentService {
 
   Future<PaymentBalanceModel> fetchPaymentBalance() async {
     try {
-      final Response response = await _apiClient.get(ApiEndpoints.paymentLedger);
+      final Response response = await _apiClient.get(ApiEndpoints.paymentBalance);
       if (response.statusCode == 200 && response.data != null) {
         final Map<String, dynamic> data = ApiClient.extractMap(response.data);
-        return PaymentBalanceModel.fromJson(data);
+        var model = PaymentBalanceModel.fromJson(data);
+        
+        // Secondary check: if balance is 0, it might be because the balance endpoint 
+        // has a different structure than the ledger one. We check ledger data as fallback.
+        if (model.balance == 0) {
+           print("⚠️ Balance is 0 from balance endpoint, checking ledger for available_balance...");
+           final Response ledgerResponse = await _apiClient.get(ApiEndpoints.paymentLedger);
+           if (ledgerResponse.statusCode == 200 && ledgerResponse.data != null) {
+             final Map<String, dynamic> ledgerData = ApiClient.extractMap(ledgerResponse.data);
+             final fallbackModel = PaymentBalanceModel.fromJson(ledgerData);
+             if (fallbackModel.balance > 0) {
+               print("✅ Found non-zero balance in ledger: ${fallbackModel.balance}");
+               model = fallbackModel;
+             }
+           }
+        }
+        
+        return model;
       }
       throw Exception('Invalid backend response');
     } catch (e) {
+      print("🚨 BALANCE FETCH ERROR: $e");
       throw Exception('Failed to fetch payment balance: $e');
     }
   }
@@ -81,5 +99,9 @@ class PaymentService {
     } catch (e) {
       throw Exception('Failed to verify payment: $e');
     }
+  }
+
+  Future<String> getInvoiceUrl(String invoiceId) async {
+    return "${ApiEndpoints.baseUrl}${ApiEndpoints.invoiceDownload}$invoiceId/";
   }
 }

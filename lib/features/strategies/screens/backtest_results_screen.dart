@@ -16,17 +16,23 @@ import 'package:cryptoarth/features/marketplace/screens/marketplace_screen.dart'
 
 class BacktestResultsScreen extends ConsumerStatefulWidget {
   final String strategyCode;
+  final String? backtestId;
   final String? strategyName;
   final String? symbol;
   final String? timeframe;
+  final String? leverage;
+  final String? capital;
   final Map<String, dynamic>? initialData;
 
   const BacktestResultsScreen({
     super.key, 
     required this.strategyCode,
+    this.backtestId,
     this.strategyName,
     this.symbol,
     this.timeframe,
+    this.leverage,
+    this.capital,
     this.initialData,
   });
 
@@ -36,7 +42,9 @@ class BacktestResultsScreen extends ConsumerStatefulWidget {
 
 class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
   BacktestModel? _backtestData;
+  Map<String, dynamic>? _resultData;
   List<FlSpot> _chartSpots = [];
+  List<FlSpot> _equitySpots = [];
   bool _isLoading = true;
   String _error = '';
 
@@ -54,14 +62,25 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
         
         setState(() {
           _backtestData = BacktestModel.fromJson(data);
+          _resultData = data;
           _chartSpots = points.asMap().entries.map((e) {
             final val = num.tryParse(e.value.toString()) ?? 
                         num.tryParse(e.value['value']?.toString() ?? e.value['pnl']?.toString() ?? '0') ?? 0.0;
             return FlSpot(e.key.toDouble(), val.toDouble());
           }).toList();
           
+          final List<dynamic> equityPoints = data['equity_curve'] ?? [];
+          _equitySpots = equityPoints.asMap().entries.map((e) {
+             final val = num.tryParse(e.value['y']?.toString() ?? e.value['balance']?.toString() ?? '0') ?? 0.0;
+             final x = num.tryParse(e.value['x']?.toString() ?? e.value['trade_no']?.toString() ?? e.key.toString())?.toDouble() ?? e.key.toDouble();
+             return FlSpot(x, val.toDouble());
+          }).toList();
+
           if (_chartSpots.isEmpty) {
             _chartSpots = [const FlSpot(0, 0), const FlSpot(1, 10), const FlSpot(2, 5)];
+          }
+          if (_equitySpots.isEmpty) {
+            _equitySpots = [const FlSpot(0, 0), const FlSpot(5, 2000), const FlSpot(10, -1000)];
           }
           _isLoading = false;
         });
@@ -70,11 +89,12 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
 
       final notifier = ref.read(backtestProvider.notifier);
       
-      // Attempt to fetch result first (assuming strategyCode might be a backtestId)
-      Map<String, dynamic> result;
-      try {
-        result = await notifier.fetchBacktestResult(widget.strategyCode);
-      } catch (_) {
+      // Attempt to fetch result first
+    Map<String, dynamic> result;
+    try {
+      final String idToUse = widget.backtestId ?? widget.strategyCode;
+      result = await notifier.fetchBacktestResult(idToUse);
+    } catch (_) {
         // Fallback to detail if result fails (might be a code, not an ID)
         final detail = await notifier.fetchBacktestDetail(widget.strategyCode);
         result = detail.toJson();
@@ -87,14 +107,25 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
       if (mounted) {
         setState(() {
           _backtestData = BacktestModel.fromJson(result);
+          _resultData = result;
           _chartSpots = points.asMap().entries.map((e) {
             final val = num.tryParse(e.value['value']?.toString() ?? e.value['pnl']?.toString() ?? '0') ?? 0.0;
             return FlSpot(e.key.toDouble(), val.toDouble());
           }).toList();
           
+          final List<dynamic> equityPoints = result['equity_curve'] ?? [];
+          _equitySpots = equityPoints.asMap().entries.map((e) {
+             final val = num.tryParse(e.value['y']?.toString() ?? e.value['balance']?.toString() ?? '0') ?? 0.0;
+             final x = num.tryParse(e.value['x']?.toString() ?? e.value['trade_no']?.toString() ?? e.key.toString())?.toDouble() ?? e.key.toDouble();
+             return FlSpot(x, val.toDouble());
+          }).toList();
+
           if (_chartSpots.isEmpty) {
             // Default spots if empty
             _chartSpots = [const FlSpot(0, 0), const FlSpot(1, 10), const FlSpot(2, 5)];
+          }
+          if (_equitySpots.isEmpty) {
+            _equitySpots = [const FlSpot(0, 0), const FlSpot(5, 2000), const FlSpot(10, -1000)];
           }
           
           _isLoading = false;
@@ -347,19 +378,34 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
   }
 
   Widget _buildMetricsGrid(BacktestModel backtest) {
+    // Attempt to pull richer data from _resultData if available
+    final String sharpe = _resultData?['trade_statistics']?['sharpe_ratio']?.toStringAsFixed(2) ?? 
+                          _resultData?['sharpe_ratio']?.toStringAsFixed(2) ?? "N/A";
+    final String profitFactor = _resultData?['trade_statistics']?['profit_factor']?.toStringAsFixed(2) ??
+                                _resultData?['profit_factor']?.toStringAsFixed(2) ?? "N/A";
+    final String totalTrades = _resultData?['trade_statistics']?['total_trades']?.toString() ??
+                               _resultData?['total_trades']?.toString() ?? "N/A";
+    final String avgWin = _resultData?['trade_statistics']?['avg_win']?.toStringAsFixed(2) ?? 
+                          _resultData?['avg_win']?.toStringAsFixed(2) ?? "N/A";
+    final String avgLoss = _resultData?['trade_statistics']?['avg_loss']?.toStringAsFixed(2) ?? 
+                           _resultData?['avg_loss']?.toStringAsFixed(2) ?? "N/A";
+    final String totalFees = _resultData?['trade_statistics']?['total_commission']?.toStringAsFixed(2) ?? 
+                             _resultData?['total_commission']?.toStringAsFixed(2) ?? "N/A";
+    final double grossPnl = num.tryParse(_resultData?['trade_statistics']?['gross_pnl']?.toString() ?? '')?.toDouble() ?? backtest.pnl.toDouble();
+
     return Column(
       children: [
         Row(
           children: [
             Expanded(child: _buildMetricCard("NET P&L (AFTER FEES)", "\$${backtest.pnl.toStringAsFixed(2)}", backtest.pnl >= 0 ? AppColors.green : Colors.redAccent, "Final profit/loss")),
             const SizedBox(width: 8),
-            Expanded(child: _buildMetricCard("GROSS P&L", "\$${backtest.pnl.toStringAsFixed(2)}", AppColors.purple, "(BEFORE FEES)")),
+            Expanded(child: _buildMetricCard("GROSS P&L", "\$${grossPnl.toStringAsFixed(2)}", AppColors.purple, "(BEFORE FEES)")),
           ],
         ),
         const SizedBox(height: 8),
         Row(
           children: [
-            Expanded(child: _buildMetricCard("TOTAL FEES PAID", "N/A", AppColors.orange, "")),
+            Expanded(child: _buildMetricCard("TOTAL FEES PAID", "\$${totalFees}", AppColors.orange, "")),
             const SizedBox(width: 8),
             Expanded(child: _buildMetricCard("WIN RATE %", "${backtest.winRate.toStringAsFixed(2)}%", AppColors.purple, "")),
           ],
@@ -367,21 +413,21 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
          const SizedBox(height: 8),
         Row(
           children: [
-            Expanded(child: _buildSmallMetric("Total Trades", "N/A")),
+            Expanded(child: _buildSmallMetric("Total Trades", totalTrades)),
             const SizedBox(width: 8),
             Expanded(child: _buildSmallMetric("Max Drawdown", "${backtest.drawdown.toStringAsFixed(2)}%", valueColor: Colors.redAccent)),
              const SizedBox(width: 8),
-            Expanded(child: _buildSmallMetric("Sharpe Ratio", "N/A", valueColor: AppColors.cyan)),
+            Expanded(child: _buildSmallMetric("Sharpe Ratio", sharpe, valueColor: AppColors.cyan)),
           ],
         ),
         const SizedBox(height: 8),
          Row(
           children: [
-             Expanded(child: _buildSmallMetric("Profit Factor", "0.13", valueColor: AppColors.gold)),
+             Expanded(child: _buildSmallMetric("Profit Factor", profitFactor, valueColor: AppColors.gold)),
             const SizedBox(width: 8),
-            Expanded(child: _buildSmallMetric("Avg Win \$", "\$1,490,682", valueColor: AppColors.green)),
+            Expanded(child: _buildSmallMetric("Avg Win \$", "\$${avgWin}", valueColor: AppColors.green)),
              const SizedBox(width: 8),
-            Expanded(child: _buildSmallMetric("Avg Loss \$", "\$11,511,917", valueColor: Colors.redAccent)),
+            Expanded(child: _buildSmallMetric("Avg Loss \$", "\$${avgLoss}", valueColor: Colors.redAccent)),
           ],
         ),
       ],
@@ -425,6 +471,11 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
   }
 
   Widget _buildFeesCard() {
+    final String totalFees = _resultData?['trade_statistics']?['total_commission']?.toStringAsFixed(2) ?? 
+                             _resultData?['total_commission']?.toStringAsFixed(2) ?? "0.00";
+    final String tradesCount = _resultData?['trade_statistics']?['total_trades']?.toString() ??
+                               _resultData?['total_trades']?.toString() ?? "0";
+
     return GlassContainer(
       width: double.infinity,
       color: AppColors.cardSurface,
@@ -438,8 +489,8 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
             children: [
                Text("Total Commission", style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
                const SizedBox(height: 4),
-               const Text("-\$846,235.00", style: TextStyle(color: AppColors.cyan, fontWeight: FontWeight.bold, fontSize: 16)),
-               const Text("(2 trades)", style: TextStyle(color: Colors.white30, fontSize: 10)),
+               Text("-\$${totalFees}", style: const TextStyle(color: AppColors.cyan, fontWeight: FontWeight.bold, fontSize: 16)),
+               Text("($tradesCount trades)", style: const TextStyle(color: Colors.white30, fontSize: 10)),
             ],
           ),
           Container(
@@ -454,7 +505,7 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
               children: [
                  Text("TOTAL FEES", style: TextStyle(color: AppColors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
                  const SizedBox(height: 4),
-                 const Text("-\$846,235.00", style: TextStyle(color: AppColors.orange, fontWeight: FontWeight.bold, fontSize: 14)),
+                 Text("-\$${totalFees}", style: const TextStyle(color: AppColors.orange, fontWeight: FontWeight.bold, fontSize: 14)),
               ],
             ),
           )
@@ -468,10 +519,10 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-           _buildConfigChip("Symbol", "BTCUSD"),
-           _buildConfigChip("Timeframe", "15MIN"),
-           _buildConfigChip("Leverage", "10x"),
-           _buildConfigChip("Capital %", "25%"),
+           _buildConfigChip("Symbol", widget.symbol ?? "BTCUSD"),
+           _buildConfigChip("Timeframe", widget.timeframe ?? "15MIN"),
+           _buildConfigChip("Leverage", widget.leverage ?? "10x"),
+           _buildConfigChip("Capital", widget.capital != null ? "${widget.capital}" : "10k"),
            _buildConfigChip("Commission", "0.02%"),
         ],
       ),
@@ -499,6 +550,9 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
   }
 
   Widget _buildEquityCurve() {
+     final isProfit = (_equitySpots.isNotEmpty && _equitySpots.last.y >= (_equitySpots.first.y)) || (_backtestData?.pnl ?? 0) >= 0;
+     final mainColor = isProfit ? AppColors.green : Colors.redAccent;
+
      return GlassContainer(
       height: 180,
       width: double.infinity,
@@ -508,24 +562,24 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
       child: LineChart(
         LineChartData(
           gridData: const FlGridData(show: false),
-          titlesData: const FlTitlesData(
-            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40, interval: 5000000)),
-            bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-             topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          titlesData: FlTitlesData(
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true, 
+                reservedSize: 40, 
+                getTitlesWidget: (v, m) => Text('\$${(v/1000).toStringAsFixed(0)}k', style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 8)),
+              )
+            ),
+            bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+             topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
           borderData: FlBorderData(show: false),
           lineBarsData: [
             LineChartBarData(
-              spots: [
-                const FlSpot(0, 0),
-                const FlSpot(5, -2000000),
-                const FlSpot(10, -5000000),
-                const FlSpot(15, -8000000),
-                const FlSpot(20, -10000000),
-              ],
-              isCurved: false,
-              color: Colors.redAccent,
+              spots: _equitySpots,
+              isCurved: true,
+              color: mainColor,
               barWidth: 2,
               dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(
@@ -573,21 +627,26 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
   }
 
   Widget _buildTimeAnalysis() {
+    final bestHour = _resultData?['time_analysis']?['best_hour'] ?? "N/A";
+    final worstHour = _resultData?['time_analysis']?['worst_hour'] ?? "N/A";
+    final bestDay = _resultData?['time_analysis']?['best_day'] ?? "N/A";
+    final worstDay = _resultData?['time_analysis']?['worst_day'] ?? "N/A";
+
     return Column(
       children: [
         Row(
           children: [
-             Expanded(child: _buildTimeCard("Best Hour", "9:00 - 10:00", "\$1.4M", AppColors.green)),
+             Expanded(child: _buildTimeCard("Best Hour", bestHour, "", AppColors.green)),
              const SizedBox(width: 8),
-             Expanded(child: _buildTimeCard("Worst Hour", "14:00 - 15:00", "-\$11.5M", Colors.redAccent)),
+             Expanded(child: _buildTimeCard("Worst Hour", worstHour, "", Colors.redAccent)),
           ],
         ),
          const SizedBox(height: 8),
          Row(
           children: [
-             Expanded(child: _buildTimeCard("Best Day", "Thursday", "-\$10M", AppColors.green)), // Logic from screenshot showing loss but green? sticking to screenshot
+             Expanded(child: _buildTimeCard("Best Day", bestDay, "", AppColors.green)),
              const SizedBox(width: 8),
-             Expanded(child: _buildTimeCard("Worst Day", "Thursday", "-\$10M", Colors.redAccent)),
+             Expanded(child: _buildTimeCard("Worst Day", worstDay, "", Colors.redAccent)),
           ],
         ),
       ],

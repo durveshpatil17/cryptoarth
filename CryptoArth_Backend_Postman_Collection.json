@@ -1,12 +1,14 @@
 {
   "info": {
     "name": "CryptoArth Backend API",
-    "description": "Crypto_Arth_Backend – Auth, Profile, Portfolio, Orders, PnL, Strategies, Backtest, Marketplace, Broker, Dashboard. Use {{base_url}} and {{access_token}}.",
+    "description": "CryptoArth Backend - Complete API for Panel and Mobile. All endpoints: Auth, Profile, Portfolio, Orders, PnL, Strategies, Execution History buttons, Backtest, Copilot, Broker, Payments, Signals, Tutorials, Admin, System. Variables: {{base_url}} and {{access_token}}.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "base_url", "value": "http://127.0.0.1:8000" },
-    { "key": "access_token", "value": "" }
+    { "key": "access_token", "value": "" },
+    { "key": "backtest_id", "value": "" },
+    { "key": "strategy_code", "value": "STRG-XXX" }
   ],
   "auth": {
     "type": "bearer",
@@ -438,6 +440,116 @@
             "url": "{{base_url}}/auth/get_referal_link/"
           }
         }
+      ]
+    },
+    {
+      "name": "Execution History (Panel Buttons)",
+      "item": [
+        { "name": "Backtest (button)", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/backtest/detail/", "description": "Query: strategy_code" },
+        { "name": "Chart (button)", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/backtest/detail/chart/", "description": "Query: strategy_code" },
+        { "name": "Edit (button)", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"strategy_code\": \"STRG-XXX\",\n  \"strategy_name\": \"New Name\"\n}" }, "url": "{{base_url}}/auth/strategy/backtest/edit/" },
+        { "name": "Pine (button)", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/backtest/pine-code/", "description": "Query: strategy_code" },
+        { "name": "Report (button)", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/backtest/detail/report/", "description": "Query: strategy_code" },
+        { "name": "Share give access", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"strategy_code\": \"STRG-XXX\",\n  \"user_id\": 25\n}" }, "url": "{{base_url}}/auth/strategy/backtest/share/" },
+        { "name": "Share remove access", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "DELETE", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"strategy_code\": \"STRG-XXX\",\n  \"user_id\": 25\n}" }, "url": "{{base_url}}/auth/strategy/backtest/share/" },
+        { "name": "Share list users", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/backtest/share/", "description": "Query: strategy_code" },
+        { "name": "Improve (button)", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"strategy_code\": \"STRG-XXX\"\n}" }, "url": "{{base_url}}/auth/strategy/improve/" },
+        { "name": "Improve quote", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"strategy_code\": \"STRG-XXX\"\n}" }, "url": "{{base_url}}/auth/strategy/improve/quote/" },
+        { "name": "Deep Think v1", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"strategy_code\": \"STRG-XXX\"\n}" }, "url": "{{base_url}}/auth/strategy/deep-think-optimize/" },
+        { "name": "Deep Think v2", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"strategy_code\": \"STRG-XXX\"\n}" }, "url": "{{base_url}}/auth/strategy/deep-think-optimize-v2/" },
+        { "name": "Deep Think v2 status", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/deep-think-optimize-v2/status/", "description": "Query: task_id or strategy_code" },
+        { "name": "Deep Think v2 sync", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/deep-think-optimize-v2/sync/" },
+        { "name": "PDF (button)", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/backtest/report/{{backtest_id}}/", "description": "Replace backtest_id with UUID" },
+        { "name": "Delete (button)", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"strategy_code\": \"STRG-XXX\"\n}" }, "url": "{{base_url}}/auth/strategy/delete/" }
+      ]
+    },
+    {
+      "name": "Signals",
+      "item": [
+        { "name": "Process signal", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/signal/" },
+        { "name": "Copy signal", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/copy-signal/" },
+        { "name": "Set signal", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/setSignal/" },
+        { "name": "Delete signal", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/deleteSignal/" },
+        { "name": "Edit active signal", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/editActiveSignal/" },
+        { "name": "Edit pending signal", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/edidPendingSignal/" },
+        { "name": "Close signal", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/closeSignal/" },
+        { "name": "Signal list", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/signal-list/" },
+        { "name": "Copy strategy show", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/copystrategyshow/" }
+      ]
+    },
+    {
+      "name": "Tutorials",
+      "item": [
+        { "name": "Tutorials list", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/tutorials/" },
+        { "name": "Tutorial detail", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/tutorials/1/" },
+        { "name": "Tutorial AI fetch", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/tutorial-ai/" },
+        { "name": "Tutorial AI generate", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/tutorial-ai/generate/" },
+        { "name": "Tutorial AI generate all", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/tutorial-ai/generate-all/" },
+        { "name": "Get tutorial", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/get_tutorial/" }
+      ]
+    },
+    {
+      "name": "Payments (Full)",
+      "item": [
+        { "name": "Create payment order", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "url": "{{base_url}}/auth/payment/create-order/" },
+        { "name": "Verify payment", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "url": "{{base_url}}/auth/payment/verify/" },
+        { "name": "Payment balance", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/payment/balance/" },
+        { "name": "Payment ledger", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/payment/ledger/" },
+        { "name": "Download invoice", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/payment/invoice/INV001/" }
+      ]
+    },
+    {
+      "name": "Backtest (Full)",
+      "item": [
+        { "name": "Backtest result status", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/backtest/result/" },
+        { "name": "Prepare backtest", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/copilot/prepare-backtest/" },
+        { "name": "Run backtest", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/copilot/backtest/" },
+        { "name": "Save strategy", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/copilot/save-strategy/" },
+        { "name": "Backtest deploy", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/backtest/deploy/" },
+        { "name": "Backtest trade mode", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/backtest/trade-mode/" },
+        { "name": "Backtest validate", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/backtest/validate/" },
+        { "name": "Backtest indicators", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/backtest/indicators/" },
+        { "name": "Check open position", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/backtest/check-open-position/", "description": "Query: strategy_code" },
+        { "name": "Rerun backtest", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/rerun-backtest/" },
+        { "name": "Update strategy name", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/update-name/" },
+        { "name": "Sync deployed", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/sync-deployed/" },
+        { "name": "Check deployment sync", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/check-deployment-sync/" },
+        { "name": "Backtest candles", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/backtest/candles/", "description": "Query: symbol, timeframe" },
+        { "name": "Backtest symbols", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/backtest-symbols/" }
+      ]
+    },
+    {
+      "name": "Copilot",
+      "item": [
+        { "name": "Copilot chat", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/copilot/chat/" },
+        { "name": "Copilot stream", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/copilot/stream/" },
+        { "name": "Copilot history", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/copilot/history/" },
+        { "name": "Fetch conversions", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/copilot/fetch-conversions/" }
+      ]
+    },
+    {
+      "name": "Admin (Sample)",
+      "item": [
+        { "name": "Admin strategy list", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/get_admin_strategy_list/" },
+        { "name": "Admin user list", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/get_admin_user_list/" },
+        { "name": "Admin broker list", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"user_id\": 1\n}" }, "url": "{{base_url}}/auth/get_admin_broker_list/" },
+        { "name": "Admin deploy user strategy", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/admin_deploy_user_strategy/" },
+        { "name": "Admin undeploy user strategy", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/admin_undeploy_user_strategy/" }
+      ]
+    },
+    {
+      "name": "System (Staff)",
+      "item": [
+        { "name": "System performance", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/system/performance/" },
+        { "name": "System errors", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/system/errors/" }
+      ]
+    },
+    {
+      "name": "Router (ViewSets)",
+      "item": [
+        { "name": "Highlow strategies list", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/highlow-strategies/", "description": "Staff" },
+        { "name": "Highlow strategies1 list", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/highlow-strategies1/", "description": "Bearer" },
+        { "name": "Latency list", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/latency/", "description": "Staff. Query: strategy_code, strategy_name" }
       ]
     }
   ]

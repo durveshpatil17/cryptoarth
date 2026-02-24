@@ -1,315 +1,535 @@
-﻿# CryptoArth Backend â€“ API Documentation
+﻿# CryptoArth Backend - Complete API Documentation
 
-Complete reference for **Crypto_Arth_Backend** APIs. Use this for Flutter mobile app or any client integration. No backend code was changed.
-
----
-
-## 1. API Base URL & Health
-
-- **Local development:** `http://127.0.0.1:8000`
-- **Staging / Production:** `https://trade-api.cryptoarth.in`
-
-- **Health check (no auth):** `GET /health/` â†’ response body: `"ok"`
+**Base URL:** http://127.0.0.1:8000 (local) or your deployed host.
+**Auth:** JWT Bearer. Header: Authorization: Bearer <access_token>. Access token: 24h. Refresh: 1 day. No server-side logout.
 
 ---
 
-## 2. Authentication Overview
+## 1. Health and Admin
 
-### 2.1 Method
-- **Type:** JWT (Bearer token)
-- **Header:** `Authorization: Bearer <access_token>`
-- **Access token lifetime:** 1440 minutes (24 hours)
-- **Refresh token lifetime:** 1 day
-- **Token rotation:** Refresh tokens are rotated when used (`ROTATE_REFRESH_TOKENS: True`)
-
-### 2.2 Logout
-- There is **no server-side logout endpoint**
-- **Logout = discard** the access token (and optionally refresh token) on the client
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | /health/ | No |
+| (Django) | /admin/ | Admin site |
 
 ---
 
-## 3. Authentication APIs (Points)
+## 2. Authentication
 
-### 3.1 Send OTP
-- **Endpoint:** `POST /auth/send-otp/`
-- **Auth required:** No
-- **Request body (JSON):**
-  - `phone` (string) â€“ 10-digit mobile number, e.g. `"9876543210"`
-- **Success:** 200 â€“ OTP sent
-- **Error:** 4xx with message in body
-
-### 3.2 Verify OTP / Login
-- **Endpoint:** `POST /auth/login/`
-- **Auth required:** No
-- **Request body (JSON):**
-  - `phone` (string)
-  - `otp` (string) â€“ 6-digit OTP
-- **Success (200):** Returns:
-  - `message` â€“ e.g. "Login successful."
-  - `access` â€“ JWT access token (use in Bearer header)
-  - `refresh` â€“ JWT refresh token
-  - `user_id` â€“ numeric user ID
-  - `redirect_url` â€“ optional hint for frontend
-
-### 3.3 Signup (new user)
-- **Endpoint:** `POST /auth/signup/`
-- **Auth required:** No
-- **Request body (JSON):**
-  - `phone` (string)
-  - `otp` (string)
-  - `email` (string)
-  - `first_name` (string)
-  - `last_name` (string)
-  - `refercode` (string, optional)
-- **Note:** User is created only here; `/auth/send-otp/` does not create users.
-- **Success (200):** Same shape as login (`access`, `refresh`, etc.)
-
-### 3.4 Consume OTP
-- **Endpoint:** `POST /auth/consume-otp/`
-- **Auth required:** Yes (Bearer)
-- **Request body:** Empty `{}` or no body
-- **Purpose:** Clear OTP from cache after successful login/signup. Always returns 200.
-
-### 3.5 Session check
-- **Endpoint:** `GET /auth/session/`
-- **Auth required:** Yes (Bearer)
-- **Success (200):** `user.id`, `user.username`, `user.is_mobile_app`, `expires`
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| POST | /auth/send-otp/ | No |
+| POST | /auth/login/ | No |
+| POST | /auth/signup/ | No |
+| POST | /auth/consume-otp/ | Bearer |
+| GET | /auth/session/ | Bearer |
+| GET | /auth/diagnostic/ | Bearer |
+| POST | /auth/diagnostic/ | Bearer (test broker, no save) |
 
 ---
 
-## 4. Profile APIs (Points)
+## 3. Profile and User
 
-### 4.1 Get profile
-- **Endpoint:** `GET /auth/profile/` or `GET /auth/user/`
-- **Auth required:** Yes (Bearer)
-- **Success (200):** User object (id, email, phone, first_name, last_name, is_login, broker, flags, etc.). Sensitive fields (e.g. api_key) are not returned.
-
-### 4.2 Update profile
-- **Endpoint:** `PATCH /auth/profile/` or `PATCH /auth/user/`
-- **Auth required:** Yes (Bearer)
-- **Request body (JSON):** Any subset of: `first_name`, `last_name`, `email`, etc.
-- **Success (200):** Updated user object
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | /auth/profile/ | Bearer |
+| PATCH | /auth/profile/ | Bearer |
+| GET | /auth/user/ | Bearer |
+| PATCH | /auth/user/ | Bearer |
+| POST | /auth/check-phone/ | No |
+| GET | /auth/users/phone/<phone>/ | Staff |
 
 ---
 
-## 5. Portfolio / Positions (Points)
+## 4. Portfolio and Positions
 
-### 5.1 Live positions
-- **Endpoint:** `GET /auth/get_user_positions/`
-- **Auth required:** Yes (Bearer)
-- **Success (200):** Array of position objects (live trading)
-
-### 5.2 Paper positions
-- **Endpoint:** `GET /auth/user/positions/paper/`
-- **Auth required:** Yes (Bearer)
-- **Success (200):** Array of paper trade positions
-
-### 5.3 Broker balance
-- **Endpoint:** `GET /auth/broker/balance/`
-- **Auth required:** Yes (Bearer)
-- **Success (200):** Balance info from all connected brokers (structure may vary by broker)
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | /auth/get_user_positions/ | Bearer |
+| GET | /auth/user/positions/paper/ | Bearer |
+| POST | /auth/user/open_position/ | Bearer |
 
 ---
 
-## 6. Orders & Trades (Points)
+## 5. Broker
 
-### 6.1 Orders (live)
-- **Endpoint:** `GET /auth/orders/`
-- **Auth required:** Yes (Bearer)
-- **Returns:** Order details for current user (today range by default)
-
-### 6.2 Orders (paper)
-- **Endpoint:** `GET /auth/orders/paper/`
-- **Auth required:** Yes (Bearer)
-
-### 6.3 Trades (live)
-- **Endpoint:** `GET /auth/trades/`
-- **Auth required:** Yes (Bearer)
-
-### 6.4 Trades (paper)
-- **Endpoint:** `GET /auth/trades/paper/`
-- **Auth required:** Yes (Bearer)
-
-### 6.5 User order details
-- **Endpoint:** `GET /auth/userOrderDetails/`
-- **Auth required:** Yes (Bearer)
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | /auth/broker/balance/ | Bearer |
+| POST | /auth/broker/connect/ | Bearer |
+| POST | /auth/broker/connect1/ | Bearer |
+| POST | /auth/connect/coindcx/ | Bearer |
 
 ---
 
-## 7. PnL Report (Points)
+## 6. Orders and Trades
 
-### 7.1 PnL summary
-- **Endpoint:** `GET /auth/get_user_pnl/`
-- **Auth required:** Yes (Bearer)
-- **Success (200):** JSON with:
-  - `today_profit` â€“ today P&L
-  - `total_profit` â€“ all-time P&L
-  - `trades` â€“ count of open positions (from broker APIs)
-
-### 7.2 PnL report PDF
-- **Endpoint:** `GET /auth/pl-report/pdf/`
-- **Auth required:** Yes (Bearer)
-- **Returns:** PDF file (Content-Type: application/pdf). Query params as per backend for date range.
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | /auth/orders/ | Bearer |
+| GET | /auth/orders/paper/ | Bearer |
+| GET | /auth/trades/ | Bearer |
+| GET | /auth/trades/paper/ | Bearer |
+| GET | /auth/userOrderDetails/ | Bearer |
 
 ---
 
-## 8. Strategies (Points)
+## 7. PnL and Reports
 
-### 8.1 User strategies / portfolio
-- **Endpoint:** `GET /auth/user/strategies/` or `GET /auth/strategies/`
-- **Auth required:** Yes (Bearer)
-- **Returns:** User strategy portfolio list
-
-### 8.2 Deployed strategies (codes only)
-- **Endpoint:** `GET /auth/strategies/deployed/`
-- **Auth required:** Yes (Bearer)
-- **Success (200):** `{ "success": true, "data": [ { "strategy_code", "strategy_name" }, ... ] }`
-
-### 8.3 Deploy strategy
-- **Endpoint:** `POST /auth/user/strategies/deploy/`
-- **Auth required:** Yes (Bearer)
-- **Body:** e.g. `strategyid`, `user_id`, `broker_id` (as per backend)
-
-### 8.4 Undeploy strategy
-- **Endpoint:** `POST /auth/user/strategies/undeploy/`
-- **Auth required:** Yes (Bearer)
-- **Body:** e.g. `strategyid` (as per backend)
-
-### 8.5 Backtest â€“ list strategies
-- **Endpoint:** `GET /auth/strategy/backtest/list/`
-- **Auth required:** Yes (Bearer)
-- **Query params (optional):**
-  - `type=marketplace` â€“ public strategies
-  - `type=my-strategy` â€“ own strategies
-  - `type=shared` â€“ shared with user
-  - `lite=1` â€“ lighter response
-
-### 8.6 Backtest â€“ detail & result
-- **Detail:** `GET /auth/strategy/backtest/detail/` (query: backtest_id or strategy_code)
-- **Result status:** `GET /auth/strategy/backtest/result/` (for polling backtest job)
-- **Auth required:** Yes (Bearer) for both
-
-### 8.7 Dashboard / Marketplace strategies
-- **Endpoint:** `GET /auth/strategy/dashboard/`
-- **Auth required:** Yes (Bearer)
-- **Returns:** Strategies for dashboard/marketplace (own, shared, public)
-- **Query params (optional):** `lite=1`, `cards=1`
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | /auth/get_user_pnl/ | Bearer |
+| GET | /auth/pl-report/pdf/ | Bearer |
+| GET | /strategy/pnl/ | Bearer |
 
 ---
 
-## 9. Backtest (Extra endpoints)
+## 8. Strategies (User)
 
-- `POST /auth/strategy/copilot/prepare-backtest/` â€“ prepare backtest
-- `POST /auth/strategy/copilot/backtest/` â€“ run backtest
-- `GET /auth/strategy/backtest/detail/chart/` â€“ chart data
-- `GET /auth/strategy/backtest/detail/report/` â€“ report
-- `GET /auth/backtest/candles/` â€“ candle data
-- `GET /auth/backtest-symbols/` â€“ symbol mappings  
-All require **Bearer** auth.
-
----
-
-## 10. Broker Connection (Points)
-
-### 10.1 Connect broker (Delta Exchange)
-- **Endpoint:** `POST /auth/broker/connect/`
-- **Auth required:** Yes (Bearer)
-- **Request body (JSON):** `api_key`, `api_secret`
-- **Success (200):** Broker linked to user
-- **Error (400):** Invalid credentials, KYC not done, or login disabled
-
-### 10.2 Test broker (no save)
-- **Endpoint:** `POST /auth/diagnostic/`
-- **Auth required:** Yes (Bearer)
-- **Request body (JSON):** `api_key`, `api_secret`, `broker` (e.g. "Coindcx" or Delta)
-- **Purpose:** Validate credentials without saving
-
-### 10.3 Connect CoinDCX
-- **Endpoint:** `POST /auth/connect/coindcx/`
-- **Auth required:** Yes (Bearer)
-- **Body:** api_key, api_secret (as per backend)
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | /auth/user/strategies/ | Bearer |
+| GET | /auth/strategies/ | Bearer |
+| GET | /auth/strategies/deployed/ | Bearer |
+| POST | /auth/user/strategies/deploy/ | Bearer |
+| POST | /auth/user/strategies/undeploy/ | Bearer |
+| GET | /auth/strategy/dashboard/ | Bearer |
+| GET | /auth/strategy/backtest/list/ | Bearer |
+| POST | /auth/user/add_strategy/ | Bearer |
+| GET | /auth/user/user_strategy/ | Bearer |
+| GET | /auth/user/admin_user_strategy/ | Bearer |
+| POST | /auth/user_strategy_set/ | Bearer |
+| GET | /auth/get_strategy_data/ | Bearer |
+| GET | /strategy/user-strategy/ | Bearer |
+| GET | /strategy/user/ | Bearer |
 
 ---
 
-## 11. Dashboard (Admin / Staff only)
+## 9. Execution History (Panel Buttons)
 
-- **POST** `/auth/dashboard/` â€“ body: `startdate`, `enddate`
-- **POST** `/auth/dashboardcount/` â€“ body: `startDate`, `endDate`
-- **GET** `/auth/today_dashboardcount/`  
-All require **Bearer** and **staff** permission. For regular app users, use Profile, Portfolio, Orders, PnL, and Strategies (and Marketplace) as the main dashboard data.
-
----
-
-## 12. Payments & Credits (Points)
-
-- **Create order:** `POST /auth/payment/create-order/`
-- **Verify payment:** `POST /auth/payment/verify/`
-- **Credit balance:** `GET /auth/payment/balance/`
-- **Ledger:** `GET /auth/payment/ledger/`  
-All require **Bearer** auth.
-
----
-
-## 13. Notifications & Other (Points)
-
-### 13.1 Notifications
-- **Endpoint:** `GET /auth/notifications/` or `GET /auth/userNotifications/`
-- **Auth required:** Yes (Bearer)
-
-### 13.2 Check phone
-- **Endpoint:** `POST /auth/check-phone/`
-- **Body:** `{ "phone": "9876543210" }`
-- **Auth required:** No
-
-### 13.3 Watchlist
-- **Endpoint:** `GET /auth/watchlist/`
-- **Auth required:** Yes (Bearer)
-
-### 13.4 Referral link
-- **Endpoint:** `GET /auth/get_referal_link/`
-- **Auth required:** Yes (Bearer)
+| Button | Method | Endpoint | Auth |
+|--------|--------|----------|------|
+| Backtest | GET | /auth/strategy/backtest/detail/ (query: strategy_code) | Bearer |
+| Chart | GET | /auth/strategy/backtest/detail/chart/ (query: strategy_code) | Bearer |
+| Edit | POST | /auth/strategy/backtest/edit/ (body: strategy_code + optional fields) | Bearer |
+| Pine | GET | /auth/strategy/backtest/pine-code/ (query: strategy_code) | Bearer |
+| Report | GET | /auth/strategy/backtest/detail/report/ (query: strategy_code) | Bearer |
+| Share give | POST | /auth/strategy/backtest/share/ (body: strategy_code, user_id) | Bearer |
+| Share remove | DELETE | /auth/strategy/backtest/share/ (body: strategy_code, user_id) | Bearer |
+| Share list | GET | /auth/strategy/backtest/share/ (query: strategy_code) | Bearer |
+| Improve | POST | /auth/strategy/improve/ (body: strategy_code) | Bearer |
+| Improve quote | POST | /auth/strategy/improve/quote/ (body: strategy_code) | Bearer |
+| Deep Think v1 | POST | /auth/strategy/deep-think-optimize/ | Bearer |
+| Deep Think v2 | POST | /auth/strategy/deep-think-optimize-v2/ | Bearer |
+| Deep Think v2 status | GET | /auth/strategy/deep-think-optimize-v2/status/ | Bearer |
+| Deep Think v2 sync | POST | /auth/strategy/deep-think-optimize-v2/sync/ | Bearer |
+| PDF | GET | /auth/strategy/backtest/report/<uuid:backtest_id>/ | Bearer |
+| Delete | POST | /auth/strategy/delete/ (body: strategy_code) | Bearer |
 
 ---
 
-## 14. Test Credentials & Staging
+## 10. Backtest (Full)
 
-- **Test credentials:** The backend does **not** define built-in test users or test OTP in code. To test:
-  1. Use a real or test mobile number.
-  2. Call `POST /auth/send-otp/` with that phone.
-  3. Use the OTP received (or any test OTP if configured in your environment) in `POST /auth/login/`.
-- **Staging server:** Use your deployed backend base URL. Same API paths and Bearer auth. Ensure CORS and ALLOWED_HOSTS allow your Flutter app origin.
-
----
-
-## 15. Quick Reference Table
-
-| Category        | Method | Endpoint                         | Auth   |
-|----------------|--------|----------------------------------|--------|
-| Health         | GET    | /health/                         | No     |
-| Send OTP       | POST   | /auth/send-otp/                  | No     |
-| Login          | POST   | /auth/login/                     | No     |
-| Signup         | POST   | /auth/signup/                    | No     |
-| Consume OTP    | POST   | /auth/consume-otp/               | Bearer |
-| Session        | GET    | /auth/session/                   | Bearer |
-| Profile        | GET    | /auth/profile/                   | Bearer |
-| Profile update | PATCH  | /auth/profile/                   | Bearer |
-| Positions      | GET    | /auth/get_user_positions/        | Bearer |
-| Paper positions| GET    | /auth/user/positions/paper/      | Bearer |
-| Broker balance | GET    | /auth/broker/balance/            | Bearer |
-| Orders         | GET    | /auth/orders/                    | Bearer |
-| Orders paper   | GET    | /auth/orders/paper/              | Bearer |
-| Trades         | GET    | /auth/trades/                    | Bearer |
-| PnL            | GET    | /auth/get_user_pnl/              | Bearer |
-| PnL PDF        | GET    | /auth/pl-report/pdf/             | Bearer |
-| Strategies     | GET    | /auth/user/strategies/           | Bearer |
-| Deployed       | GET    | /auth/strategies/deployed/       | Bearer |
-| Deploy         | POST   | /auth/user/strategies/deploy/    | Bearer |
-| Undeploy       | POST   | /auth/user/strategies/undeploy/  | Bearer |
-| Backtest list  | GET    | /auth/strategy/backtest/list/    | Bearer |
-| Marketplace    | GET    | /auth/strategy/dashboard/        | Bearer |
-| Broker connect | POST   | /auth/broker/connect/            | Bearer |
-| Notifications  | GET    | /auth/notifications/             | Bearer |
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | /auth/strategy/backtest/result/ | Bearer |
+| POST | /auth/strategy/copilot/prepare-backtest/ | Bearer |
+| POST | /auth/strategy/copilot/backtest/ | Bearer |
+| POST | /auth/strategy/copilot/save-strategy/ | Bearer |
+| POST | /auth/strategy/backtest/deploy/ | Bearer |
+| POST | /auth/strategy/backtest/trade-mode/ | Bearer |
+| POST | /auth/strategy/backtest/validate/ | Bearer |
+| POST | /auth/strategy/backtest/indicators/ | Bearer |
+| GET | /auth/strategy/backtest/check-open-position/ (query: strategy_code) | Bearer |
+| POST | /auth/strategy/rerun-backtest/ | Bearer |
+| POST | /auth/strategy/update-name/ | Bearer |
+| POST | /auth/strategy/sync-deployed/ | Bearer |
+| GET | /auth/strategy/check-deployment-sync/ | Bearer |
+| GET | /auth/backtest/candles/ (query: symbol, timeframe) | Bearer |
+| GET | /auth/backtest-symbols/ | Bearer |
 
 ---
 
-Use the **Postman collection** (`CryptoArth_Backend_Postman_Collection.json`) for ready-to-run requests and variables (`base_url`, `access_token`).
+## 11. Share and Access
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| POST | /auth/add_user_to_strategy/ | Bearer |
+| POST | /auth/remove_user_to_strategy/ | Bearer |
+| GET | /auth/strategy/users/<strategy_id>/detailed/ | Bearer |
+
+---
+
+## 12. Copilot and Strategy Builder
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| POST | /auth/strategy/copilot/chat/ | Bearer |
+| POST | /auth/strategy/copilot/stream/ | Bearer |
+| GET | /auth/strategy/copilot/history/ | Bearer |
+| GET | /auth/strategy/copilot/fetch-conversions/ | Bearer |
+| POST | /auth/strategy/copilot/code-conversion/ | Bearer |
+| POST | /auth/strategy/copilot/smart-convert/ | Bearer |
+| POST | /auth/strategy/copilot/smart-convert-test/ | Bearer |
+| POST | /auth/strategy/copilot/convert/ | Bearer |
+| POST | /auth/strategy/copilot/convert-test/ | Bearer |
+| GET | /strategy/templates/ | Bearer |
+| GET | /api/strategy-aitemplates/ | Bearer |
+| POST | /auth/strategy/ai/generate-strategy/ | Bearer |
+| GET | /auth/strategy/ai/generate-strategy/status/ | Bearer |
+| GET | /auth/strategy/ai/health/ | Bearer |
+
+---
+
+## 13. Payments and Credits
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| POST | /auth/payment/create-order/ | Bearer |
+| POST | /auth/payment/verify/ | Bearer |
+| GET | /auth/payment/balance/ | Bearer |
+| GET | /auth/payment/ledger/ | Bearer |
+| GET | /auth/payment/invoice/<invoice_id>/ | Bearer |
+| POST | /auth/payment/test-email/ | Bearer |
+| POST | /auth/payment/webhook/ | Server |
+| POST | /payment/webhook/razorpay/ | Public webhook |
+
+---
+
+## 14. Signals
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| POST | /auth/signal/ | Bearer |
+| POST | /auth/copy-signal/ | Bearer |
+| POST | /auth/internal-signal/ | Bearer |
+| POST | /auth/setSignal/ | Bearer |
+| POST | /auth/deleteSignal/ | Bearer |
+| POST | /auth/editActiveSignal/ | Bearer |
+| POST | /auth/edidPendingSignal/ | Bearer |
+| POST | /auth/closeSignal/ | Bearer |
+| GET | /auth/signal-list/ | Bearer |
+| GET | /auth/copystrategyshow/ | Bearer |
+
+---
+
+## 15. Tutorials
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | /auth/tutorials/ | Bearer |
+| GET | /auth/tutorials/<pk>/ | Bearer |
+| GET | /auth/tutorial-ai/ | Bearer |
+| POST | /auth/tutorial-ai/generate/ | Bearer |
+| POST | /auth/tutorial-ai/generate-all/ | Bearer |
+| GET | /auth/get_tutorial/ | Bearer |
+
+---
+
+## 16. Admin (Staff)
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | /auth/admin/notifications/ | Staff |
+| GET | /auth/admin/fail-orders/ | Staff |
+| GET | /auth/get_admin_strategy_list/ | Staff |
+| GET | /auth/get_admin_user_list/ | Staff |
+| POST | /auth/get_admin_broker_list/ (body: user_id) | Staff |
+| POST | /auth/admin_deploy_user_strategy/ | Staff |
+| POST | /auth/admin_undeploy_user_strategy/ | Staff |
+| GET | /auth/get_admin_strategy_data/ | Staff |
+| POST | /auth/edit_user/ | Staff |
+| POST | /auth/change_margin_moode/ | Staff |
+| GET | /auth/admin/strategies/deployed/ | Staff |
+| GET | /auth/adminPositionDetails/ | Staff |
+| GET | /auth/admin/open-positions/ | Staff |
+| GET | /auth/adminOrderDetails/ | Staff |
+| GET | /auth/adminTradeDetails/ | Staff |
+| POST | /auth/admin/close_position/ | Staff |
+| POST | /auth/admin/close_positions_by_strategy/ | Staff |
+| POST | /auth/admin/auto-close-position/ | Staff |
+| POST | /auth/admin/auto-close-positions/ | Staff |
+| POST | /auth/admin/fail-orders/ | Staff |
+| GET/POST | /auth/admin/candle-loader/ | Staff |
+| GET | /auth/admin/candle-loader/mappings/ | Staff |
+| GET/PUT/DELETE | /auth/admin/candle-loader/mappings/<mapping_id>/ | Staff |
+| GET | /auth/admin/order-rules/<phone>/ | Staff |
+| GET/DELETE | /auth/admin/order-rules/<phone>/<pk>/ | Staff |
+| GET | /auth/admin/strategy-monitor/ | Staff |
+| POST | /auth/admin/strategy-monitor/detail/ | Staff |
+| POST | /auth/admin/strategy-monitor/deploy/ | Staff |
+| POST | /auth/admin/strategy-monitor/update/ | Staff |
+| GET | /auth/admin/credits/lookup/ | Staff |
+| POST | /auth/admin/credits/add/ | Staff |
+| POST | /auth/admin/credits/deduct/ | Staff |
+| POST | /auth/admin/credits/correct/ | Staff |
+| POST | /auth/admin_deactivate_strategy/ | Staff |
+| POST | /auth/admin_activate_strategy/ | Staff |
+| POST | /auth/admin_strategy_set/ | Staff |
+
+---
+
+## 17. Positions Close and Margin
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| POST | /auth/close_open_position_onbroker/ | Bearer |
+| POST | /auth/close_delta_position/ | Bearer |
+| POST | /auth/close_coindcx_position/ | Bearer |
+| POST | /auth/close_position_customer/ | Bearer |
+| POST | /auth/Close_all_Positions/ | Bearer |
+| POST | /auth/user/auto-close-position/ | Bearer |
+| GET | /auth/get_margin_calculator/ | Bearer |
+| GET | /auth/get_margin_calculator1/ | Bearer |
+
+---
+
+## 18. System and Monitoring (Staff)
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | /auth/system/performance/ | Staff |
+| GET | /auth/system/api-latency-history/ | Staff |
+| GET | /auth/system/backtest-queue/ | Staff |
+| GET | /auth/system/top-endpoints/ | Staff |
+| GET | /auth/system/errors/ | Staff |
+| GET | /auth/system/error-logs/<error_id>/ | Staff |
+| POST | /auth/system/error-logs/<error_id>/resolve/ | Staff |
+| GET | /auth/system/registered-endpoints/ | Staff |
+| GET | /auth/system/redis-detailed/ | Staff |
+| GET | /auth/system/celery-workers/ | Staff |
+| GET | /auth/system/cron-jobs/ | Staff |
+| POST | /auth/system/cron-jobs/<job_name>/toggle/ | Staff |
+| POST | /auth/system/cron-jobs/<job_name>/run/ | Staff |
+| GET | /auth/system/strategy-engine/ | Staff |
+
+---
+
+## 19. Router (ViewSets) - under /auth/
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | /auth/highlow-strategies/ | Staff |
+| POST | /auth/highlow-strategies/ | Staff |
+| GET | /auth/highlow-strategies/<id>/ | Staff |
+| PUT/PATCH | /auth/highlow-strategies/<id>/ | Staff |
+| DELETE | /auth/highlow-strategies/<id>/ | Staff |
+| GET | /auth/highlow-strategies1/ | Bearer |
+| POST | /auth/highlow-strategies1/ | Bearer |
+| GET | /auth/highlow-strategies1/<id>/ | Bearer |
+| PUT/PATCH/DELETE | /auth/highlow-strategies1/<id>/ | Bearer |
+| POST | /auth/highlow-strategies-limited/ | Bearer |
+| GET | /auth/latency/ (query: strategy_code, strategy_name) | Staff |
+| POST | /auth/latency/ | Staff |
+| GET | /auth/latency/<id>/ | Staff |
+| PUT/PATCH/DELETE | /auth/latency/<id>/ | Staff |
+
+---
+
+## 20. Other
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | /auth/watchlist/ | Bearer |
+| GET | /auth/get_referal_link/ | Bearer |
+| GET | /auth/userNotifications/ | Bearer |
+| GET | /auth/notifications/ | Bearer |
+| POST | /auth/dashboard/ (body: startdate, enddate) | Staff |
+| POST | /auth/dashboardcount/ (body: startDate, endDate) | Staff |
+| GET | /auth/today_dashboardcount/ | Staff |
+
+---
+
+## 21. Master List - Every Endpoint (Alphabetical by Path)
+
+Use this list to verify no endpoint is missing. Auth: N=None, B=Bearer, S=Staff.
+
+| Endpoint | Method(s) | Auth |
+|----------|-----------|------|
+| /health/ | GET | N |
+| /admin/ | - | Admin |
+| /api/strategy-aitemplates/ | GET | B |
+| /auth/add_user_to_strategy/ | POST | B |
+| /auth/admin/auto-close-position/ | POST | S |
+| /auth/admin/auto-close-positions/ | POST | S |
+| /auth/admin/close_position/ | POST | S |
+| /auth/admin/close_positions_by_strategy/ | POST | S |
+| /auth/admin/credits/add/ | POST | S |
+| /auth/admin/credits/correct/ | POST | S |
+| /auth/admin/credits/deduct/ | POST | S |
+| /auth/admin/credits/lookup/ | GET | S |
+| /auth/admin/candle-loader/ | GET, POST | S |
+| /auth/admin/candle-loader/mappings/ | GET | S |
+| /auth/admin/candle-loader/mappings/<mapping_id>/ | GET, PUT, DELETE | S |
+| /auth/admin/fail-orders/ | GET | S |
+| /auth/admin/notifications/ | GET | S |
+| /auth/admin/open-positions/ | GET | S |
+| /auth/admin/order-rules/<phone>/ | GET | S |
+| /auth/admin/order-rules/<phone>/<pk>/ | GET, DELETE | S |
+| /auth/admin/strategies/deployed/ | GET | S |
+| /auth/admin/strategy-monitor/ | GET | S |
+| /auth/admin/strategy-monitor/detail/ | POST | S |
+| /auth/admin/strategy-monitor/deploy/ | POST | S |
+| /auth/admin/strategy-monitor/update/ | POST | S |
+| /auth/admin_activate_strategy/ | POST | S |
+| /auth/admin_deactivate_strategy/ | POST | S |
+| /auth/admin_deploy_user_strategy/ | POST | S |
+| /auth/admin_strategy_set/ | POST | S |
+| /auth/admin_undeploy_user_strategy/ | POST | S |
+| /auth/adminOrderDetails/ | GET | S |
+| /auth/adminPositionDetails/ | GET | S |
+| /auth/adminTradeDetails/ | GET | S |
+| /auth/backtest/candles/ | GET | B |
+| /auth/backtest-symbols/ | GET | B |
+| /auth/broker/balance/ | GET | B |
+| /auth/broker/connect/ | POST | B |
+| /auth/broker/connect1/ | POST | B |
+| /auth/change_margin_moode/ | POST | S |
+| /auth/check-phone/ | POST | N |
+| /auth/Close_all_Positions/ | POST | B |
+| /auth/close_coindcx_position/ | POST | B |
+| /auth/close_delta_position/ | POST | B |
+| /auth/close_open_position_onbroker/ | POST | B |
+| /auth/close_position_customer/ | POST | B |
+| /auth/closeSignal/ | POST | B |
+| /auth/connect/coindcx/ | POST | B |
+| /auth/consume-otp/ | POST | B |
+| /auth/copystrategyshow/ | GET | B |
+| /auth/copy-signal/ | POST | B |
+| /auth/dashboard/ | POST | S |
+| /auth/dashboardcount/ | POST | S |
+| /auth/deleteSignal/ | POST | B |
+| /auth/diagnostic/ | GET, POST | B |
+| /auth/editActiveSignal/ | POST | B |
+| /auth/edidPendingSignal/ | POST | B |
+| /auth/edit_user/ | POST | S |
+| /auth/get_admin_broker_list/ | POST | S |
+| /auth/get_admin_strategy_data/ | GET | S |
+| /auth/get_admin_strategy_list/ | GET | S |
+| /auth/get_admin_user_list/ | GET | S |
+| /auth/get_margin_calculator/ | GET | B |
+| /auth/get_margin_calculator1/ | GET | B |
+| /auth/get_referal_link/ | GET | B |
+| /auth/get_strategy_data/ | GET | B |
+| /auth/get_tutorial/ | GET | B |
+| /auth/get_user_positions/ | GET | B |
+| /auth/get_user_pnl/ | GET | B |
+| /auth/highlow-strategies/ | GET, POST | S |
+| /auth/highlow-strategies/<id>/ | GET, PUT, PATCH, DELETE | S |
+| /auth/highlow-strategies-limited/ | POST | B |
+| /auth/highlow-strategies1/ | GET, POST | B |
+| /auth/highlow-strategies1/<id>/ | GET, PUT, PATCH, DELETE | B |
+| /auth/internal-signal/ | POST | B |
+| /auth/latency/ | GET, POST | S |
+| /auth/latency/<id>/ | GET, PUT, PATCH, DELETE | S |
+| /auth/login/ | POST | N |
+| /auth/notifications/ | GET | B |
+| /auth/orders/ | GET | B |
+| /auth/orders/paper/ | GET | B |
+| /auth/pl-report/pdf/ | GET | B |
+| /auth/payment/balance/ | GET | B |
+| /auth/payment/create-order/ | POST | B |
+| /auth/payment/invoice/<invoice_id>/ | GET | B |
+| /auth/payment/ledger/ | GET | B |
+| /auth/payment/test-email/ | POST | B |
+| /auth/payment/verify/ | POST | B |
+| /auth/payment/webhook/ | POST | Server |
+| /auth/profile/ | GET, PATCH | B |
+| /auth/remove_user_to_strategy/ | POST | B |
+| /auth/send-otp/ | POST | N |
+| /auth/session/ | GET | B |
+| /auth/setSignal/ | POST | B |
+| /auth/signal/ | POST | B |
+| /auth/signal-list/ | GET | B |
+| /auth/signup/ | POST | N |
+| /auth/strategies/ | GET | B |
+| /auth/strategies/deployed/ | GET | B |
+| /auth/strategy/ai/generate-strategy/ | POST | B |
+| /auth/strategy/ai/generate-strategy/status/ | GET | B |
+| /auth/strategy/ai/health/ | GET | B |
+| /auth/strategy/backtest/check-open-position/ | GET | B |
+| /auth/strategy/backtest/deploy/ | POST | B |
+| /auth/strategy/backtest/detail/ | GET | B |
+| /auth/strategy/backtest/detail/chart/ | GET | B |
+| /auth/strategy/backtest/detail/report/ | GET | B |
+| /auth/strategy/backtest/edit/ | POST | B |
+| /auth/strategy/backtest/indicators/ | POST | B |
+| /auth/strategy/backtest/list/ | GET | B |
+| /auth/strategy/backtest/pine-code/ | GET | B |
+| /auth/strategy/backtest/report/<backtest_id>/ | GET | B |
+| /auth/strategy/backtest/result/ | GET | B |
+| /auth/strategy/backtest/share/ | GET, POST, DELETE | B |
+| /auth/strategy/backtest/trade-mode/ | POST | B |
+| /auth/strategy/backtest/validate/ | POST | B |
+| /auth/strategy/copilot/backtest/ | POST | B |
+| /auth/strategy/copilot/chat/ | POST | B |
+| /auth/strategy/copilot/code-conversion/ | POST | B |
+| /auth/strategy/copilot/convert/ | POST | B |
+| /auth/strategy/copilot/convert-test/ | POST | B |
+| /auth/strategy/copilot/fetch-conversions/ | GET | B |
+| /auth/strategy/copilot/history/ | GET | B |
+| /auth/strategy/copilot/prepare-backtest/ | POST | B |
+| /auth/strategy/copilot/save-strategy/ | POST | B |
+| /auth/strategy/copilot/smart-convert/ | POST | B |
+| /auth/strategy/copilot/smart-convert-test/ | POST | B |
+| /auth/strategy/copilot/stream/ | POST | B |
+| /auth/strategy/dashboard/ | GET | B |
+| /auth/strategy/deep-think-optimize/ | POST | B |
+| /auth/strategy/deep-think-optimize-v2/ | POST | B |
+| /auth/strategy/deep-think-optimize-v2/status/ | GET | B |
+| /auth/strategy/deep-think-optimize-v2/sync/ | POST | B |
+| /auth/strategy/delete/ | POST | B |
+| /auth/strategy/improve/ | POST | B |
+| /auth/strategy/improve/quote/ | POST | B |
+| /auth/strategy/rerun-backtest/ | POST | B |
+| /auth/strategy/search-user/ | GET | B |
+| /auth/strategy/sync-deployed/ | POST | B |
+| /auth/strategy/check-deployment-sync/ | GET | B |
+| /auth/strategy/update-name/ | POST | B |
+| /auth/strategy/users/<strategy_id>/detailed/ | GET | B |
+| /auth/system/api-latency-history/ | GET | S |
+| /auth/system/backtest-queue/ | GET | S |
+| /auth/system/celery-workers/ | GET | S |
+| /auth/system/cron-jobs/ | GET | S |
+| /auth/system/cron-jobs/<job_name>/run/ | POST | S |
+| /auth/system/cron-jobs/<job_name>/toggle/ | POST | S |
+| /auth/system/error-logs/<error_id>/ | GET | S |
+| /auth/system/error-logs/<error_id>/resolve/ | POST | S |
+| /auth/system/errors/ | GET | S |
+| /auth/system/performance/ | GET | S |
+| /auth/system/redis-detailed/ | GET | S |
+| /auth/system/registered-endpoints/ | GET | S |
+| /auth/system/strategy-engine/ | GET | S |
+| /auth/system/top-endpoints/ | GET | S |
+| /auth/today_dashboardcount/ | GET | S |
+| /auth/trades/ | GET | B |
+| /auth/trades/paper/ | GET | B |
+| /auth/tutorial-ai/ | GET | B |
+| /auth/tutorial-ai/generate/ | POST | B |
+| /auth/tutorial-ai/generate-all/ | POST | B |
+| /auth/tutorials/ | GET | B |
+| /auth/tutorials/<pk>/ | GET | B |
+| /auth/user/ | GET, PATCH | B |
+| /auth/user/add_strategy/ | POST | B |
+| /auth/user/admin_user_strategy/ | GET | B |
+| /auth/user/open_position/ | POST | B |
+| /auth/user/positions/paper/ | GET | B |
+| /auth/user/user_strategy/ | GET | B |
+| /auth/user/strategies/ | GET | B |
+| /auth/user/strategies/deploy/ | POST | B |
+| /auth/user/strategies/undeploy/ | POST | B |
+| /auth/user/auto-close-position/ | POST | B |
+| /auth/userNotifications/ | GET | B |
+| /auth/userOrderDetails/ | GET | B |
+| /auth/user_strategy_set/ | POST | B |
+| /auth/users/phone/<phone>/ | GET | S |
+| /auth/watchlist/ | GET | B |
+| /payment/webhook/razorpay/ | POST | Public |
+| /strategy/pnl/ | GET | B |
+| /strategy/templates/ | GET | B |
+| /strategy/user/ | GET | B |
+| /strategy/user-strategy/ | GET | B |
+
+---
+
+**End of API Documentation.** This file lists every endpoint from Crypto_Arth_Backend (digno/config/urls.py and router). Use with the Postman collection for ready-to-run requests.
