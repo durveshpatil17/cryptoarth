@@ -356,12 +356,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
   }
 
   Widget _buildChatList(List<Map<String, dynamic>> messages, bool isActuallyLoading) {
+    final notifier = ref.read(copilotProvider.notifier);
+    final showLoading = ref.watch(copilotProvider).isLoading || notifier.isGenerating;
+    
     return ListView.builder(
        controller: _scrollController,
        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-       itemCount: messages.length + (ref.watch(copilotProvider).isLoading ? 1 : 0),
+       itemCount: messages.length + (showLoading ? 1 : 0),
        itemBuilder: (context, index) {
          if (index == messages.length) {
+            if (notifier.isGenerating) {
+              return _buildGeneratingBubble();
+            }
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 24.0),
               child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.cyan)),
@@ -379,64 +385,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     );
   }
 
+  Widget _buildGeneratingBubble() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E293B),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(4),
+            topRight: Radius.circular(16),
+            bottomLeft: Radius.circular(16),
+            bottomRight: Radius.circular(16),
+          ),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "AI is generating your strategy...",
+              style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+            ),
+            const SizedBox(width: 12),
+            const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.cyan,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAssistantMessage(Map<String, dynamic> message) {
     final String text = message['content'] ?? '';
-    final String? python = message['python'];
-    final String? pineScript = message['pine_script'];
-    final dynamic strategyJson = message['strategy_json'];
-    final dynamic metrics = message['metrics'];
+    
+    final hasStructuredData =
+        (message["python"] is String && message["python"].toString().isNotEmpty) ||
+        (message["pine_script"] is String && message["pine_script"].toString().isNotEmpty) ||
+        (message["strategy_json"] is Map) ||
+        (message["backtest_result"] is Map) ||
+        (message["metrics"] is Map);
 
-    final String? codeSnippet = (python != null && python.isNotEmpty) ? python : pineScript;
-
-    // If structured data exists (synced from history), use StrategyResponseCard
-    if (codeSnippet != null && codeSnippet.isNotEmpty) {
-      String title = "AI Strategy";
-      String description = text;
-      String winRate = "Analyzing...";
-      String profitFactor = "--";
-
-      // Try to extract from strategy_json first
-      if (strategyJson is Map) {
-        title = strategyJson['name'] ?? strategyJson['strategy_name'] ?? title;
-        description = strategyJson['description'] ?? strategyJson['strategy_description'] ?? text;
-        winRate = strategyJson['win_rate']?.toString() ?? winRate;
-        profitFactor = strategyJson['profit_factor']?.toString() ?? profitFactor;
-      } 
-      
-      // Fallback or supplement with metrics field
-      if (metrics is Map) {
-        winRate = metrics['win_rate']?.toString() ?? winRate;
-        profitFactor = metrics['profit_factor']?.toString() ?? profitFactor;
-      }
-
-      return StrategyResponseCard(
-        title: title,
-        description: description,
-        winRate: winRate,
-        profitFactor: profitFactor,
-        codeSnippet: codeSnippet,
-        onBacktest: () => _showBacktestOverlay(
-          "STRAT_${DateTime.now().millisecondsSinceEpoch}", 
-          title, 
-          codeSnippet
-        ),
-      );
-    }
-
-    // Fallback detection for pure text responses that contain strategy code
-    if (text.contains('strategy(') && text.contains('//@version=')) {
-      return StrategyResponseCard(
-        title: "AI Strategy",
-        description: "Generated strategy based on your prompt.",
-        winRate: "Analyzing...",
-        profitFactor: "--",
-        codeSnippet: text,
-        onBacktest: () => _showBacktestOverlay(
-          "STRAT_${DateTime.now().millisecondsSinceEpoch}", 
-          "AI Strategy", 
-          text
-        ),
-      );
+    // If structured data exists (synced from history) or text contains strategy code
+    if (hasStructuredData || (text.contains('strategy(') && text.contains('//@version='))) {
+      return StrategyResponseCard(message: message);
     }
 
     return Align(

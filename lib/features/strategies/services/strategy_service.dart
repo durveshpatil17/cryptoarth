@@ -70,6 +70,17 @@ class StrategyService {
     }
   }
 
+  Future<void> deployCopilotStrategy(String strategyId, String mode) async {
+    try {
+      await _apiClient.post(ApiEndpoints.deployStrategy, {
+        "strategy_id": strategyId,
+        "mode": mode,
+      });
+    } catch (e) {
+      throw Exception('Failed to deploy strategy: $e');
+    }
+  }
+
   Future<void> undeployStrategy(dynamic strategyId) async {
     try {
       await _apiClient.post(ApiEndpoints.undeployStrategy, {
@@ -139,6 +150,15 @@ class StrategyService {
       return ApiClient.extractMap(response.data);
     } catch (e) {
       throw Exception('Failed to run backtest: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> createStrategy(Map<String, dynamic> data) async {
+    try {
+      final Response response = await _apiClient.post(ApiEndpoints.copilotSave, data);
+      return ApiClient.extractMap(response.data);
+    } catch (e) {
+      throw Exception('Failed to create strategy: $e');
     }
   }
 

@@ -1,5 +1,12 @@
 ﻿# CryptoArth Backend - Complete API Documentation
 
+## API Base URL & Health
+
+- **Local development:** `http://127.0.0.1:8000`
+- **Staging / Production:** `https://trade-api.cryptoarth.in`
+
+- **Health check (no auth):** `GET /health/` â†’ response body: `"ok"`
+
 **Base URL:** http://127.0.0.1:8000 (local) or your deployed host.
 **Auth:** JWT Bearer. Header: Authorization: Bearer <access_token>. Access token: 24h. Refresh: 1 day. No server-side logout.
 

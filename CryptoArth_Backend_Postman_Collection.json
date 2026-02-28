@@ -5,14 +5,31 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "base_url", "value": "http://127.0.0.1:8000" },
-    { "key": "access_token", "value": "" },
-    { "key": "backtest_id", "value": "" },
-    { "key": "strategy_code", "value": "STRG-XXX" }
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "backtest_id",
+      "value": ""
+    },
+    {
+      "key": "strategy_code",
+      "value": "STRG-XXX"
+    }
   ],
   "auth": {
     "type": "bearer",
-    "bearer": [ { "key": "token", "value": "{{access_token}}" } ]
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}"
+      }
+    ]
   },
   "item": [
     {
@@ -36,7 +53,12 @@
           "name": "Send OTP",
           "request": {
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"phone\": \"9876543210\"\n}"
@@ -49,7 +71,12 @@
           "name": "Login (Verify OTP)",
           "request": {
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"phone\": \"9876543210\",\n  \"otp\": \"123456\"\n}"
@@ -62,7 +89,12 @@
           "name": "Signup",
           "request": {
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"phone\": \"9876543210\",\n  \"otp\": \"123456\",\n  \"email\": \"user@example.com\",\n  \"first_name\": \"First\",\n  \"last_name\": \"Last\",\n  \"refercode\": \"\"\n}"
@@ -74,10 +106,26 @@
         {
           "name": "Consume OTP",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
-            "body": { "mode": "raw", "raw": "{}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
             "url": "{{base_url}}/auth/consume-otp/",
             "description": "Call after login to clear OTP. Bearer required."
           }
@@ -85,7 +133,15 @@
         {
           "name": "Session check",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/session/",
             "description": "Lightweight session info. Bearer required."
@@ -99,7 +155,15 @@
         {
           "name": "Get profile",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/profile/",
             "description": "User profile. Also: GET /auth/user/"
@@ -108,9 +172,22 @@
         {
           "name": "Update profile",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "PATCH",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"first_name\": \"First\",\n  \"last_name\": \"Last\",\n  \"email\": \"user@example.com\"\n}"
@@ -127,7 +204,15 @@
         {
           "name": "Get user positions (live)",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/get_user_positions/"
           }
@@ -135,7 +220,15 @@
         {
           "name": "Get paper positions",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/user/positions/paper/"
           }
@@ -143,7 +236,15 @@
         {
           "name": "Broker balance",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/broker/balance/"
           }
@@ -156,7 +257,15 @@
         {
           "name": "Orders (live)",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/orders/"
           }
@@ -164,7 +273,15 @@
         {
           "name": "Orders (paper)",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/orders/paper/"
           }
@@ -172,7 +289,15 @@
         {
           "name": "Trades (live)",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/trades/"
           }
@@ -180,7 +305,15 @@
         {
           "name": "Trades (paper)",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/trades/paper/"
           }
@@ -188,7 +321,15 @@
         {
           "name": "User order details",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/userOrderDetails/"
           }
@@ -201,7 +342,15 @@
         {
           "name": "Get PnL summary",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/get_user_pnl/",
             "description": "Returns today_profit, total_profit, trades."
@@ -210,7 +359,15 @@
         {
           "name": "PnL report PDF",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/pl-report/pdf/"
           }
@@ -223,7 +380,15 @@
         {
           "name": "User strategies",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/user/strategies/"
           }
@@ -231,7 +396,15 @@
         {
           "name": "Deployed strategies",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/strategies/deployed/"
           }
@@ -239,20 +412,52 @@
         {
           "name": "Deploy strategy",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
-            "body": { "mode": "raw", "raw": "{\n  \"strategyid\": 1,\n  \"user_id\": 1,\n  \"broker_id\": 1\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"strategyid\": 1,\n  \"user_id\": 1,\n  \"broker_id\": 1\n}"
+            },
             "url": "{{base_url}}/auth/user/strategies/deploy/"
           }
         },
         {
           "name": "Undeploy strategy",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
-            "body": { "mode": "raw", "raw": "{\n  \"strategyid\": 1\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"strategyid\": 1\n}"
+            },
             "url": "{{base_url}}/auth/user/strategies/undeploy/"
           }
         }
@@ -264,7 +469,15 @@
         {
           "name": "Backtest list",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/strategy/backtest/list/",
             "description": "Query: type=marketplace|my-strategy|shared, lite=1"
@@ -273,7 +486,15 @@
         {
           "name": "Backtest detail",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/strategy/backtest/detail/",
             "description": "Add query params: backtest_id or strategy_code as per backend."
@@ -282,7 +503,15 @@
         {
           "name": "Backtest result status",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/strategy/backtest/result/"
           }
@@ -290,7 +519,15 @@
         {
           "name": "Dashboard / Marketplace strategies",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/strategy/dashboard/",
             "description": "Query: lite=1, cards=1 optional."
@@ -304,9 +541,22 @@
         {
           "name": "Connect broker (Delta)",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"api_key\": \"your_delta_api_key\",\n  \"api_secret\": \"your_delta_api_secret\"\n}"
@@ -318,9 +568,22 @@
         {
           "name": "Test broker (no save)",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"api_key\": \"your_api_key\",\n  \"api_secret\": \"your_api_secret\",\n  \"broker\": \"Coindcx\"\n}"
@@ -332,10 +595,26 @@
         {
           "name": "Connect CoinDCX",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
-            "body": { "mode": "raw", "raw": "{\n  \"api_key\": \"\",\n  \"api_secret\": \"\"\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"api_key\": \"\",\n  \"api_secret\": \"\"\n}"
+            },
             "url": "{{base_url}}/auth/connect/coindcx/"
           }
         }
@@ -347,9 +626,22 @@
         {
           "name": "Dashboard count (POST)",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"startdate\": \"2025-01-01\",\n  \"enddate\": \"2025-02-21\"\n}"
@@ -361,9 +653,22 @@
         {
           "name": "Dashboard count (startDate/endDate)",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"startDate\": \"2025-01-01\",\n  \"endDate\": \"2025-02-21\"\n}"
@@ -375,7 +680,15 @@
         {
           "name": "Today dashboard count",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/today_dashboardcount/",
             "description": "Staff only."
@@ -389,7 +702,15 @@
         {
           "name": "Payment balance",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/payment/balance/"
           }
@@ -397,7 +718,15 @@
         {
           "name": "Payment ledger",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/payment/ledger/"
           }
@@ -405,7 +734,15 @@
         {
           "name": "Notifications",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/notifications/"
           }
@@ -419,15 +756,31 @@
           "name": "Check phone",
           "request": {
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
-            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"9876543210\"\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"9876543210\"\n}"
+            },
             "url": "{{base_url}}/auth/check-phone/"
           }
         },
         {
           "name": "Watchlist",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/watchlist/"
           }
@@ -435,7 +788,15 @@
         {
           "name": "Referral link",
           "request": {
-            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
             "method": "GET",
             "url": "{{base_url}}/auth/get_referal_link/"
           }
@@ -445,112 +806,1136 @@
     {
       "name": "Execution History (Panel Buttons)",
       "item": [
-        { "name": "Backtest (button)", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/backtest/detail/", "description": "Query: strategy_code" },
-        { "name": "Chart (button)", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/backtest/detail/chart/", "description": "Query: strategy_code" },
-        { "name": "Edit (button)", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"strategy_code\": \"STRG-XXX\",\n  \"strategy_name\": \"New Name\"\n}" }, "url": "{{base_url}}/auth/strategy/backtest/edit/" },
-        { "name": "Pine (button)", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/backtest/pine-code/", "description": "Query: strategy_code" },
-        { "name": "Report (button)", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/backtest/detail/report/", "description": "Query: strategy_code" },
-        { "name": "Share give access", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"strategy_code\": \"STRG-XXX\",\n  \"user_id\": 25\n}" }, "url": "{{base_url}}/auth/strategy/backtest/share/" },
-        { "name": "Share remove access", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "DELETE", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"strategy_code\": \"STRG-XXX\",\n  \"user_id\": 25\n}" }, "url": "{{base_url}}/auth/strategy/backtest/share/" },
-        { "name": "Share list users", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/backtest/share/", "description": "Query: strategy_code" },
-        { "name": "Improve (button)", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"strategy_code\": \"STRG-XXX\"\n}" }, "url": "{{base_url}}/auth/strategy/improve/" },
-        { "name": "Improve quote", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"strategy_code\": \"STRG-XXX\"\n}" }, "url": "{{base_url}}/auth/strategy/improve/quote/" },
-        { "name": "Deep Think v1", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"strategy_code\": \"STRG-XXX\"\n}" }, "url": "{{base_url}}/auth/strategy/deep-think-optimize/" },
-        { "name": "Deep Think v2", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"strategy_code\": \"STRG-XXX\"\n}" }, "url": "{{base_url}}/auth/strategy/deep-think-optimize-v2/" },
-        { "name": "Deep Think v2 status", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/deep-think-optimize-v2/status/", "description": "Query: task_id or strategy_code" },
-        { "name": "Deep Think v2 sync", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/deep-think-optimize-v2/sync/" },
-        { "name": "PDF (button)", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/backtest/report/{{backtest_id}}/", "description": "Replace backtest_id with UUID" },
-        { "name": "Delete (button)", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"strategy_code\": \"STRG-XXX\"\n}" }, "url": "{{base_url}}/auth/strategy/delete/" }
-      ]
-    },
-    {
-      "name": "Signals",
-      "item": [
-        { "name": "Process signal", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/signal/" },
-        { "name": "Copy signal", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/copy-signal/" },
-        { "name": "Set signal", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/setSignal/" },
-        { "name": "Delete signal", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/deleteSignal/" },
-        { "name": "Edit active signal", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/editActiveSignal/" },
-        { "name": "Edit pending signal", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/edidPendingSignal/" },
-        { "name": "Close signal", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/closeSignal/" },
-        { "name": "Signal list", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/signal-list/" },
-        { "name": "Copy strategy show", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/copystrategyshow/" }
-      ]
-    },
-    {
-      "name": "Tutorials",
-      "item": [
-        { "name": "Tutorials list", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/tutorials/" },
-        { "name": "Tutorial detail", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/tutorials/1/" },
-        { "name": "Tutorial AI fetch", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/tutorial-ai/" },
-        { "name": "Tutorial AI generate", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/tutorial-ai/generate/" },
-        { "name": "Tutorial AI generate all", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/tutorial-ai/generate-all/" },
-        { "name": "Get tutorial", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/get_tutorial/" }
-      ]
-    },
-    {
-      "name": "Payments (Full)",
-      "item": [
-        { "name": "Create payment order", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "url": "{{base_url}}/auth/payment/create-order/" },
-        { "name": "Verify payment", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "url": "{{base_url}}/auth/payment/verify/" },
-        { "name": "Payment balance", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/payment/balance/" },
-        { "name": "Payment ledger", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/payment/ledger/" },
-        { "name": "Download invoice", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/payment/invoice/INV001/" }
-      ]
-    },
-    {
-      "name": "Backtest (Full)",
-      "item": [
-        { "name": "Backtest result status", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/backtest/result/" },
-        { "name": "Prepare backtest", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/copilot/prepare-backtest/" },
-        { "name": "Run backtest", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/copilot/backtest/" },
-        { "name": "Save strategy", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/copilot/save-strategy/" },
-        { "name": "Backtest deploy", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/backtest/deploy/" },
-        { "name": "Backtest trade mode", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/backtest/trade-mode/" },
-        { "name": "Backtest validate", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/backtest/validate/" },
-        { "name": "Backtest indicators", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/backtest/indicators/" },
-        { "name": "Check open position", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/backtest/check-open-position/", "description": "Query: strategy_code" },
-        { "name": "Rerun backtest", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/rerun-backtest/" },
-        { "name": "Update strategy name", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/update-name/" },
-        { "name": "Sync deployed", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/sync-deployed/" },
-        { "name": "Check deployment sync", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/check-deployment-sync/" },
-        { "name": "Backtest candles", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/backtest/candles/", "description": "Query: symbol, timeframe" },
-        { "name": "Backtest symbols", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/backtest-symbols/" }
-      ]
-    },
-    {
-      "name": "Copilot",
-      "item": [
-        { "name": "Copilot chat", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/copilot/chat/" },
-        { "name": "Copilot stream", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/strategy/copilot/stream/" },
-        { "name": "Copilot history", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/copilot/history/" },
-        { "name": "Fetch conversions", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/strategy/copilot/fetch-conversions/" }
-      ]
-    },
-    {
-      "name": "Admin (Sample)",
-      "item": [
-        { "name": "Admin strategy list", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/get_admin_strategy_list/" },
-        { "name": "Admin user list", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/get_admin_user_list/" },
-        { "name": "Admin broker list", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"user_id\": 1\n}" }, "url": "{{base_url}}/auth/get_admin_broker_list/" },
-        { "name": "Admin deploy user strategy", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/admin_deploy_user_strategy/" },
-        { "name": "Admin undeploy user strategy", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "POST", "url": "{{base_url}}/auth/admin_undeploy_user_strategy/" }
-      ]
-    },
-    {
-      "name": "System (Staff)",
-      "item": [
-        { "name": "System performance", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/system/performance/" },
-        { "name": "System errors", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/system/errors/" }
-      ]
-    },
-    {
-      "name": "Router (ViewSets)",
-      "item": [
-        { "name": "Highlow strategies list", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/highlow-strategies/", "description": "Staff" },
-        { "name": "Highlow strategies1 list", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/highlow-strategies1/", "description": "Bearer" },
-        { "name": "Latency list", "request": { "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}" } ] }, "method": "GET", "url": "{{base_url}}/auth/latency/", "description": "Staff. Query: strategy_code, strategy_name" }
-      ]
-    }
-  ]
-}
+        {
+          "name": "Backtest (button)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{base_url}}/auth/strategy/backtest/detail/",
+            "description": "Query: strategy_code"
+          },
+          {
+            "name": "Chart (button)",
+            "request": {
+              "auth": {
+                "type": "bearer",
+                "bearer": [
+                  {
+                    "key": "token",
+                    "value": "{{access_token}}"
+                  }
+                ]
+              },
+              "method": "GET",
+              "url": "{{base_url}}/auth/strategy/backtest/detail/chart/",
+              "description": "Query: strategy_code"
+            },
+            {
+              "name": "Edit (button)",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{access_token}}"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"strategy_code\": \"STRG-XXX\",\n  \"strategy_name\": \"New Name\"\n}"
+                },
+                "url": "{{base_url}}/auth/strategy/backtest/edit/"
+              },
+              {
+                "name": "Pine (button)",
+                "request": {
+                  "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                      {
+                        "key": "token",
+                        "value": "{{access_token}}"
+                      }
+                    ]
+                  },
+                  "method": "GET",
+                  "url": "{{base_url}}/auth/strategy/backtest/pine-code/",
+                  "description": "Query: strategy_code"
+                },
+                {
+                  "name": "Report (button)",
+                  "request": {
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{access_token}}"
+                        }
+                      ]
+                    },
+                    "method": "GET",
+                    "url": "{{base_url}}/auth/strategy/backtest/detail/report/",
+                    "description": "Query: strategy_code"
+                  },
+                  {
+                    "name": "Share give access",
+                    "request": {
+                      "auth": {
+                        "type": "bearer",
+                        "bearer": [
+                          {
+                            "key": "token",
+                            "value": "{{access_token}}"
+                          }
+                        ]
+                      },
+                      "method": "POST",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "body": {
+                        "mode": "raw",
+                        "raw": "{\n  \"strategy_code\": \"STRG-XXX\",\n  \"user_id\": 25\n}"
+                      },
+                      "url": "{{base_url}}/auth/strategy/backtest/share/"
+                    },
+                    {
+                      "name": "Share remove access",
+                      "request": {
+                        "auth": {
+                          "type": "bearer",
+                          "bearer": [
+                            {
+                              "key": "token",
+                              "value": "{{access_token}}"
+                            }
+                          ]
+                        },
+                        "method": "DELETE",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"strategy_code\": \"STRG-XXX\",\n  \"user_id\": 25\n}"
+                        },
+                        "url": "{{base_url}}/auth/strategy/backtest/share/"
+                      },
+                      {
+                        "name": "Share list users",
+                        "request": {
+                          "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                              {
+                                "key": "token",
+                                "value": "{{access_token}}"
+                              }
+                            ]
+                          },
+                          "method": "GET",
+                          "url": "{{base_url}}/auth/strategy/backtest/share/",
+                          "description": "Query: strategy_code"
+                        },
+                        {
+                          "name": "Improve (button)",
+                          "request": {
+                            "auth": {
+                              "type": "bearer",
+                              "bearer": [
+                                {
+                                  "key": "token",
+                                  "value": "{{access_token}}"
+                                }
+                              ]
+                            },
+                            "method": "POST",
+                            "header": [
+                              {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                              }
+                            ],
+                            "body": {
+                              "mode": "raw",
+                              "raw": "{\n  \"strategy_code\": \"STRG-XXX\"\n}"
+                            },
+                            "url": "{{base_url}}/auth/strategy/improve/"
+                          },
+                          {
+                            "name": "Improve quote",
+                            "request": {
+                              "auth": {
+                                "type": "bearer",
+                                "bearer": [
+                                  {
+                                    "key": "token",
+                                    "value": "{{access_token}}"
+                                  }
+                                ]
+                              },
+                              "method": "POST",
+                              "header": [
+                                {
+                                  "key": "Content-Type",
+                                  "value": "application/json"
+                                }
+                              ],
+                              "body": {
+                                "mode": "raw",
+                                "raw": "{\n  \"strategy_code\": \"STRG-XXX\"\n}"
+                              },
+                              "url": "{{base_url}}/auth/strategy/improve/quote/"
+                            },
+                            {
+                              "name": "Deep Think v1",
+                              "request": {
+                                "auth": {
+                                  "type": "bearer",
+                                  "bearer": [
+                                    {
+                                      "key": "token",
+                                      "value": "{{access_token}}"
+                                    }
+                                  ]
+                                },
+                                "method": "POST",
+                                "header": [
+                                  {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                  }
+                                ],
+                                "body": {
+                                  "mode": "raw",
+                                  "raw": "{\n  \"strategy_code\": \"STRG-XXX\"\n}"
+                                },
+                                "url": "{{base_url}}/auth/strategy/deep-think-optimize/"
+                              },
+                              {
+                                "name": "Deep Think v2",
+                                "request": {
+                                  "auth": {
+                                    "type": "bearer",
+                                    "bearer": [
+                                      {
+                                        "key": "token",
+                                        "value": "{{access_token}}"
+                                      }
+                                    ]
+                                  },
+                                  "method": "POST",
+                                  "header": [
+                                    {
+                                      "key": "Content-Type",
+                                      "value": "application/json"
+                                    }
+                                  ],
+                                  "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"strategy_code\": \"STRG-XXX\"\n}"
+                                  },
+                                  "url": "{{base_url}}/auth/strategy/deep-think-optimize-v2/"
+                                },
+                                {
+                                  "name": "Deep Think v2 status",
+                                  "request": {
+                                    "auth": {
+                                      "type": "bearer",
+                                      "bearer": [
+                                        {
+                                          "key": "token",
+                                          "value": "{{access_token}}"
+                                        }
+                                      ]
+                                    },
+                                    "method": "GET",
+                                    "url": "{{base_url}}/auth/strategy/deep-think-optimize-v2/status/",
+                                    "description": "Query: task_id or strategy_code"
+                                  },
+                                  {
+                                    "name": "Deep Think v2 sync",
+                                    "request": {
+                                      "auth": {
+                                        "type": "bearer",
+                                        "bearer": [
+                                          {
+                                            "key": "token",
+                                            "value": "{{access_token}}"
+                                          }
+                                        ]
+                                      },
+                                      "method": "POST",
+                                      "url": "{{base_url}}/auth/strategy/deep-think-optimize-v2/sync/"
+                                    },
+                                    {
+                                      "name": "PDF (button)",
+                                      "request": {
+                                        "auth": {
+                                          "type": "bearer",
+                                          "bearer": [
+                                            {
+                                              "key": "token",
+                                              "value": "{{access_token}}"
+                                            }
+                                          ]
+                                        },
+                                        "method": "GET",
+                                        "url": "{{base_url}}/auth/strategy/backtest/report/{{backtest_id}}/",
+                                        "description": "Replace backtest_id with UUID"
+                                      },
+                                      {
+                                        "name": "Delete (button)",
+                                        "request": {
+                                          "auth": {
+                                            "type": "bearer",
+                                            "bearer": [
+                                              {
+                                                "key": "token",
+                                                "value": "{{access_token}}"
+                                              }
+                                            ]
+                                          },
+                                          "method": "POST",
+                                          "header": [
+                                            {
+                                              "key": "Content-Type",
+                                              "value": "application/json"
+                                            }
+                                          ],
+                                          "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n  \"strategy_code\": \"STRG-XXX\"\n}"
+                                          },
+                                          "url": "{{base_url}}/auth/strategy/delete/"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "name": "Signals",
+                                      "item": [
+                                        {
+                                          "name": "Process signal",
+                                          "request": {
+                                            "auth": {
+                                              "type": "bearer",
+                                              "bearer": [
+                                                {
+                                                  "key": "token",
+                                                  "value": "{{access_token}}"
+                                                }
+                                              ]
+                                            },
+                                            "method": "POST",
+                                            "url": "{{base_url}}/auth/signal/"
+                                          },
+                                          {
+                                            "name": "Copy signal",
+                                            "request": {
+                                              "auth": {
+                                                "type": "bearer",
+                                                "bearer": [
+                                                  {
+                                                    "key": "token",
+                                                    "value": "{{access_token}}"
+                                                  }
+                                                ]
+                                              },
+                                              "method": "POST",
+                                              "url": "{{base_url}}/auth/copy-signal/"
+                                            },
+                                            {
+                                              "name": "Set signal",
+                                              "request": {
+                                                "auth": {
+                                                  "type": "bearer",
+                                                  "bearer": [
+                                                    {
+                                                      "key": "token",
+                                                      "value": "{{access_token}}"
+                                                    }
+                                                  ]
+                                                },
+                                                "method": "POST",
+                                                "url": "{{base_url}}/auth/setSignal/"
+                                              },
+                                              {
+                                                "name": "Delete signal",
+                                                "request": {
+                                                  "auth": {
+                                                    "type": "bearer",
+                                                    "bearer": [
+                                                      {
+                                                        "key": "token",
+                                                        "value": "{{access_token}}"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "method": "POST",
+                                                  "url": "{{base_url}}/auth/deleteSignal/"
+                                                },
+                                                {
+                                                  "name": "Edit active signal",
+                                                  "request": {
+                                                    "auth": {
+                                                      "type": "bearer",
+                                                      "bearer": [
+                                                        {
+                                                          "key": "token",
+                                                          "value": "{{access_token}}"
+                                                        }
+                                                      ]
+                                                    },
+                                                    "method": "POST",
+                                                    "url": "{{base_url}}/auth/editActiveSignal/"
+                                                  },
+                                                  {
+                                                    "name": "Edit pending signal",
+                                                    "request": {
+                                                      "auth": {
+                                                        "type": "bearer",
+                                                        "bearer": [
+                                                          {
+                                                            "key": "token",
+                                                            "value": "{{access_token}}"
+                                                          }
+                                                        ]
+                                                      },
+                                                      "method": "POST",
+                                                      "url": "{{base_url}}/auth/edidPendingSignal/"
+                                                    },
+                                                    {
+                                                      "name": "Close signal",
+                                                      "request": {
+                                                        "auth": {
+                                                          "type": "bearer",
+                                                          "bearer": [
+                                                            {
+                                                              "key": "token",
+                                                              "value": "{{access_token}}"
+                                                            }
+                                                          ]
+                                                        },
+                                                        "method": "POST",
+                                                        "url": "{{base_url}}/auth/closeSignal/"
+                                                      },
+                                                      {
+                                                        "name": "Signal list",
+                                                        "request": {
+                                                          "auth": {
+                                                            "type": "bearer",
+                                                            "bearer": [
+                                                              {
+                                                                "key": "token",
+                                                                "value": "{{access_token}}"
+                                                              }
+                                                            ]
+                                                          },
+                                                          "method": "GET",
+                                                          "url": "{{base_url}}/auth/signal-list/"
+                                                        },
+                                                        {
+                                                          "name": "Copy strategy show",
+                                                          "request": {
+                                                            "auth": {
+                                                              "type": "bearer",
+                                                              "bearer": [
+                                                                {
+                                                                  "key": "token",
+                                                                  "value": "{{access_token}}"
+                                                                }
+                                                              ]
+                                                            },
+                                                            "method": "GET",
+                                                            "url": "{{base_url}}/auth/copystrategyshow/"
+                                                          }
+                                                        ]
+                                                      },
+                                                      {
+                                                        "name": "Tutorials",
+                                                        "item": [
+                                                          {
+                                                            "name": "Tutorials list",
+                                                            "request": {
+                                                              "auth": {
+                                                                "type": "bearer",
+                                                                "bearer": [
+                                                                  {
+                                                                    "key": "token",
+                                                                    "value": "{{access_token}}"
+                                                                  }
+                                                                ]
+                                                              },
+                                                              "method": "GET",
+                                                              "url": "{{base_url}}/auth/tutorials/"
+                                                            },
+                                                            {
+                                                              "name": "Tutorial detail",
+                                                              "request": {
+                                                                "auth": {
+                                                                  "type": "bearer",
+                                                                  "bearer": [
+                                                                    {
+                                                                      "key": "token",
+                                                                      "value": "{{access_token}}"
+                                                                    }
+                                                                  ]
+                                                                },
+                                                                "method": "GET",
+                                                                "url": "{{base_url}}/auth/tutorials/1/"
+                                                              },
+                                                              {
+                                                                "name": "Tutorial AI fetch",
+                                                                "request": {
+                                                                  "auth": {
+                                                                    "type": "bearer",
+                                                                    "bearer": [
+                                                                      {
+                                                                        "key": "token",
+                                                                        "value": "{{access_token}}"
+                                                                      }
+                                                                    ]
+                                                                  },
+                                                                  "method": "GET",
+                                                                  "url": "{{base_url}}/auth/tutorial-ai/"
+                                                                },
+                                                                {
+                                                                  "name": "Tutorial AI generate",
+                                                                  "request": {
+                                                                    "auth": {
+                                                                      "type": "bearer",
+                                                                      "bearer": [
+                                                                        {
+                                                                          "key": "token",
+                                                                          "value": "{{access_token}}"
+                                                                        }
+                                                                      ]
+                                                                    },
+                                                                    "method": "POST",
+                                                                    "url": "{{base_url}}/auth/tutorial-ai/generate/"
+                                                                  },
+                                                                  {
+                                                                    "name": "Tutorial AI generate all",
+                                                                    "request": {
+                                                                      "auth": {
+                                                                        "type": "bearer",
+                                                                        "bearer": [
+                                                                          {
+                                                                            "key": "token",
+                                                                            "value": "{{access_token}}"
+                                                                          }
+                                                                        ]
+                                                                      },
+                                                                      "method": "POST",
+                                                                      "url": "{{base_url}}/auth/tutorial-ai/generate-all/"
+                                                                    },
+                                                                    {
+                                                                      "name": "Get tutorial",
+                                                                      "request": {
+                                                                        "auth": {
+                                                                          "type": "bearer",
+                                                                          "bearer": [
+                                                                            {
+                                                                              "key": "token",
+                                                                              "value": "{{access_token}}"
+                                                                            }
+                                                                          ]
+                                                                        },
+                                                                        "method": "GET",
+                                                                        "url": "{{base_url}}/auth/get_tutorial/"
+                                                                      }
+                                                                    ]
+                                                                  },
+                                                                  {
+                                                                    "name": "Payments (Full)",
+                                                                    "item": [
+                                                                      {
+                                                                        "name": "Create payment order",
+                                                                        "request": {
+                                                                          "auth": {
+                                                                            "type": "bearer",
+                                                                            "bearer": [
+                                                                              {
+                                                                                "key": "token",
+                                                                                "value": "{{access_token}}"
+                                                                              }
+                                                                            ]
+                                                                          },
+                                                                          "method": "POST",
+                                                                          "header": [
+                                                                            {
+                                                                              "key": "Content-Type",
+                                                                              "value": "application/json"
+                                                                            }
+                                                                          ],
+                                                                          "url": "{{base_url}}/auth/payment/create-order/"
+                                                                        },
+                                                                        {
+                                                                          "name": "Verify payment",
+                                                                          "request": {
+                                                                            "auth": {
+                                                                              "type": "bearer",
+                                                                              "bearer": [
+                                                                                {
+                                                                                  "key": "token",
+                                                                                  "value": "{{access_token}}"
+                                                                                }
+                                                                              ]
+                                                                            },
+                                                                            "method": "POST",
+                                                                            "header": [
+                                                                              {
+                                                                                "key": "Content-Type",
+                                                                                "value": "application/json"
+                                                                              }
+                                                                            ],
+                                                                            "url": "{{base_url}}/auth/payment/verify/"
+                                                                          },
+                                                                          {
+                                                                            "name": "Payment balance",
+                                                                            "request": {
+                                                                              "auth": {
+                                                                                "type": "bearer",
+                                                                                "bearer": [
+                                                                                  {
+                                                                                    "key": "token",
+                                                                                    "value": "{{access_token}}"
+                                                                                  }
+                                                                                ]
+                                                                              },
+                                                                              "method": "GET",
+                                                                              "url": "{{base_url}}/auth/payment/balance/"
+                                                                            },
+                                                                            {
+                                                                              "name": "Payment ledger",
+                                                                              "request": {
+                                                                                "auth": {
+                                                                                  "type": "bearer",
+                                                                                  "bearer": [
+                                                                                    {
+                                                                                      "key": "token",
+                                                                                      "value": "{{access_token}}"
+                                                                                    }
+                                                                                  ]
+                                                                                },
+                                                                                "method": "GET",
+                                                                                "url": "{{base_url}}/auth/payment/ledger/"
+                                                                              },
+                                                                              {
+                                                                                "name": "Download invoice",
+                                                                                "request": {
+                                                                                  "auth": {
+                                                                                    "type": "bearer",
+                                                                                    "bearer": [
+                                                                                      {
+                                                                                        "key": "token",
+                                                                                        "value": "{{access_token}}"
+                                                                                      }
+                                                                                    ]
+                                                                                  },
+                                                                                  "method": "GET",
+                                                                                  "url": "{{base_url}}/auth/payment/invoice/INV001/"
+                                                                                }
+                                                                              ]
+                                                                            },
+                                                                            {
+                                                                              "name": "Backtest (Full)",
+                                                                              "item": [
+                                                                                {
+                                                                                  "name": "Backtest result status",
+                                                                                  "request": {
+                                                                                    "auth": {
+                                                                                      "type": "bearer",
+                                                                                      "bearer": [
+                                                                                        {
+                                                                                          "key": "token",
+                                                                                          "value": "{{access_token}}"
+                                                                                        }
+                                                                                      ]
+                                                                                    },
+                                                                                    "method": "GET",
+                                                                                    "url": "{{base_url}}/auth/strategy/backtest/result/"
+                                                                                  },
+                                                                                  {
+                                                                                    "name": "Prepare backtest",
+                                                                                    "request": {
+                                                                                      "auth": {
+                                                                                        "type": "bearer",
+                                                                                        "bearer": [
+                                                                                          {
+                                                                                            "key": "token",
+                                                                                            "value": "{{access_token}}"
+                                                                                          }
+                                                                                        ]
+                                                                                      },
+                                                                                      "method": "POST",
+                                                                                      "url": "{{base_url}}/auth/strategy/copilot/prepare-backtest/"
+                                                                                    },
+                                                                                    {
+                                                                                      "name": "Run backtest",
+                                                                                      "request": {
+                                                                                        "auth": {
+                                                                                          "type": "bearer",
+                                                                                          "bearer": [
+                                                                                            {
+                                                                                              "key": "token",
+                                                                                              "value": "{{access_token}}"
+                                                                                            }
+                                                                                          ]
+                                                                                        },
+                                                                                        "method": "POST",
+                                                                                        "url": "{{base_url}}/auth/strategy/copilot/backtest/"
+                                                                                      },
+                                                                                      {
+                                                                                        "name": "Save strategy",
+                                                                                        "request": {
+                                                                                          "auth": {
+                                                                                            "type": "bearer",
+                                                                                            "bearer": [
+                                                                                              {
+                                                                                                "key": "token",
+                                                                                                "value": "{{access_token}}"
+                                                                                              }
+                                                                                            ]
+                                                                                          },
+                                                                                          "method": "POST",
+                                                                                          "url": "{{base_url}}/auth/strategy/copilot/save-strategy/"
+                                                                                        },
+                                                                                        {
+                                                                                          "name": "Backtest deploy",
+                                                                                          "request": {
+                                                                                            "auth": {
+                                                                                              "type": "bearer",
+                                                                                              "bearer": [
+                                                                                                {
+                                                                                                  "key": "token",
+                                                                                                  "value": "{{access_token}}"
+                                                                                                }
+                                                                                              ]
+                                                                                            },
+                                                                                            "method": "POST",
+                                                                                            "url": "{{base_url}}/auth/strategy/backtest/deploy/"
+                                                                                          },
+                                                                                          {
+                                                                                            "name": "Backtest trade mode",
+                                                                                            "request": {
+                                                                                              "auth": {
+                                                                                                "type": "bearer",
+                                                                                                "bearer": [
+                                                                                                  {
+                                                                                                    "key": "token",
+                                                                                                    "value": "{{access_token}}"
+                                                                                                  }
+                                                                                                ]
+                                                                                              },
+                                                                                              "method": "POST",
+                                                                                              "url": "{{base_url}}/auth/strategy/backtest/trade-mode/"
+                                                                                            },
+                                                                                            {
+                                                                                              "name": "Backtest validate",
+                                                                                              "request": {
+                                                                                                "auth": {
+                                                                                                  "type": "bearer",
+                                                                                                  "bearer": [
+                                                                                                    {
+                                                                                                      "key": "token",
+                                                                                                      "value": "{{access_token}}"
+                                                                                                    }
+                                                                                                  ]
+                                                                                                },
+                                                                                                "method": "POST",
+                                                                                                "url": "{{base_url}}/auth/strategy/backtest/validate/"
+                                                                                              },
+                                                                                              {
+                                                                                                "name": "Backtest indicators",
+                                                                                                "request": {
+                                                                                                  "auth": {
+                                                                                                    "type": "bearer",
+                                                                                                    "bearer": [
+                                                                                                      {
+                                                                                                        "key": "token",
+                                                                                                        "value": "{{access_token}}"
+                                                                                                      }
+                                                                                                    ]
+                                                                                                  },
+                                                                                                  "method": "POST",
+                                                                                                  "url": "{{base_url}}/auth/strategy/backtest/indicators/"
+                                                                                                },
+                                                                                                {
+                                                                                                  "name": "Check open position",
+                                                                                                  "request": {
+                                                                                                    "auth": {
+                                                                                                      "type": "bearer",
+                                                                                                      "bearer": [
+                                                                                                        {
+                                                                                                          "key": "token",
+                                                                                                          "value": "{{access_token}}"
+                                                                                                        }
+                                                                                                      ]
+                                                                                                    },
+                                                                                                    "method": "GET",
+                                                                                                    "url": "{{base_url}}/auth/strategy/backtest/check-open-position/",
+                                                                                                    "description": "Query: strategy_code"
+                                                                                                  },
+                                                                                                  {
+                                                                                                    "name": "Rerun backtest",
+                                                                                                    "request": {
+                                                                                                      "auth": {
+                                                                                                        "type": "bearer",
+                                                                                                        "bearer": [
+                                                                                                          {
+                                                                                                            "key": "token",
+                                                                                                            "value": "{{access_token}}"
+                                                                                                          }
+                                                                                                        ]
+                                                                                                      },
+                                                                                                      "method": "POST",
+                                                                                                      "url": "{{base_url}}/auth/strategy/rerun-backtest/"
+                                                                                                    },
+                                                                                                    {
+                                                                                                      "name": "Update strategy name",
+                                                                                                      "request": {
+                                                                                                        "auth": {
+                                                                                                          "type": "bearer",
+                                                                                                          "bearer": [
+                                                                                                            {
+                                                                                                              "key": "token",
+                                                                                                              "value": "{{access_token}}"
+                                                                                                            }
+                                                                                                          ]
+                                                                                                        },
+                                                                                                        "method": "POST",
+                                                                                                        "url": "{{base_url}}/auth/strategy/update-name/"
+                                                                                                      },
+                                                                                                      {
+                                                                                                        "name": "Sync deployed",
+                                                                                                        "request": {
+                                                                                                          "auth": {
+                                                                                                            "type": "bearer",
+                                                                                                            "bearer": [
+                                                                                                              {
+                                                                                                                "key": "token",
+                                                                                                                "value": "{{access_token}}"
+                                                                                                              }
+                                                                                                            ]
+                                                                                                          },
+                                                                                                          "method": "POST",
+                                                                                                          "url": "{{base_url}}/auth/strategy/sync-deployed/"
+                                                                                                        },
+                                                                                                        {
+                                                                                                          "name": "Check deployment sync",
+                                                                                                          "request": {
+                                                                                                            "auth": {
+                                                                                                              "type": "bearer",
+                                                                                                              "bearer": [
+                                                                                                                {
+                                                                                                                  "key": "token",
+                                                                                                                  "value": "{{access_token}}"
+                                                                                                                }
+                                                                                                              ]
+                                                                                                            },
+                                                                                                            "method": "GET",
+                                                                                                            "url": "{{base_url}}/auth/strategy/check-deployment-sync/"
+                                                                                                          },
+                                                                                                          {
+                                                                                                            "name": "Backtest candles",
+                                                                                                            "request": {
+                                                                                                              "auth": {
+                                                                                                                "type": "bearer",
+                                                                                                                "bearer": [
+                                                                                                                  {
+                                                                                                                    "key": "token",
+                                                                                                                    "value": "{{access_token}}"
+                                                                                                                  }
+                                                                                                                ]
+                                                                                                              },
+                                                                                                              "method": "GET",
+                                                                                                              "url": "{{base_url}}/auth/backtest/candles/",
+                                                                                                              "description": "Query: symbol, timeframe"
+                                                                                                            },
+                                                                                                            {
+                                                                                                              "name": "Backtest symbols",
+                                                                                                              "request": {
+                                                                                                                "auth": {
+                                                                                                                  "type": "bearer",
+                                                                                                                  "bearer": [
+                                                                                                                    {
+                                                                                                                      "key": "token",
+                                                                                                                      "value": "{{access_token}}"
+                                                                                                                    }
+                                                                                                                  ]
+                                                                                                                },
+                                                                                                                "method": "GET",
+                                                                                                                "url": "{{base_url}}/auth/backtest-symbols/"
+                                                                                                              }
+                                                                                                            ]
+                                                                                                          },
+                                                                                                          {
+                                                                                                            "name": "Copilot",
+                                                                                                            "item": [
+                                                                                                              {
+                                                                                                                "name": "Copilot chat",
+                                                                                                                "request": {
+                                                                                                                  "auth": {
+                                                                                                                    "type": "bearer",
+                                                                                                                    "bearer": [
+                                                                                                                      {
+                                                                                                                        "key": "token",
+                                                                                                                        "value": "{{access_token}}"
+                                                                                                                      }
+                                                                                                                    ]
+                                                                                                                  },
+                                                                                                                  "method": "POST",
+                                                                                                                  "url": "{{base_url}}/auth/strategy/copilot/chat/"
+                                                                                                                },
+                                                                                                                {
+                                                                                                                  "name": "Copilot stream",
+                                                                                                                  "request": {
+                                                                                                                    "auth": {
+                                                                                                                      "type": "bearer",
+                                                                                                                      "bearer": [
+                                                                                                                        {
+                                                                                                                          "key": "token",
+                                                                                                                          "value": "{{access_token}}"
+                                                                                                                        }
+                                                                                                                      ]
+                                                                                                                    },
+                                                                                                                    "method": "POST",
+                                                                                                                    "url": "{{base_url}}/auth/strategy/copilot/stream/"
+                                                                                                                  },
+                                                                                                                  {
+                                                                                                                    "name": "Copilot history",
+                                                                                                                    "request": {
+                                                                                                                      "auth": {
+                                                                                                                        "type": "bearer",
+                                                                                                                        "bearer": [
+                                                                                                                          {
+                                                                                                                            "key": "token",
+                                                                                                                            "value": "{{access_token}}"
+                                                                                                                          }
+                                                                                                                        ]
+                                                                                                                      },
+                                                                                                                      "method": "GET",
+                                                                                                                      "url": "{{base_url}}/auth/strategy/copilot/history/"
+                                                                                                                    },
+                                                                                                                    {
+                                                                                                                      "name": "Fetch conversions",
+                                                                                                                      "request": {
+                                                                                                                        "auth": {
+                                                                                                                          "type": "bearer",
+                                                                                                                          "bearer": [
+                                                                                                                            {
+                                                                                                                              "key": "token",
+                                                                                                                              "value": "{{access_token}}"
+                                                                                                                            }
+                                                                                                                          ]
+                                                                                                                        },
+                                                                                                                        "method": "GET",
+                                                                                                                        "url": "{{base_url}}/auth/strategy/copilot/fetch-conversions/"
+                                                                                                                      }
+                                                                                                                    ]
+                                                                                                                  },
+                                                                                                                  {
+                                                                                                                    "name": "Admin (Sample)",
+                                                                                                                    "item": [
+                                                                                                                      {
+                                                                                                                        "name": "Admin strategy list",
+                                                                                                                        "request": {
+                                                                                                                          "auth": {
+                                                                                                                            "type": "bearer",
+                                                                                                                            "bearer": [
+                                                                                                                              {
+                                                                                                                                "key": "token",
+                                                                                                                                "value": "{{access_token}}"
+                                                                                                                              }
+                                                                                                                            ]
+                                                                                                                          },
+                                                                                                                          "method": "GET",
+                                                                                                                          "url": "{{base_url}}/auth/get_admin_strategy_list/"
+                                                                                                                        },
+                                                                                                                        {
+                                                                                                                          "name": "Admin user list",
+                                                                                                                          "request": {
+                                                                                                                            "auth": {
+                                                                                                                              "type": "bearer",
+                                                                                                                              "bearer": [
+                                                                                                                                {
+                                                                                                                                  "key": "token",
+                                                                                                                                  "value": "{{access_token}}"
+                                                                                                                                }
+                                                                                                                              ]
+                                                                                                                            },
+                                                                                                                            "method": "GET",
+                                                                                                                            "url": "{{base_url}}/auth/get_admin_user_list/"
+                                                                                                                          },
+                                                                                                                          {
+                                                                                                                            "name": "Admin broker list",
+                                                                                                                            "request": {
+                                                                                                                              "auth": {
+                                                                                                                                "type": "bearer",
+                                                                                                                                "bearer": [
+                                                                                                                                  {
+                                                                                                                                    "key": "token",
+                                                                                                                                    "value": "{{access_token}}"
+                                                                                                                                  }
+                                                                                                                                ]
+                                                                                                                              },
+                                                                                                                              "method": "POST",
+                                                                                                                              "header": [
+                                                                                                                                {
+                                                                                                                                  "key": "Content-Type",
+                                                                                                                                  "value": "application/json"
+                                                                                                                                }
+                                                                                                                              ],
+                                                                                                                              "body": {
+                                                                                                                                "mode": "raw",
+                                                                                                                                "raw": "{\n  \"user_id\": 1\n}"
+                                                                                                                              },
+                                                                                                                              "url": "{{base_url}}/auth/get_admin_broker_list/"
+                                                                                                                            },
+                                                                                                                            {
+                                                                                                                              "name": "Admin deploy user strategy",
+                                                                                                                              "request": {
+                                                                                                                                "auth": {
+                                                                                                                                  "type": "bearer",
+                                                                                                                                  "bearer": [
+                                                                                                                                    {
+                                                                                                                                      "key": "token",
+                                                                                                                                      "value": "{{access_token}}"
+                                                                                                                                    }
+                                                                                                                                  ]
+                                                                                                                                },
+                                                                                                                                "method": "POST",
+                                                                                                                                "url": "{{base_url}}/auth/admin_deploy_user_strategy/"
+                                                                                                                              },
+                                                                                                                              {
+                                                                                                                                "name": "Admin undeploy user strategy",
+                                                                                                                                "request": {
+                                                                                                                                  "auth": {
+                                                                                                                                    "type": "bearer",
+                                                                                                                                    "bearer": [
+                                                                                                                                      {
+                                                                                                                                        "key": "token",
+                                                                                                                                        "value": "{{access_token}}"
+                                                                                                                                      }
+                                                                                                                                    ]
+                                                                                                                                  },
+                                                                                                                                  "method": "POST",
+                                                                                                                                  "url": "{{base_url}}/auth/admin_undeploy_user_strategy/"
+                                                                                                                                }
+                                                                                                                              ]
+                                                                                                                            },
+                                                                                                                            {
+                                                                                                                              "name": "System (Staff)",
+                                                                                                                              "item": [
+                                                                                                                                {
+                                                                                                                                  "name": "System performance",
+                                                                                                                                  "request": {
+                                                                                                                                    "auth": {
+                                                                                                                                      "type": "bearer",
+                                                                                                                                      "bearer": [
+                                                                                                                                        {
+                                                                                                                                          "key": "token",
+                                                                                                                                          "value": "{{access_token}}"
+                                                                                                                                        }
+                                                                                                                                      ]
+                                                                                                                                    },
+                                                                                                                                    "method": "GET",
+                                                                                                                                    "url": "{{base_url}}/auth/system/performance/"
+                                                                                                                                  },
+                                                                                                                                  {
+                                                                                                                                    "name": "System errors",
+                                                                                                                                    "request": {
+                                                                                                                                      "auth": {
+                                                                                                                                        "type": "bearer",
+                                                                                                                                        "bearer": [
+                                                                                                                                          {
+                                                                                                                                            "key": "token",
+                                                                                                                                            "value": "{{access_token}}"
+                                                                                                                                          }
+                                                                                                                                        ]
+                                                                                                                                      },
+                                                                                                                                      "method": "GET",
+                                                                                                                                      "url": "{{base_url}}/auth/system/errors/"
+                                                                                                                                    }
+                                                                                                                                  ]
+                                                                                                                                },
+                                                                                                                                {
+                                                                                                                                  "name": "Router (ViewSets)",
+                                                                                                                                  "item": [
+                                                                                                                                    {
+                                                                                                                                      "name": "Highlow strategies list",
+                                                                                                                                      "request": {
+                                                                                                                                        "auth": {
+                                                                                                                                          "type": "bearer",
+                                                                                                                                          "bearer": [
+                                                                                                                                            {
+                                                                                                                                              "key": "token",
+                                                                                                                                              "value": "{{access_token}}"
+                                                                                                                                            }
+                                                                                                                                          ]
+                                                                                                                                        },
+                                                                                                                                        "method": "GET",
+                                                                                                                                        "url": "{{base_url}}/auth/highlow-strategies/",
+                                                                                                                                        "description": "Staff"
+                                                                                                                                      },
+                                                                                                                                      {
+                                                                                                                                        "name": "Highlow strategies1 list",
+                                                                                                                                        "request": {
+                                                                                                                                          "auth": {
+                                                                                                                                            "type": "bearer",
+                                                                                                                                            "bearer": [
+                                                                                                                                              {
+                                                                                                                                                "key": "token",
+                                                                                                                                                "value": "{{access_token}}"
+                                                                                                                                              }
+                                                                                                                                            ]
+                                                                                                                                          },
+                                                                                                                                          "method": "GET",
+                                                                                                                                          "url": "{{base_url}}/auth/highlow-strategies1/",
+                                                                                                                                          "description": "Bearer"
+                                                                                                                                        },
+                                                                                                                                        {
+                                                                                                                                          "name": "Latency list",
+                                                                                                                                          "request": {
+                                                                                                                                            "auth": {
+                                                                                                                                              "type": "bearer",
+                                                                                                                                              "bearer": [
+                                                                                                                                                {
+                                                                                                                                                  "key": "token",
+                                                                                                                                                  "value": "{{access_token}}"
+                                                                                                                                                }
+                                                                                                                                              ]
+                                                                                                                                            },
+                                                                                                                                            "method": "GET",
+                                                                                                                                            "url": "{{base_url}}/auth/latency/",
+                                                                                                                                            "description": "Staff. Query: strategy_code, strategy_name"
+                                                                                                                                          }
+                                                                                                                                        ]
+                                                                                                                                      }
+                                                                                                                                    ]
+                                                                                                                                  }

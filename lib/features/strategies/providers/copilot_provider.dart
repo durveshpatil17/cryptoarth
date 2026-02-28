@@ -2,6 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cryptoarth/features/strategies/services/copilot_service.dart';
 import 'package:cryptoarth/features/credits/providers/payment_balance_provider.dart';
 import 'package:cryptoarth/features/strategies/models/chat_message_model.dart';
+import 'package:cryptoarth/features/strategies/providers/strategy_provider.dart';
+import 'package:cryptoarth/features/strategies/providers/backtest_provider.dart';
+import 'package:cryptoarth/features/strategies/models/backtest_model.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -18,9 +21,28 @@ final chatHistoryProvider = FutureProvider<List<dynamic>>((ref) async {
   return [];
 });
 
+String _generatePineLocal(Map<String, dynamic> strategy) {
+  final String desc = strategy["description"] ?? strategy["strategy_name"] ?? "Copilot Strategy";
+  return '''
+//@version=5
+strategy("\$desc", overlay=true)
+
+bb = ta.bb(close, 20, 2)
+longCondition = close <= bb.lower
+shortCondition = close >= bb.upper
+
+if (longCondition)
+    strategy.entry("Long", strategy.long)
+
+if (shortCondition)
+    strategy.entry("Short", strategy.short)
+''';
+}
+
 class CopilotNotifier extends AsyncNotifier<List<Map<String, dynamic>>> {
   String? _sessionId;
   final _uuid = const Uuid();
+  bool isGenerating = false;
 
   @override
   FutureOr<List<Map<String, dynamic>>> build() {
@@ -40,7 +62,9 @@ class CopilotNotifier extends AsyncNotifier<List<Map<String, dynamic>>> {
     // Optimistically add the user message
     state = AsyncData([...previousMessages, userMessage]);
 
-    state = await AsyncValue.guard(() async {
+    isGenerating = true;
+    try {
+      state = await AsyncValue.guard(() async {
       final currentList = state.value ?? [];
       final service = ref.read(copilotServiceProvider);
       const String selectedModel = "claude-sonnet-4-5-20250929";
@@ -164,8 +188,46 @@ class CopilotNotifier extends AsyncNotifier<List<Map<String, dynamic>>> {
       // Invalidate payment balance to update credits UI
       ref.invalidate(paymentBalanceProvider);
 
-      return [...currentList, assistantMessage];
+      print("=== FINAL ASSISTANT MESSAGE STATE ===");
+      print(assistantMessage);
+
+      // PART 1 - ROBUST JSON EXTRACTION
+      final content = assistantMessage["content"]?.toString() ?? "";
+
+      final start = content.indexOf("```json");
+      if (start != -1) {
+        final end = content.indexOf("```", start + 7);
+        if (end != -1) {
+          final jsonString = content.substring(start + 7, end).trim();
+
+          try {
+            final parsed = jsonDecode(jsonString);
+
+            assistantMessage["strategy_meta"] = parsed;
+            assistantMessage["strategy_json"] = parsed["strategy_json"] ?? parsed;
+            assistantMessage["strategy_name"] = parsed["strategy_name"];
+            assistantMessage["strategy_description"] = parsed["strategy_description"];
+
+            if (assistantMessage["strategy_json"] is Map) {
+              assistantMessage["pine_code"] = _generatePineLocal(assistantMessage["strategy_json"]);
+            }
+
+            print("✅ STRATEGY JSON EXTRACTED AND PINE GENERATED");
+
+          } catch (e) {
+            print("❌ JSON PARSE ERROR: $e");
+          }
+        }
+      }
+
+      // PART 2 - FORCE RIVERPOD STATE REBUILD
+      final updated = [...currentList];
+      updated.add(Map<String, dynamic>.from(assistantMessage));
+      return updated;
     });
+    } finally {
+      isGenerating = false;
+    }
   }
 
   Future<void> loadSession(String sessionId) async {
@@ -206,6 +268,95 @@ class CopilotNotifier extends AsyncNotifier<List<Map<String, dynamic>>> {
   void clearChat() {
     state = const AsyncData([]);
     _sessionId = null;
+  }
+
+  Future<void> runBacktest(String messageId) async {
+    final messages = state.value ?? [];
+    final index = messages.indexWhere((m) => m['id'] == messageId);
+    if (index == -1) return;
+
+    final message = messages[index];
+    final service = ref.read(strategyServiceProvider);
+
+    try {
+      final Map<String, dynamic> runPayload = {
+        "symbol": "BTCUSD",
+        "timeframe": "15MIN",
+        "leverage": 10,
+        "capital_percent": 25,
+        "capital": 10000,
+        "commission_type": "maker",
+        "commission_percent": 0.05,
+      };
+
+      if (message['strategy_json'] != null) {
+        runPayload['json_strategy_code'] = message['strategy_json'];
+      } else if (message['python'] != null) {
+        runPayload['python_backtest_code'] = message['python'];
+      } else if (message['pine_code'] != null || message['pine_script'] != null) {
+        runPayload['pine_code'] = message['pine_code'] ?? message['pine_script'];
+      }
+
+      final result = await service.runBacktest(runPayload);
+      
+      // Update state safely
+      final updatedMessage = Map<String, dynamic>.from(message);
+      updatedMessage['backtest_id'] = result['backtest_id'];
+      updatedMessage['metrics'] = result['metrics'] ?? result['backtest_result']?['metrics'];
+      updatedMessage['backtest_result'] = result;
+      
+      final newList = List<Map<String, dynamic>>.from(messages);
+      newList[index] = updatedMessage;
+      state = AsyncData(newList);
+      
+      // Invalidate backtest history
+      ref.invalidate(backtestProvider);
+    } catch (e) {
+      print("🚨 COPILOT BACKTEST ERROR: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> deployStrategy(String messageId) async {
+    final messages = state.value ?? [];
+    final index = messages.indexWhere((m) => m['id'] == messageId);
+    if (index == -1) return;
+
+    final message = messages[index];
+    
+    final backtestId = message['backtest_id']?.toString() ?? message['backtest_result']?['backtest_id']?.toString();
+    
+    if (backtestId == null) {
+       throw Exception("Backtest must be completed before saving/deploying");
+    }
+
+    final service = ref.read(strategyServiceProvider);
+
+    try {
+      // Step 5: Save
+      final savePayload = {
+        "backtest_id": backtestId
+      };
+      // createStrategy endpoint calls /auth/strategy/copilot/save-strategy/
+      final saveResponse = await service.createStrategy(savePayload);
+      
+      final savedStrategyId = saveResponse['id']?.toString() ?? saveResponse['strategy_id']?.toString();
+      if (savedStrategyId == null) {
+         throw Exception("Failed to save strategy: No strategy ID returned");
+      }
+      
+      // Step 6: Deploy
+      await service.deployCopilotStrategy(savedStrategyId, "paper");
+      
+      // Invalidate providers so execution history and dashboard refresh
+      ref.invalidate(strategyProvider);
+      ref.invalidate(dashboardStrategyProvider);
+      ref.invalidate(backtestProvider);
+      
+    } catch (e) {
+      print("🚨 COPILOT DEPLOY ERROR: $e");
+      rethrow;
+    }
   }
 }
 

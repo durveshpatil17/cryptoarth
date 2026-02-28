@@ -12,12 +12,16 @@ class BacktestConfigScreen extends ConsumerStatefulWidget {
   final String strategyCode;
   final String strategyName;
   final String? pineCode;
+  final String? pythonCode;
+  final dynamic strategySource;
 
   const BacktestConfigScreen({
     super.key, 
-    this.strategyCode = 'MACD_CROSSOVER',
-    this.strategyName = 'EMA 9/21 Crossover',
+    this.strategyCode = 'COPILOT_STRAT',
+    this.strategyName = 'AI Generated Strategy',
     this.pineCode,
+    this.pythonCode,
+    this.strategySource,
   });
 
   @override
@@ -265,9 +269,14 @@ class _BacktestConfigScreenState extends ConsumerState<BacktestConfigScreen> {
         if (widget.pineCode != null) "pine_code": widget.pineCode,
       };
       
-      // 1. Prepare Backtest
-      final prepareData = await srv.prepareBacktest(payload);
-      final strategyJson = prepareData["strategy_json"];
+      // 1. Prepare Backtest (only if we don't already have source)
+      dynamic strategyJson;
+      if (widget.strategySource != null) {
+        strategyJson = widget.strategySource;
+      } else if (widget.pineCode == null && widget.pythonCode == null && !widget.strategyCode.startsWith('COPILOT_STRAT')) {
+         final prepareData = await srv.prepareBacktest(payload);
+         strategyJson = prepareData["strategy_json"];
+      }
       
       // 2. Run Backtest
       final int leverageVal = int.tryParse(payload["leverage"].toString()) ?? 10;
@@ -290,19 +299,23 @@ class _BacktestConfigScreenState extends ConsumerState<BacktestConfigScreen> {
 
       if (strategyJson != null) {
         // Flattened components for server's JSON engine
-        runPayload.addAll(Map<String, dynamic>.from(strategyJson));
-        if (strategyJson['risk'] != null && strategyJson['risk'] is Map) {
-          runPayload.addAll(Map<String, dynamic>.from(strategyJson['risk']));
+        if (strategyJson is Map) {
+          runPayload.addAll(Map<String, dynamic>.from(strategyJson));
+          if (strategyJson['risk'] != null && strategyJson['risk'] is Map) {
+            runPayload.addAll(Map<String, dynamic>.from(strategyJson['risk']));
+          }
         }
         
         // Multi-path strategy representation
         runPayload["json_strategy_code"] = strategyJson;
-        runPayload["strategy_json"] = strategyJson;
       }
       
       // Always include pine_code if available as a fallback
       if (widget.pineCode != null) {
         runPayload["pine_code"] = widget.pineCode;
+      }
+      if (widget.pythonCode != null) {
+        runPayload["python_backtest_code"] = widget.pythonCode;
       }
 
       final runData = await srv.runBacktest(runPayload);
