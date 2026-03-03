@@ -55,6 +55,7 @@ class ApiEndpoints {
   static const String backtestEdit = "/auth/strategy/backtest/edit/";
   static const String backtestPine = "/auth/strategy/backtest/pine-code/";
   static const String backtestShare = "/auth/strategy/backtest/share/";
+  static const String strategySearchUser = "/auth/strategy/search-user/";
   static const String strategyImprove = "/auth/strategy/improve/";
   static const String strategyDeepThink = "/auth/strategy/deep-think-optimize-v2/";
   static const String strategyDelete = "/auth/strategy/delete/";

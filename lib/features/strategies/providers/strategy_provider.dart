@@ -36,8 +36,9 @@ class StrategyNotifier extends AsyncNotifier<List<StrategyModel>> {
 
   Future<void> undeployStrategy(dynamic strategyId) async {
     try {
+      final user = ref.read(authProvider).user;
       final service = ref.read(strategyServiceProvider);
-      await service.undeployStrategy(strategyId);
+      await service.undeployStrategy(strategyId, userId: user?.id);
       ref.invalidateSelf(); // refresh list
     } catch (e) {
       throw Exception('Undeploy failed: $e');

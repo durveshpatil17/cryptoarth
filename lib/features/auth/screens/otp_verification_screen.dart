@@ -9,10 +9,14 @@ import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
 class OtpVerificationScreen extends ConsumerStatefulWidget {
 
   final String mobileNumber;
+  final bool isSignup;
+  final Map<String, dynamic>? signupData;
 
   const OtpVerificationScreen({
     super.key,
     required this.mobileNumber,
+    this.isSignup = false,
+    this.signupData,
   });
 
   @override
@@ -64,7 +68,37 @@ class _OtpVerificationScreenState
   }
 
   Future<void> verify(String otp) async {
-    final success = await ref.read(authProvider.notifier).login(widget.mobileNumber, otp);
+    bool success = false;
+    
+    if (widget.isSignup) {
+      if (widget.signupData == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Signup data missing! Please try again.")),
+        );
+        return;
+      }
+      
+      final String firstName = widget.signupData!['first_name'] ?? '';
+      final String lastName = widget.signupData!['last_name'] ?? '';
+      final String email = widget.signupData!['email'] ?? '';
+      
+      if (firstName.isEmpty || email.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Critical registration data missing.")),
+        );
+        return;
+      }
+
+      success = await ref.read(authProvider.notifier).signup(
+        phone: widget.mobileNumber,
+        otp: otp,
+        email: email,
+        firstName: firstName,
+        lastName: lastName,
+      );
+    } else {
+      success = await ref.read(authProvider.notifier).login(widget.mobileNumber, otp);
+    }
 
     if (!mounted) return;
 

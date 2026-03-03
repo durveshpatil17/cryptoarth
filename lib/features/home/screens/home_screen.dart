@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 import 'package:cryptoarth/shared/widgets/glass_container.dart';
@@ -7,12 +8,15 @@ import 'package:cryptoarth/shared/widgets/strategy_response_card.dart';
 import 'package:cryptoarth/features/strategies/screens/backtest_config_screen.dart';
 import 'package:cryptoarth/features/credits/screens/credits_store_screen.dart';
 
+import 'package:cryptoarth/features/strategies/screens/templates_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cryptoarth/features/credits/providers/payment_balance_provider.dart';
 import 'package:cryptoarth/features/strategies/providers/strategy_provider.dart';
 import 'package:cryptoarth/features/strategies/providers/copilot_provider.dart';
 import 'package:cryptoarth/features/portfolio/providers/pnl_provider.dart';
 import 'package:cryptoarth/features/portfolio/providers/watchlist_provider.dart';
+import 'package:cryptoarth/features/portfolio/providers/portfolio_provider.dart';
+import 'package:cryptoarth/features/broker/providers/broker_balance_provider.dart';
 import 'package:cryptoarth/core/utils/time_utils.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -295,62 +299,130 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        leading: Builder(
-          builder: (context) {
-            return IconButton(
-              icon: const Icon(Icons.menu, color: Colors.white70),
-              onPressed: () {
-                final ScaffoldState? root = context.findRootAncestorStateOfType<ScaffoldState>();
-                root?.openDrawer();
-              },
-            );
-          },
-        ),
-        title: _buildAnimatedCoinTicker(), 
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          Center(child: _buildCreditBalance()),
-          const SizedBox(width: 12),
-          Center(child: _buildLivePnL()),
-          const SizedBox(width: 8),
-          const Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            child: ProfileAvatar(radius: 16),
+      body: Stack(
+        children: [
+          // Background Depth Effects
+          Positioned(
+            top: -100,
+            left: MediaQuery.of(context).size.width * 0.2,
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary.withOpacity(0.05),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+                child: Container(color: Colors.transparent),
+              ),
+            ),
+          ),
+          
+          SafeArea(
+            child: Column(
+              children: [
+                // Precisely Aligned Top Nav
+                _buildTopNav(),
+                
+                const SizedBox(height: 16),
+                
+                // Precisely Aligned Account Ribbon
+                _buildAccountRibbon(),
+                
+                const SizedBox(height: 32),
+
+                Expanded(
+                  child: chatState.when(
+                    data: (messages) => messages.isEmpty 
+                      ? _buildWelcomeCenter() 
+                      : _buildChatList(messages, false),
+                    loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
+                    error: (err, stack) => _buildErrorState(err.toString()),
+                  ),
+                ),
+
+                // Floating Input (Only when active chat)
+                if (chatState.value != null && chatState.value!.isNotEmpty)
+                   _buildFloatingInputArea(),
+              ],
+            ),
           ),
         ],
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: chatState.when(
-                data: (messages) => messages.isEmpty 
-                  ? _buildWelcomeCenter() 
-                  : _buildChatList(messages, false),
-                loading: () {
-                   return const Center(child: CircularProgressIndicator(color: AppColors.cyan));
-                },
-                error: (err, stack) => Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
-                      const SizedBox(height: 16),
-                      Text("Failed to send message: $err", style: const TextStyle(color: Colors.white70)),
-                      TextButton(onPressed: () => ref.invalidate(copilotProvider), child: const Text("Retry")),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+    );
+  }
 
-            // Persistent Input Area (Always Visible)
-            _buildInputArea(),
-          ],
-        ),
+  Widget _buildTopNav() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white70, size: 24),
+            onPressed: () {
+              final ScaffoldState? root = context.findRootAncestorStateOfType<ScaffoldState>();
+              root?.openDrawer();
+            },
+          ),
+          const Spacer(),
+          _buildAnimatedCoinTicker(),
+          const Spacer(),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: ProfileAvatar(radius: 14),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccountRibbon() {
+    final brokerBalance = ref.watch(brokerBalanceProvider).value?.balance ?? 0.0;
+    final credits = ref.watch(paymentBalanceProvider).value?.balance.floor() ?? 0;
+    final todayPnL = ref.watch(pnlProvider).value?.todayProfit ?? 0.0;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.01),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.035)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildRibbonItem("PORTFOLIO", "\$${brokerBalance.toStringAsFixed(0)}", Colors.white),
+          Container(width: 1, height: 16, color: Colors.white.withOpacity(0.06)),
+          _buildRibbonItem("TODAY PNL", "${todayPnL >= 0 ? '+' : ''}\$${todayPnL.toStringAsFixed(1)}", todayPnL >= 0 ? AppColors.green : Colors.redAccent),
+          Container(width: 1, height: 16, color: Colors.white.withOpacity(0.06)),
+          _buildRibbonItem("CREDITS", "$credits", AppColors.gold),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRibbonItem(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 7, fontWeight: FontWeight.bold, letterSpacing: 1)),
+        const SizedBox(height: 2),
+        Text(value, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w900)),
+      ],
+    );
+  }
+
+  Widget _buildErrorState(String error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.redAccent, size: 40),
+          const SizedBox(height: 16),
+          Text("Something went wrong", style: TextStyle(color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.bold)),
+          TextButton(onPressed: () => ref.invalidate(copilotProvider), child: const Text("Tap to retry")),
+        ],
       ),
     );
   }
@@ -461,350 +533,263 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     );
   }
 
+  // Cleaned up redundant builders...
+
   Widget _buildWelcomeCenter() {
-     return LayoutBuilder(
-       builder: (context, constraints) {
-         return SingleChildScrollView(
-           child: ConstrainedBox(
-             constraints: BoxConstraints(minHeight: constraints.maxHeight),
-             child: IntrinsicHeight(
-               child: Padding(
-                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                 child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                       const Spacer(),
-                       const Icon(
-                         Icons.insights,
-                         size: 36,
-                         color: AppColors.cyan,
-                       ),
-              const SizedBox(height: 16),
-              const Text(
-                 "Algorithmic Trading,\nDemocratized.",
-                 style: TextStyle(
-                   color: Colors.white, 
-                   fontSize: 24, 
-                   fontWeight: FontWeight.w800, 
-                   letterSpacing: -0.5, 
-                   height: 1.2
-                 ),
-                 textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                 "Institutional-grade algorithmic power for retail traders.\nDesign, backtest, and deploy sophisticated strategies.",
-                 style: TextStyle(color: Colors.white60, fontSize: 12, height: 1.5),
-                 textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.gold.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.gold.withOpacity(0.3)),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.bolt, color: AppColors.gold, size: 14),
-                    SizedBox(width: 8),
-                    Text("Only 20 Credits / Generation", style: TextStyle(color: AppColors.gold, fontSize: 11, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-              // Suggestions
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "EXAMPLE STRATEGIES", 
-                  style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1.0)
-                ),
-              ),
-
-              const SizedBox(height: 6),
-              _buildSuggestionPrompt("Long BTC when RSI < 30 and MACD crosses up"),
-              const SizedBox(height: 6),
-              _buildSuggestionPrompt("Mean reversion using Bollinger Bands on ETH 15m"),
-              const SizedBox(height: 24),
-                 
-                 // Deep Marketing Addictive Nudge
-                 Container(
-                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                   decoration: BoxDecoration(
-                     color: const Color(0xFF0F172A), // Dark navy
-                     borderRadius: BorderRadius.circular(12),
-                     border: Border.all(color: Colors.white.withOpacity(0.05)),
-                   ),
-                   child: Row(
-                     children: [
-                       Icon(Icons.trending_up, color: AppColors.green.withOpacity(0.8), size: 18),
-                       const SizedBox(width: 12),
-                       Expanded(
-                         child: Column(
-                           crossAxisAlignment: CrossAxisAlignment.start,
-                           children: [
-                             const Text(
-                               "Why use CryptoArth AI?",
-                               style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                             ),
-                             const SizedBox(height: 2),
-                             Text(
-                               "Traders using our backtested AI models see on average a 43% increase in win-rate.",
-                               style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 10, height: 1.4),
-                             ),
-                           ],
-                         ),
-                       ),
-                     ],
-                   ),
-                 ),
-                 const Spacer(),
-              ],
-           ),
-        ),
-             ),
-           ),
-         );
-       },
-     );
-  }
-
-  Widget _buildInputArea() {
-     return Container(
-        padding: const EdgeInsets.only(left: 12, right: 12, top: 8, bottom: 8),
-        decoration: BoxDecoration(
-           color: AppColors.background,
-           border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
-        ),
-        child: Column(
-          children: [
-            // Prompt Modifiers for Retail Traders
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildPromptModifierChip(Icons.bolt, "Scalping", AppColors.gold),
-                  _buildPromptModifierChip(Icons.shield_outlined, "Low Risk", AppColors.cyan),
-                  _buildPromptModifierChip(Icons.show_chart, "Trend Following", AppColors.green),
-                  _buildPromptModifierChip(Icons.monetization_on_outlined, "High Yield", AppColors.purple),
-                ],
+     return SingleChildScrollView(
+       physics: const BouncingScrollPhysics(),
+       padding: const EdgeInsets.symmetric(horizontal: 24),
+       child: Column(
+         children: [
+            const SizedBox(height: 48),
+            
+            // Hero Title: Precision Scaled
+            ShaderMask(
+              shaderCallback: (bounds) => AppColors.primaryGradient.createShader(bounds),
+              child: const Text(
+                "Build Your Alpha.",
+                style: TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -1.2, height: 1.1),
               ),
             ),
-            const SizedBox(height: 8),
-            GlassContainer(
-               borderRadius: 20,
-               color: AppColors.cardSurface,
-               opacity: 0.6,
-               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-               child: Row(
-                  children: [
-                     Expanded(
-                        child: TextField(
-                           controller: _controller,
-                           style: const TextStyle(color: Colors.white, fontSize: 14),
-                           onSubmitted: (_) => _sendMessage(),
-                           decoration: InputDecoration(
-                              hintText: "Build a strategy... (e.g. 'RSI < 30 buy')",
-                              hintStyle: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 14),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                           ),
-                        ),
-                     ),
-                     IconButton(
-                        icon: const Icon(Icons.mic_none, color: Colors.white38),
-                        onPressed: () {},
-                     ),
-                     Container(
-                        height: 36,
-                        width: 36,
-                        decoration: BoxDecoration(
-                           color: AppColors.cyan.withOpacity(0.8),
-                           borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: IconButton(
-                           icon: const Icon(Icons.send, color: Colors.black, size: 16),
-                           onPressed: _sendMessage,
-                        ),
-                     ),
-                  ],
-               ),
+            const SizedBox(height: 12),
+            Text(
+              "Describe your trading idea.\nAI handles code and execution.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13, height: 1.4, fontWeight: FontWeight.w500),
             ),
-          ],
-        ),
-     );
-  }
+            
+            const SizedBox(height: 48),
 
-  Widget _buildPromptModifierChip(IconData icon, String label, Color iconColor) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8.0),
-      child: InkWell(
-        onTap: () {
-          _controller.text = "${_controller.text} $label".trim();
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 12, color: iconColor),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+            // Precisely Refined Command Bar
+            _buildCommandIsland(),
 
-  Widget _buildCreditBalance() {
-    final balanceAsync = ref.watch(paymentBalanceProvider);
+            const SizedBox(height: 32),
 
-    return GestureDetector(
-      onTap: () async {
-        final newCredits = await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const CreditsStoreScreen()),
-        );
-        if (newCredits != null && newCredits is int) {
-          ref.read(paymentBalanceProvider.notifier).refresh();
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
-        ),
-        child: balanceAsync.when(
-          data: (balanceModel) {
-            final int credits = balanceModel?.balance.floor() ?? 0;
-            return Row(
-              mainAxisSize: MainAxisSize.min,
+            // Standardized Carousel Section
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.monetization_on_outlined, size: 14, color: AppColors.gold.withOpacity(0.8)),
-                const SizedBox(width: 6),
                 Text(
-                  "Available: $credits",
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
+                  "START WITH A PROMPT", 
+                  style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.5)
+                ),
+                const SizedBox(height: 16),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  clipBehavior: Clip.none,
+                  child: Row(
+                    children: [
+                      _buildFloatingBubble("RSI Oversold Buy"),
+                      _buildFloatingBubble("MACD Bullish Cross"),
+                      _buildFloatingBubble("Scalp 5m Breakout"),
+                      _buildFloatingBubble("EMA 200 Trend Filter"),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 4),
-                Icon(Icons.add_circle_outline, size: 10, color: AppColors.cyan.withOpacity(0.6)),
               ],
-            );
-          },
-          loading: () => Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: 10,
-                height: 10,
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold.withOpacity(0.5)),
+            ),
+
+            const SizedBox(height: 48),
+
+            // Precisely Positioned Template Entry
+            _buildTemplatesPointer(),
+            
+            const SizedBox(height: 80),
+         ],
+       ),
+     );
+  }
+
+  Widget _buildCommandIsland() {
+    return Container(
+      height: 64,
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: Colors.white.withOpacity(0.07)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 40, offset: const Offset(0, 12)),
+        ],
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 8),
+          Icon(Icons.add, color: Colors.white.withOpacity(0.2), size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
+              decoration: const InputDecoration(
+                hintText: "Describe a strategy...",
+                hintStyle: TextStyle(color: Colors.white24, fontSize: 14, fontWeight: FontWeight.w400),
+                border: InputBorder.none,
+                isCollapsed: true,
               ),
-              const SizedBox(width: 8),
-              Text(
-                "Loading...",
-                style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11),
-              ),
-            ],
+              onSubmitted: (_) => _sendMessage(),
+            ),
           ),
-          error: (e, s) => Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, size: 12, color: Colors.redAccent),
-              const SizedBox(width: 4),
-              Text(
-                "Error",
-                style: TextStyle(color: Colors.redAccent.withOpacity(0.8), fontSize: 11),
-              ),
-            ],
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: _sendMessage,
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+              child: const Icon(Icons.arrow_upward, color: Colors.black, size: 20),
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingBubble(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 12.0),
+      child: InkWell(
+        onTap: () => _controller.text = text,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.02),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
+          child: Text(
+            text,
+            style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12, fontWeight: FontWeight.w600),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSuggestionPrompt(String text) {
+  Widget _buildMinimalTemplatePreview() {
+    // A very high-end looking single card preview
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.03)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.cyan.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.auto_graph, color: AppColors.cyan, size: 20),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Trend Reversal V2", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                SizedBox(height: 4),
+                Text("High accuracy mean reversion logic", style: TextStyle(color: Colors.white38, fontSize: 11)),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right, color: Colors.white24, size: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingInputArea() {
+     return ClipRect(
+       child: BackdropFilter(
+         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+         child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+            decoration: BoxDecoration(
+               color: AppColors.background.withOpacity(0.8),
+            ),
+            child: _buildCommandIsland(),
+         ),
+       ),
+     );
+  }
+
+  Widget _buildStatusBadge(String text, Color color) {
+     return Container(
+       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+       decoration: BoxDecoration(
+         color: color.withOpacity(0.1),
+         borderRadius: BorderRadius.circular(4),
+         border: Border.all(color: color.withOpacity(0.3)),
+       ),
+       child: Text(
+         text, 
+         style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 0.5)
+       ),
+     );
+  }
+
+  Widget _buildBubbleChip(String text) {
+     return InkWell(
+       onTap: () => _controller.text = text,
+       borderRadius: BorderRadius.circular(20),
+       child: Container(
+         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+         decoration: BoxDecoration(
+           color: Colors.white.withOpacity(0.03),
+           borderRadius: BorderRadius.circular(20),
+           border: Border.all(color: Colors.white.withOpacity(0.1)),
+         ),
+         child: Text(
+           text,
+           style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 11),
+         ),
+       ),
+     );
+  }
+
+  Widget _buildTemplatesPointer() {
     return InkWell(
-      onTap: () {
-        _controller.text = text;
-      },
-      borderRadius: BorderRadius.circular(8),
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TemplatesScreen())),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          color: Colors.white.withOpacity(0.02),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withOpacity(0.04)),
         ),
         child: Row(
           children: [
-            Icon(Icons.search, size: 16, color: Colors.white.withOpacity(0.5)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                text,
-                style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: AppColors.cyan.withOpacity(0.1), shape: BoxShape.circle),
+              child: const Icon(Icons.dashboard_customize_outlined, color: AppColors.cyan, size: 20),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Strategy Templates", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                  SizedBox(height: 2),
+                  Text("Browse ready-to-use trading setups", style: TextStyle(color: Colors.white38, fontSize: 11)),
+                ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, size: 12, color: Colors.white.withOpacity(0.2)),
+            Icon(Icons.arrow_forward_ios, color: Colors.white.withOpacity(0.2), size: 14),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildLivePnL() {
-    final pnlModel = ref.watch(pnlProvider).value;
-    final double livePnL = (pnlModel?.todayProfit ?? 0.0).toDouble();
-
-    return Container(
-       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-       decoration: BoxDecoration(
-         color: livePnL >= 0 ? AppColors.green.withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
-         borderRadius: BorderRadius.circular(12),
-         border: Border.all(
-           color: livePnL >= 0 ? AppColors.green.withOpacity(0.5) : Colors.redAccent.withOpacity(0.5),
-           width: 1
-         ),
-       ),
-       child: Row(
-         mainAxisSize: MainAxisSize.min,
-         children: [
-           Icon(
-             livePnL >= 0 ? Icons.trending_up : Icons.trending_down, 
-             size: 12, 
-             color: livePnL >= 0 ? AppColors.green : Colors.redAccent
-           ),
-           const SizedBox(width: 4),
-           Text(
-             "${livePnL >= 0 ? '+' : ''}\$${livePnL.toStringAsFixed(2)}",
-             style: TextStyle(
-               fontWeight: FontWeight.bold,
-               fontSize: 10,
-               color: livePnL >= 0 ? AppColors.green : Colors.redAccent,
-             ),
-           ),
-         ],
-       ),
     );
   }
 

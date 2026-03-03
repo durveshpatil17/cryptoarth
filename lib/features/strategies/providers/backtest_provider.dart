@@ -61,12 +61,12 @@ class BacktestNotifier extends AsyncNotifier<List<BacktestModel>> {
     refresh();
   }
 
-  Future<void> shareStrategy(String strategyCode, int userId) async {
+  Future<void> shareStrategy(String strategyCode, dynamic userId) async {
     final service = ref.read(strategyServiceProvider);
     await service.shareStrategy(strategyCode, userId);
   }
 
-  Future<void> removeShareAccess(String strategyCode, int userId) async {
+  Future<void> removeShareAccess(String strategyCode, dynamic userId) async {
     final service = ref.read(strategyServiceProvider);
     await service.removeShareAccess(strategyCode, userId);
   }

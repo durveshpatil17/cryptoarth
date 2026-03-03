@@ -9,6 +9,9 @@ import 'package:cryptoarth/features/strategies/screens/code_generator_screen.dar
 import 'package:cryptoarth/features/home/screens/chat_history_screen.dart';
 import 'package:cryptoarth/features/strategies/screens/templates_screen.dart';
 import 'package:cryptoarth/features/settings/screens/credits_screen.dart';
+import 'package:cryptoarth/features/tutorials/screens/tutorial_ai_screen.dart';
+import 'package:cryptoarth/features/tutorials/screens/tutorials_list_screen.dart';
+
 
 
 
@@ -182,6 +185,20 @@ class CustomDrawer extends ConsumerWidget {
                         context,
                         MaterialPageRoute(builder: (context) => const MainScreen(initialIndex: 1)),
                         (route) => false,
+                      );
+                    }),
+                    _buildMenuItem(Icons.play_circle_outline, "Tutorial AI", onTap: () {
+                      Navigator.pop(context); // Close drawer
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const TutorialAIScreen()),
+                      );
+                    }),
+                    _buildMenuItem(Icons.video_library_outlined, "Video Tutorials", onTap: () {
+                      Navigator.pop(context); // Close drawer
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const TutorialsListScreen()),
                       );
                     }),
                   ],

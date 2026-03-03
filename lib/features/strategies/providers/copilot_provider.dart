@@ -6,6 +6,7 @@ import 'package:cryptoarth/features/strategies/providers/strategy_provider.dart'
 import 'package:cryptoarth/features/strategies/providers/backtest_provider.dart';
 import 'package:cryptoarth/features/strategies/models/backtest_model.dart';
 import 'package:uuid/uuid.dart';
+import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -191,33 +192,60 @@ class CopilotNotifier extends AsyncNotifier<List<Map<String, dynamic>>> {
       print("=== FINAL ASSISTANT MESSAGE STATE ===");
       print(assistantMessage);
 
-      // PART 1 - ROBUST JSON EXTRACTION
+      // PART 1 - ROBUST EXTRACTION (JSON, PINE, PYTHON)
       final content = assistantMessage["content"]?.toString() ?? "";
 
-      final start = content.indexOf("```json");
-      if (start != -1) {
-        final end = content.indexOf("```", start + 7);
-        if (end != -1) {
-          final jsonString = content.substring(start + 7, end).trim();
-
+      // 1.1 JSON Extraction (Strategy Logic)
+      final jsonStart = content.indexOf("```json");
+      if (jsonStart != -1) {
+        final jsonEnd = content.indexOf("```", jsonStart + 7);
+        if (jsonEnd != -1) {
+          final jsonString = content.substring(jsonStart + 7, jsonEnd).trim();
           try {
             final parsed = jsonDecode(jsonString);
-
             assistantMessage["strategy_meta"] = parsed;
             assistantMessage["strategy_json"] = parsed["strategy_json"] ?? parsed;
             assistantMessage["strategy_name"] = parsed["strategy_name"];
             assistantMessage["strategy_description"] = parsed["strategy_description"];
 
-            if (assistantMessage["strategy_json"] is Map) {
-              assistantMessage["pine_code"] = _generatePineLocal(assistantMessage["strategy_json"]);
-            }
-
-            print("✅ STRATEGY JSON EXTRACTED AND PINE GENERATED");
-
+            print("✅ STRATEGY JSON EXTRACTED");
           } catch (e) {
             print("❌ JSON PARSE ERROR: $e");
           }
         }
+      }
+
+      // 1.2 Pine Script Extraction
+      if (content.contains("```pine")) {
+        final pStart = content.indexOf("```pine");
+        final pEnd = content.indexOf("```", pStart + 7);
+        if (pEnd != -1) {
+          assistantMessage["pine_code"] = content.substring(pStart + 7, pEnd).trim();
+          print("✅ PINE SCRIPT EXTRACTED");
+        }
+      } else if (content.contains("```pinescript")) {
+        final psStart = content.indexOf("```pinescript");
+        final psEnd = content.indexOf("```", psStart + 13);
+        if (psEnd != -1) {
+          assistantMessage["pine_code"] = content.substring(psStart + 13, psEnd).trim();
+          print("✅ PINE SCRIPT EXTRACTED");
+        }
+      }
+
+      // 1.3 Python Extraction
+      if (content.contains("```python")) {
+        final pyStart = content.indexOf("```python");
+        final pyEnd = content.indexOf("```", pyStart + 9);
+        if (pyEnd != -1) {
+          assistantMessage["python"] = content.substring(pyStart + 9, pyEnd).trim();
+          print("✅ PYTHON CODE EXTRACTED");
+        }
+      }
+
+      // Fallback: If no Pine code extracted but we have JSON, generate local mock as fallback
+      if (assistantMessage["pine_code"] == null && assistantMessage["strategy_json"] is Map) {
+         assistantMessage["pine_code"] = _generatePineLocal(assistantMessage["strategy_json"]);
+         print("✅ FALLBACK PINE GENERATED FROM JSON");
       }
 
       // PART 2 - FORCE RIVERPOD STATE REBUILD
@@ -317,7 +345,7 @@ class CopilotNotifier extends AsyncNotifier<List<Map<String, dynamic>>> {
     }
   }
 
-  Future<void> deployStrategy(String messageId) async {
+  Future<void> deployStrategy(String messageId, String mode) async {
     final messages = state.value ?? [];
     final index = messages.indexWhere((m) => m['id'] == messageId);
     if (index == -1) return;
@@ -344,9 +372,10 @@ class CopilotNotifier extends AsyncNotifier<List<Map<String, dynamic>>> {
       if (savedStrategyId == null) {
          throw Exception("Failed to save strategy: No strategy ID returned");
       }
+      final user = ref.read(authProvider).user;
       
       // Step 6: Deploy
-      await service.deployCopilotStrategy(savedStrategyId, "paper");
+      await service.deployCopilotStrategy(savedStrategyId, mode, userId: user?.id);
       
       // Invalidate providers so execution history and dashboard refresh
       ref.invalidate(strategyProvider);

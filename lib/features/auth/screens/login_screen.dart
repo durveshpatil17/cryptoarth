@@ -7,6 +7,8 @@ import 'package:cryptoarth/features/auth/screens/otp_verification_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
 
+import 'package:cryptoarth/features/auth/screens/signup_screen.dart';
+
 class LoginScreen extends ConsumerWidget {
   LoginScreen({super.key});
 
@@ -177,7 +179,14 @@ class LoginScreen extends ConsumerWidget {
                   ),
 
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SignupScreen(),
+                        ),
+                      );
+                    },
                     child: const Text(
                       "Create Account",
                       style: TextStyle(

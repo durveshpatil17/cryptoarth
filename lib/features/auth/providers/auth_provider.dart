@@ -110,6 +110,37 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<bool> signup({
+    required String phone,
+    required String otp,
+    required String email,
+    required String firstName,
+    required String lastName,
+    String refercode = "",
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final success = await _authService.signup(phone, otp, email, firstName, lastName, refercode: refercode);
+      if (success) {
+        final profileData = await _authService.fetchProfile();
+        final user = UserModel.fromJson(profileData);
+        
+        state = state.copyWith(
+          isLoading: false,
+          isAuthenticated: true,
+          user: user,
+          error: null,
+        );
+      } else {
+        state = state.copyWith(isLoading: false, error: 'Signup failed');
+      }
+      return success;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
   Future<void> updateProfile(Map<String, dynamic> updates) async {
     state = state.copyWith(isLoading: true, error: null);
     try {

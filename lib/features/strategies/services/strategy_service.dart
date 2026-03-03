@@ -58,10 +58,11 @@ class StrategyService {
     }
   }
 
-  Future<void> deployStrategy(String strategyId, int brokerId, {int? userId}) async {
+  Future<void> deployStrategy(dynamic strategyId, int brokerId, {int? userId}) async {
     try {
+      final idToPass = strategyId is String ? (int.tryParse(strategyId) ?? strategyId) : strategyId;
       await _apiClient.post(ApiEndpoints.deployStrategy, {
-        "strategyid": strategyId,
+        "strategyid": idToPass,
         "broker_id": brokerId,
         if (userId != null) "user_id": userId,
       });
@@ -70,21 +71,25 @@ class StrategyService {
     }
   }
 
-  Future<void> deployCopilotStrategy(String strategyId, String mode) async {
+  Future<void> deployCopilotStrategy(dynamic strategyId, String mode, {int? userId}) async {
     try {
+      final idToPass = strategyId is String ? (int.tryParse(strategyId) ?? strategyId) : strategyId;
       await _apiClient.post(ApiEndpoints.deployStrategy, {
-        "strategy_id": strategyId,
+        "strategyid": idToPass,
         "mode": mode,
+        if (userId != null) "user_id": userId,
       });
     } catch (e) {
       throw Exception('Failed to deploy strategy: $e');
     }
   }
 
-  Future<void> undeployStrategy(dynamic strategyId) async {
+  Future<void> undeployStrategy(dynamic strategyId, {int? userId}) async {
     try {
+      final idToPass = strategyId is String ? (int.tryParse(strategyId) ?? strategyId) : strategyId;
       await _apiClient.post(ApiEndpoints.undeployStrategy, {
-        "strategyid": strategyId,
+        "strategyid": idToPass,
+        if (userId != null) "user_id": userId,
       });
     } catch (e) {
       throw Exception('Failed to undeploy strategy: $e');
@@ -105,20 +110,21 @@ class StrategyService {
     }
   }
 
-  Future<BacktestModel> fetchBacktestDetail(String strategyCode) async {
+  Future<Map<String, dynamic>> fetchBacktestDetailRaw(String strategyCode) async {
     try {
       final Response response = await _apiClient.get(
         "${ApiEndpoints.backtestDetail}?strategy_code=$strategyCode"
       );
-      
-      if (response.statusCode == 200 && response.data != null) {
-        final Map<String, dynamic> data = ApiClient.extractMap(response.data);
-        return BacktestModel.fromJson(data);
-      }
-      throw Exception('Invalid backtest detail response');
+      final data = ApiClient.extractMap(response.data);
+      return data['strategy'] ?? data;
     } catch (e) {
       throw Exception('Failed to fetch backtest detail: $e');
     }
+  }
+
+  Future<BacktestModel> fetchBacktestDetail(String strategyCode) async {
+     final data = await fetchBacktestDetailRaw(strategyCode);
+     return BacktestModel.fromJson(data);
   }
 
   Future<Map<String, dynamic>> fetchBacktestResult(String backtestId) async {
@@ -202,22 +208,19 @@ class StrategyService {
 
   Future<Map<String, dynamic>?> checkUserPhone(String phone) async {
     try {
-      final Response response = await _apiClient.post(
-        ApiEndpoints.checkPhone, 
-        {"phone": phone},
+      final Response response = await _apiClient.get(
+        "${ApiEndpoints.strategySearchUser}?phone=$phone",
       );
       if (response.statusCode == 200) {
         final data = ApiClient.extractMap(response.data);
-        if (data['exists'] == true || data.containsKey('id') || data.containsKey('user_id')) {
+        // ApiClient.extractMap auto-dives into 'user' if it exists.
+        // So we check if the extracted map contains user identifier keys or the exists flag.
+        if (data.isNotEmpty && (data.containsKey('id') || data.containsKey('user_id') || data['exists'] == true)) {
           return data;
         }
-        return null;
       }
       return null;
     } catch (e) {
-      if (e is DioException && e.response?.statusCode == 404) {
-        return null;
-      }
       return null;
     }
   }
@@ -258,7 +261,7 @@ class StrategyService {
     }
   }
 
-  Future<void> shareStrategy(String strategyCode, int userId) async {
+  Future<void> shareStrategy(String strategyCode, dynamic userId) async {
     try {
       await _apiClient.post(ApiEndpoints.backtestShare, {
         "strategy_code": strategyCode,
@@ -269,7 +272,7 @@ class StrategyService {
     }
   }
 
-  Future<void> removeShareAccess(String strategyCode, int userId) async {
+  Future<void> removeShareAccess(String strategyCode, dynamic userId) async {
     try {
       await _apiClient.delete(ApiEndpoints.backtestShare, {
         "strategy_code": strategyCode,
@@ -283,6 +286,10 @@ class StrategyService {
   Future<List<dynamic>> fetchShareList(String strategyCode) async {
     try {
       final Response response = await _apiClient.get("${ApiEndpoints.backtestShare}?strategy_code=$strategyCode");
+      final data = ApiClient.extractMap(response.data);
+      if (data.containsKey('access_users') && data['access_users'] is List) {
+        return data['access_users'];
+      }
       return ApiClient.extractList(response.data);
     } catch (e) {
       throw Exception('Failed to fetch share list: $e');
@@ -314,7 +321,7 @@ class StrategyService {
     try {
       final Response response = await _apiClient.get("${ApiEndpoints.backtestPine}?strategy_code=$strategyCode");
       final data = ApiClient.extractMap(response.data);
-      return data['code'] ?? data['pine_code'] ?? '';
+      return data['code'] ?? data['pine_code'] ?? data['pine_script'] ?? '';
     } catch (e) {
       throw Exception('Failed to fetch pine code: $e');
     }
