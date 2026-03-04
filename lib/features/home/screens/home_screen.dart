@@ -18,6 +18,9 @@ import 'package:cryptoarth/features/portfolio/providers/watchlist_provider.dart'
 import 'package:cryptoarth/features/portfolio/providers/portfolio_provider.dart';
 import 'package:cryptoarth/features/broker/providers/broker_balance_provider.dart';
 import 'package:cryptoarth/core/utils/time_utils.dart';
+import 'package:cryptoarth/features/home/screens/chat_history_screen.dart';
+import 'package:cryptoarth/features/strategies/screens/code_generator_screen.dart';
+import 'package:cryptoarth/features/strategies/screens/execution_history_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -34,11 +37,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
   
   String? _currentSessionTitle;
 
-  // Credit System State
-
-  // Ticker State
+  // Ticker Logic
   Timer? _tickerTimer;
   int _currentTickerIndex = 0;
+
+  // Carousel Logic
+  int _currentCarouselIndex = 0;
+  final PageController _pageController = PageController();
+  Timer? _carouselTimer;
 
   @override
   bool get wantKeepAlive => true; // Prevent disposal on tab switch
@@ -47,12 +53,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
   void initState() {
     super.initState();
     _startLiveTicker();
+    _startCarouselTimer();
+  }
+
+  void _startCarouselTimer() {
+    _carouselTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted) {
+        final nextIndex = (_currentCarouselIndex + 1) % 4; // Based on homeBlueprints.length
+        _pageController.animateToPage(
+          nextIndex,
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOutCubic,
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
     _saveCurrentSession();
     _tickerTimer?.cancel();
+    _carouselTimer?.cancel();
+    _pageController.dispose();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -354,26 +376,100 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
   }
 
   Widget _buildTopNav() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white70, size: 24),
-            onPressed: () {
-              final ScaffoldState? root = context.findRootAncestorStateOfType<ScaffoldState>();
-              root?.openDrawer();
-            },
-          ),
-          const Spacer(),
-          _buildAnimatedCoinTicker(),
-          const Spacer(),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: ProfileAvatar(radius: 14),
-          ),
-        ],
+    return AppBar(
+      backgroundColor: AppColors.background,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.menu, color: Colors.white70),
+        onPressed: () {
+          final ScaffoldState? root = context.findRootAncestorStateOfType<ScaffoldState>();
+          root?.openDrawer();
+        },
       ),
+      title: const Text(
+        "AI Builder",
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+      ),
+      centerTitle: false,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.tune_outlined, color: AppColors.cyan, size: 24),
+          onPressed: _showAISettingsMenu,
+          tooltip: "AI Strategy Builder Settings",
+        ),
+        const SizedBox(width: 8),
+      ],
+    );
+  }
+
+  void _showAISettingsMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => GlassContainer(
+        borderRadius: 32,
+        color: AppColors.background,
+        opacity: 0.95,
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white10,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              "AI BUILDER SETTINGS",
+              style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 2),
+            ),
+            const SizedBox(height: 24),
+            _buildSettingsItem(Icons.chat_bubble_outline, "New Chat", () {
+              Navigator.pop(context);
+              ref.read(copilotProvider.notifier).startNewChat();
+            }),
+            _buildSettingsItem(Icons.science_outlined, "Backtest", () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const BacktestConfigScreen()));
+            }),
+            _buildSettingsItem(Icons.code, "Code Generator", () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const CodeGeneratorScreen()));
+            }),
+            _buildSettingsItem(Icons.history_outlined, "Chat History", () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatHistoryScreen()));
+            }),
+            _buildSettingsItem(Icons.list_alt_outlined, "Execution History", () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const ExecutionHistoryScreen()));
+            }),
+            _buildSettingsItem(Icons.dashboard_customize_outlined, "Templates", () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const TemplatesScreen()));
+            }),
+            _buildSettingsItem(Icons.monetization_on_outlined, "Credits", () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const CreditsStoreScreen()));
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsItem(IconData icon, String title, VoidCallback onTap) {
+    return ListTile(
+      onTap: onTap,
+      leading: Icon(icon, color: Colors.white70, size: 22),
+      title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 14)),
+      trailing: const Icon(Icons.chevron_right, color: Colors.white10, size: 16),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
     );
   }
 
@@ -565,40 +661,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
 
             const SizedBox(height: 32),
 
-            // Standardized Carousel Section
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "START WITH A PROMPT", 
-                  style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.5)
-                ),
-                const SizedBox(height: 16),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  clipBehavior: Clip.none,
-                  child: Row(
-                    children: [
-                      _buildFloatingBubble("RSI Oversold Buy"),
-                      _buildFloatingBubble("MACD Bullish Cross"),
-                      _buildFloatingBubble("Scalp 5m Breakout"),
-                      _buildFloatingBubble("EMA 200 Trend Filter"),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            // Premium Decorative Blueprint Carousel
+            _buildBlueprintCarousel(),
 
-            const SizedBox(height: 48),
-
-            // Precisely Positioned Template Entry
-            _buildTemplatesPointer(),
-            
             const SizedBox(height: 80),
          ],
        ),
      );
+  }
+
+  void _handleTemplateSelection() async {
+     final String? selectedPrompt = await Navigator.push(
+       context, 
+       MaterialPageRoute(builder: (context) => const TemplatesScreen())
+     );
+     
+     if (selectedPrompt != null && mounted) {
+       setState(() {
+         _controller.text = selectedPrompt;
+       });
+       // Focus the input automatically
+       // (Assuming FocusNode would be better but simple setState works for now given the architecture)
+     }
   }
 
   Widget _buildCommandIsland() {
@@ -738,6 +822,118 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
      );
   }
 
+  Widget _buildBlueprintCarousel() {
+     final List<Map<String, dynamic>> homeBlueprints = [
+        {"name": "EMA Crossover Pro", "icon": Icons.timeline, "prompt": "Create a trading strategy using EMA crossover: Fast EMA 9, Slow EMA 21, Buy when fast crosses above slow, Sell when fast crosses below slow, Timeframe 5m, Risk per trade 1%, Max trades per day 5, Trailing SL 10"},
+        {"name": "Bollinger Reversal", "icon": Icons.waves, "prompt": "Create Bollinger Bands strategy: Period 20, Deviation 2, Buy when price touches lower band and closes above, Sell when price touches upper band and closes below, TF 15m, Risk 1%, Max trades 4/day, Trailing SL 10 points"},
+        {"name": "EMA RSI MACD", "icon": Icons.hub_outlined, "prompt": "Create multi indicator strategy using EMA 20, RSI 14 and MACD: Buy when EMA bullish, RSI above 50 and MACD positive, Sell opposite, TF 5m, Risk 1%, Max trades 4/day, Trailing SL 10 points, Loss limit 3%, Profit target 6%"},
+        {"name": "RSI Reversal", "icon": Icons.auto_graph, "prompt": "Build an RSI based strategy: RSI 14, Buy when RSI crosses above 30, Sell when RSI crosses below 70, Timeframe 15m, Risk per trade 1.5%, Max trades per day 4, Trailing SL 12 points, Daily loss limit 3%, Daily profit 6%"},
+     ];
+
+     return Column(
+        children: [
+           SizedBox(
+              height: 120,
+              child: PageView.builder(
+                 controller: _pageController,
+                 onPageChanged: (index) => setState(() => _currentCarouselIndex = index),
+                 itemCount: homeBlueprints.length,
+                 itemBuilder: (context, index) {
+                    return _buildDecorativeBlueprintCard(homeBlueprints[index]);
+                 },
+              ),
+           ),
+           const SizedBox(height: 16),
+           // Modern Pagination Dots
+           Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(homeBlueprints.length, (index) {
+                 final bool isActive = _currentCarouselIndex == index;
+                 return AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    height: 4,
+                    width: isActive ? 20 : 6,
+                    decoration: BoxDecoration(
+                       color: isActive ? AppColors.cyan : Colors.white.withOpacity(0.1),
+                       borderRadius: BorderRadius.circular(2),
+                    ),
+                 );
+              }),
+           ),
+           const SizedBox(height: 24),
+           // "More Templates" Action Button
+           InkWell(
+              onTap: _handleTemplateSelection,
+              child: Container(
+                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                 decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.02),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                 ),
+                 child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                       Text(
+                          "Explore More Blueprints", 
+                          style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, fontWeight: FontWeight.bold)
+                       ),
+                       const SizedBox(width: 8),
+                       Icon(Icons.arrow_forward_ios, color: Colors.white.withOpacity(0.2), size: 10),
+                    ],
+                 ),
+              ),
+           ),
+        ],
+     );
+  }
+
+  Widget _buildDecorativeBlueprintCard(Map<String, dynamic> blueprint) {
+     return InkWell(
+        onTap: () {
+           setState(() {
+              _controller.text = blueprint['prompt'];
+           });
+        },
+        child: Container(
+           width: double.infinity,
+           padding: const EdgeInsets.all(16),
+           decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.02),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.05)),
+              boxShadow: [
+                 BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4)),
+              ],
+           ),
+           child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                 Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                       color: AppColors.cyan.withOpacity(0.05),
+                       shape: BoxShape.circle,
+                    ),
+                    child: Icon(blueprint['icon'], color: AppColors.cyan, size: 16),
+                 ),
+                 const SizedBox(height: 12),
+                 Text(
+                    blueprint['name'],
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: -0.2),
+                 ),
+                 const SizedBox(height: 4),
+                 Text(
+                    "Prompt Blueprint",
+                    style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                 ),
+              ],
+           ),
+        ),
+     );
+  }
+
   Widget _buildBubbleChip(String text) {
      return InkWell(
        onTap: () => _controller.text = text,
@@ -757,41 +953,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
      );
   }
 
-  Widget _buildTemplatesPointer() {
-    return InkWell(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TemplatesScreen())),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.02),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withOpacity(0.04)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: AppColors.cyan.withOpacity(0.1), shape: BoxShape.circle),
-              child: const Icon(Icons.dashboard_customize_outlined, color: AppColors.cyan, size: 20),
-            ),
-            const SizedBox(width: 16),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Strategy Templates", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                  SizedBox(height: 2),
-                  Text("Browse ready-to-use trading setups", style: TextStyle(color: Colors.white38, fontSize: 11)),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, color: Colors.white.withOpacity(0.2), size: 14),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildAnimatedCoinTicker() {
     final watchlist = ref.watch(watchlistProvider).value ?? [];

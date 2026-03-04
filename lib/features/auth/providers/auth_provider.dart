@@ -5,6 +5,7 @@ import 'package:cryptoarth/features/auth/models/user_model.dart';
 import 'package:cryptoarth/features/auth/services/auth_service.dart';
 import 'package:cryptoarth/core/storage/token_storage.dart';
 import 'dart:async';
+import 'package:cryptoarth/core/storage/persistent_storage.dart';
 import 'package:cryptoarth/core/network/api_client.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) {
@@ -14,12 +15,14 @@ final authServiceProvider = Provider<AuthService>((ref) {
 class AuthState {
   final bool isLoading;
   final bool isAuthenticated;
+  final bool hasSeenLanding;
   final UserModel? user;
   final String? error;
 
   AuthState({
     this.isLoading = false,
     this.isAuthenticated = false,
+    this.hasSeenLanding = false,
     this.user,
     this.error,
   });
@@ -27,12 +30,14 @@ class AuthState {
   AuthState copyWith({
     bool? isLoading,
     bool? isAuthenticated,
+    bool? hasSeenLanding,
     UserModel? user,
     String? error,
   }) {
     return AuthState(
       isLoading: isLoading ?? this.isLoading,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
+      hasSeenLanding: hasSeenLanding ?? this.hasSeenLanding,
       user: user ?? this.user,
       error: error,
     );
@@ -57,22 +62,30 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true);
     try {
       final token = await TokenStorage.getToken();
+      final hasSeenLanding = await PersistentStorage.shouldShowLanding() == false;
+      
       if (token != null) {
         final profileData = await _authService.fetchProfile();
         final user = UserModel.fromJson(profileData);
         state = state.copyWith(
           isLoading: false,
           isAuthenticated: true,
+          hasSeenLanding: true, // If authenticated, they must have seen it
           user: user,
           error: null,
         );
       } else {
-        state = state.copyWith(isLoading: false, isAuthenticated: false);
+        state = state.copyWith(isLoading: false, isAuthenticated: false, hasSeenLanding: hasSeenLanding);
       }
     } catch (e) {
       await TokenStorage.deleteToken(); // Clear faulty token
       state = state.copyWith(isLoading: false, isAuthenticated: false, error: 'Session expired or invalid token');
     }
+  }
+
+  Future<void> setLandingSeen() async {
+    await PersistentStorage.markLandingSeen();
+    state = state.copyWith(hasSeenLanding: true);
   }
 
   Future<void> sendOtp(String phone) async {

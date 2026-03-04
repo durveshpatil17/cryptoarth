@@ -168,6 +168,15 @@ class StrategyService {
     }
   }
 
+  Future<Map<String, dynamic>> convertCode(Map<String, dynamic> data) async {
+    try {
+      final Response response = await _apiClient.post(ApiEndpoints.codeConversion, data);
+      return ApiClient.extractMap(response.data);
+    } catch (e) {
+      throw Exception('Failed to convert code: $e');
+    }
+  }
+
   Future<Map<String, dynamic>> fetchBacktestChart(String strategyCode) async {
     try {
       final Response response = await _apiClient.get("${ApiEndpoints.backtestChart}?strategy_code=$strategyCode");

@@ -4,6 +4,7 @@ import 'package:cryptoarth/shared/theme/app_theme.dart';
 import 'package:cryptoarth/features/auth/screens/welcome_screen.dart';
 import 'package:cryptoarth/features/home/screens/main_screen.dart';
 import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
+import 'package:cryptoarth/features/auth/screens/login_screen.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 
 class CryptoarthApp extends ConsumerWidget {
@@ -24,7 +25,9 @@ class CryptoarthApp extends ConsumerWidget {
           )
         : authState.isAuthenticated 
             ? const MainScreen() 
-            : const WelcomeScreen(),
+            : authState.hasSeenLanding
+                ? LoginScreen()
+                : const WelcomeScreen(),
     );
   }
 }

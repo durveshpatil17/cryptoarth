@@ -32,7 +32,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -48,15 +48,19 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text("Portfolio", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: const Text("Portfolio", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: AppColors.background,
-        automaticallyImplyLeading: false, 
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Colors.white70),
+          onPressed: () {
+            final ScaffoldState? root = context.findRootAncestorStateOfType<ScaffoldState>();
+            root?.openDrawer();
+          },
+        ),
         actions: [
           _buildModeToggle(context),
           const SizedBox(width: 8),
-          const ProfileAvatar(),
-          const SizedBox(width: 16),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(100),
@@ -64,32 +68,30 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
             children: [
                _buildFilterBar(),
                Container(
-                height: 40,
+                height: 42,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white.withOpacity(0.05)),
                 ),
                 child: TabBar(
                   controller: _tabController,
-                  isScrollable: true,
+                  isScrollable: false,
                   indicator: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    color: mode == TradingMode.live ? const Color(0xFF8B5CF6).withOpacity(0.2) : AppColors.cyan.withOpacity(0.1), 
-                    border: Border.all(color: mode == TradingMode.live ? const Color(0xFF8B5CF6).withOpacity(0.5) : AppColors.cyan.withOpacity(0.5)),
+                    color: mode == TradingMode.live ? AppColors.purple.withOpacity(0.2) : AppColors.cyan.withOpacity(0.1), 
+                    border: Border.all(color: mode == TradingMode.live ? AppColors.purple.withOpacity(0.5) : AppColors.cyan.withOpacity(0.5)),
                   ),
                   indicatorSize: TabBarIndicatorSize.tab,
-                  labelColor: mode == TradingMode.live ? const Color(0xFFD8B4FE) : AppColors.cyan,
-                  unselectedLabelColor: Colors.white60,
+                  labelColor: mode == TradingMode.live ? AppColors.purple : AppColors.cyan,
+                  unselectedLabelColor: Colors.white54,
                   labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
                   padding: const EdgeInsets.all(4),
                   tabs: const [
-                    Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text("Open Positions"))),
-                    Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text("Closed Positions"))),
-                    Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text("Order Book"))),
-                    Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text("P&L Report"))),
-                    Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text("Watchlist"))),
+                    Tab(text: "Open"),
+                    Tab(text: "Closed"),
+                    Tab(text: "P&L"),
                   ],
                 ),
               ),
@@ -102,9 +104,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
         children: [
           _buildOpenPositionsTab(),
           _buildClosedPositionsTab(),
-          _buildOrderBookTab(),
           _buildPnLReportTab(),
-          _buildWatchlistTab(),
         ],
       ),
     );
@@ -150,42 +150,47 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
   Widget _buildFilterBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          // Symbol Filter
-          ref.watch(backtestSymbolsProvider).when(
-            data: (symbols) {
-              final List<String> symbolNames = ["All", ...symbols.map((e) => e['symbol_name'].toString())];
-              return Expanded(
-                child: _buildDropDownFilter(
-                  "Symbol", 
-                  _selectedSymbol, 
-                  symbolNames, 
-                  (val) => setState(() => _selectedSymbol = val!)
-                ),
-              );
-            },
-            loading: () => const Expanded(child: SizedBox(height: 32)),
-            error: (_,__) => const Expanded(child: SizedBox(height: 32)),
-          ),
-          const SizedBox(width: 12),
-          // Strategy Filter
-          ref.watch(strategyProvider).when(
-            data: (strategies) {
-              final List<String> strategyNames = ["All Strategies", ...strategies.map((e) => e.strategyName)];
-              return Expanded(
-                child: _buildDropDownFilter(
-                  "Strategy", 
-                  _selectedStrategy, 
-                  strategyNames, 
-                  (val) => setState(() => _selectedStrategy = val!)
-                ),
-              );
-            },
-            loading: () => const Expanded(child: SizedBox(height: 32)),
-            error: (_,__) => const Expanded(child: SizedBox(height: 32)),
-          ),
-        ],
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            // Symbol Filter
+            ref.watch(backtestSymbolsProvider).when(
+              data: (symbols) {
+                final List<String> symbolNames = ["All", ...symbols.map((e) => e['symbol_name'].toString())];
+                return SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.4,
+                  child: _buildDropDownFilter(
+                    "Symbol", 
+                    _selectedSymbol, 
+                    symbolNames, 
+                    (val) => setState(() => _selectedSymbol = val!)
+                  ),
+                );
+              },
+              loading: () => const SizedBox(width: 100, height: 32),
+              error: (_,__) => const SizedBox(width: 100, height: 32),
+            ),
+            const SizedBox(width: 8),
+            // Strategy Filter
+            ref.watch(strategyProvider).when(
+              data: (strategies) {
+                final List<String> strategyNames = ["All Strategies", ...strategies.map((e) => e.strategyName)];
+                return SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.45,
+                  child: _buildDropDownFilter(
+                    "Strategy", 
+                    _selectedStrategy, 
+                    strategyNames, 
+                    (val) => setState(() => _selectedStrategy = val!)
+                  ),
+                );
+              },
+              loading: () => const SizedBox(width: 120, height: 32),
+              error: (_,__) => const SizedBox(width: 120, height: 32),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -194,23 +199,23 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 9)),
-        const SizedBox(height: 4),
+        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 6),
         Container(
-          height: 32,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
-            color: AppColors.cardSurface,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            color: AppColors.cardSurface.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.08)),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: items.contains(value) ? value : items.first,
               dropdownColor: AppColors.cardSurface,
               isExpanded: true,
-              icon: const Icon(Icons.arrow_drop_down, size: 16, color: Colors.white54),
-              style: const TextStyle(color: Colors.white70, fontSize: 11),
+              icon: const Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.white54),
+              style: const TextStyle(color: Colors.white, fontSize: 11),
               onChanged: onChanged,
               items: items.map<DropdownMenuItem<String>>((String value) {
                 return DropdownMenuItem<String>(
@@ -251,9 +256,9 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.cardSurface,
+                        color: AppColors.cardSurface.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withOpacity(0.05)),
+                        border: Border.all(color: Colors.white.withOpacity(0.08)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -347,9 +352,9 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
      return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-           color: AppColors.cardSurface,
-           borderRadius: BorderRadius.circular(12),
-           border: Border.all(color: Colors.white.withOpacity(0.05)),
+           color: AppColors.cardSurface.withOpacity(0.5),
+           borderRadius: BorderRadius.circular(16),
+           border: Border.all(color: Colors.white.withOpacity(0.08)),
         ),
         child: Column(
            children: [
@@ -475,9 +480,9 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
      return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-           color: AppColors.cardSurface,
-           borderRadius: BorderRadius.circular(12),
-           border: Border.all(color: Colors.white.withOpacity(0.05)),
+           color: AppColors.cardSurface.withOpacity(0.5),
+           borderRadius: BorderRadius.circular(16),
+           border: Border.all(color: Colors.white.withOpacity(0.08)),
         ),
         child: Column(
            children: [
@@ -565,9 +570,9 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
      return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-           color: AppColors.cardSurface,
-           borderRadius: BorderRadius.circular(12),
-           border: Border.all(color: Colors.white.withOpacity(0.05)),
+           color: AppColors.cardSurface.withOpacity(0.5),
+           borderRadius: BorderRadius.circular(16),
+           border: Border.all(color: Colors.white.withOpacity(0.08)),
         ),
         child: Column(
            children: [
@@ -699,7 +704,11 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
      return Container(
         width: width,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withOpacity(0.05))),
+        decoration: BoxDecoration(
+           color: AppColors.cardSurface.withOpacity(0.5),
+           borderRadius: BorderRadius.circular(12),
+           border: Border.all(color: Colors.white.withOpacity(0.08)),
+        ),
         child: Column(
            crossAxisAlignment: CrossAxisAlignment.start,
            children: [

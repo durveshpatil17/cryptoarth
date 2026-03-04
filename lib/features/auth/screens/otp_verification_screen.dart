@@ -33,6 +33,8 @@ class _OtpVerificationScreenState
   final List<FocusNode> focusNodes =
       List.generate(6, (_) => FocusNode());
 
+  bool _obscureOtp = true;
+
   void onChanged(String value, int index) {
 
     if (value.isNotEmpty && index < 5) {
@@ -162,74 +164,59 @@ class _OtpVerificationScreenState
         ),
       ),
 
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-
         child: Column(
-
           children: [
-
             const SizedBox(height: 30),
-
             Text(
               "OTP sent to +91 ${widget.mobileNumber}",
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 16,
-              ),
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 16),
             ),
-
-            const SizedBox(height: 30),
-
+            const SizedBox(height: 16),
             Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
-
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Flexible(child: Text("Enter 6-digit Code", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16), overflow: TextOverflow.ellipsis)),
+                TextButton.icon(
+                  onPressed: () => setState(() => _obscureOtp = !_obscureOtp),
+                  icon: Icon(_obscureOtp ? Icons.visibility : Icons.visibility_off, color: AppColors.primary, size: 18),
+                  label: Text(_obscureOtp ? "Show" : "Hide", style: const TextStyle(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(6, (index) {
-
-                return SizedBox(
-
-                  width: 45,
-
-                  child: TextField(
-
-                    controller: controllers[index],
-                    focusNode: focusNodes[index],
-
-                    textAlign: TextAlign.center,
-
-                    maxLength: 1,
-
-                    keyboardType: TextInputType.number,
-
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                    ),
-
-                    decoration: InputDecoration(
-
-                      counterText: "",
-
-                      filled: true,
-
-                      fillColor: AppColors.cardSurface,
-
-                      border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(12),
+                return Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: SizedBox(
+                      height: 50,
+                      child: TextField(
+                        controller: controllers[index],
+                        focusNode: focusNodes[index],
+                        textAlign: TextAlign.center,
+                        maxLength: 1,
+                        keyboardType: TextInputType.number,
+                        obscureText: _obscureOtp,
+                        style: const TextStyle(color: Colors.white, fontSize: 18),
+                        decoration: InputDecoration(
+                          counterText: "",
+                          filled: true,
+                          fillColor: AppColors.cardSurface,
+                          contentPadding: EdgeInsets.zero,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onChanged: (v) => onChanged(v, index),
                       ),
                     ),
-
-                    onChanged: (v) =>
-                        onChanged(v, index),
                   ),
                 );
               }),
             ),
-
             const SizedBox(height: 40),
-
             ref.watch(authProvider).isLoading 
                 ? const Center(child: CircularProgressIndicator())
                 : CustomButton(

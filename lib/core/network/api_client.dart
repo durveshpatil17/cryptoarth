@@ -151,9 +151,9 @@ class ApiClient {
   }
 
   // GET
-  Future<Response> get(String endpoint) async {
+  Future<Response> get(String endpoint, {Options? options}) async {
     try {
-      return await _dio.get(endpoint);
+      return await _dio.get(endpoint, options: options);
     } on DioException catch (e) {
       print("API GET ERROR ENDPOINT → $endpoint");
       if (e.response != null) {

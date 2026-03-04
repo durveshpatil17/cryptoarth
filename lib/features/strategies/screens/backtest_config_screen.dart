@@ -7,6 +7,10 @@ import 'backtest_results_screen.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cryptoarth/features/strategies/providers/strategy_provider.dart';
+import 'package:cryptoarth/features/strategies/models/strategy_model.dart';
+import 'package:cryptoarth/features/credits/providers/payment_balance_provider.dart';
+import 'package:cryptoarth/features/credits/screens/credits_store_screen.dart';
+import 'code_generator_screen.dart';
 
 class BacktestConfigScreen extends ConsumerStatefulWidget {
   final String strategyCode;
@@ -39,6 +43,13 @@ class _BacktestConfigScreenState extends ConsumerState<BacktestConfigScreen> {
   String _selectedCommission = 'Maker (0.02%)';
   final TextEditingController _initialCapitalController = TextEditingController(text: '10000');
 
+  // Selected Strategy State
+  late String _currentStrategyName;
+  late String _currentStrategyCode;
+  String? _currentPineCode;
+  String? _currentPythonCode;
+  dynamic _currentStrategySource;
+
   // Options
   List<Map<String, dynamic>> _symbols = [
     {'id': 1, 'symbol_name': 'BTCUSD'},
@@ -52,6 +63,11 @@ class _BacktestConfigScreenState extends ConsumerState<BacktestConfigScreen> {
   @override
   void initState() {
     super.initState();
+    _currentStrategyName = widget.strategyName;
+    _currentStrategyCode = widget.strategyCode;
+    _currentPineCode = widget.pineCode;
+    _currentPythonCode = widget.pythonCode;
+    _currentStrategySource = widget.strategySource;
     _fetchSymbols();
   }
 
@@ -119,7 +135,7 @@ class _BacktestConfigScreenState extends ConsumerState<BacktestConfigScreen> {
                   ),
                 ),
                 Text(
-                  widget.strategyName,
+                  _currentStrategyName,
                   style: TextStyle(
                     fontSize: 10,
                     color: Colors.white.withOpacity(0.5),
@@ -131,35 +147,106 @@ class _BacktestConfigScreenState extends ConsumerState<BacktestConfigScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(12.0),
-        child: GlassContainer(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          borderRadius: 20,
-          color: AppColors.cardSurface,
-          opacity: 0.5,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // compact header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        child: Column(
+          children: [
+            // Header Strategy Selector Area
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF161B22),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.white.withOpacity(0.05)),
+              ),
+              child: Column(
                 children: [
-                  const Text(
-                    "Configuration",
-                    style: TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  Text(
-                    "Advanced >",
-                    style: TextStyle(color: AppColors.cyan, fontSize: 11, fontWeight: FontWeight.bold),
-                  ),
+                   Row(
+                      children: [
+                         Expanded(
+                            flex: 3,
+                            child: _buildStrategySelectionDropdown(),
+                         ),
+                         const SizedBox(width: 12),
+                         SizedBox(
+                            height: 38,
+                            child: ElevatedButton.icon(
+                               onPressed: () {
+                                  Navigator.push(
+                                     context,
+                                     MaterialPageRoute(
+                                        builder: (context) => CodeGeneratorScreen(
+                                           strategyCode: _currentStrategyCode,
+                                           strategyName: _currentStrategyName,
+                                        ),
+                                     ),
+                                  );
+                               },
+                               icon: const Icon(Icons.code, size: 14),
+                               label: const Text("View Code", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                               style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.purple,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                               ),
+                            ),
+                         ),
+                      ],
+                   ),
+                   const SizedBox(height: 12),
+                   Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                         color: Colors.black.withOpacity(0.2),
+                         borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                         children: [
+                            const Icon(Icons.info_outline, size: 16, color: AppColors.cyan),
+                            const SizedBox(width: 12),
+                            Expanded(
+                               child: Text(
+                                  "Backtest '$_currentStrategyName' across deep liquidity pools using optimized historical data.",
+                                  style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.6), height: 1.4),
+                               ),
+                            ),
+                         ],
+                      ),
+                   ),
                 ],
               ),
-              
-              const SizedBox(height: 16),
+            ),
 
-              // Form Grid
+            const SizedBox(height: 24),
+
+            // Form Grid Container
+            GlassContainer(
+              borderRadius: 24,
+              color: AppColors.cardSurface,
+              opacity: 0.5,
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // compact header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Execution Setup",
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      Text(
+                         "Live Simulation V1.2",
+                         style: TextStyle(color: AppColors.cyan.withOpacity(0.5), fontSize: 10),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 20),
+
+                  // Form Grid
               Row(
                 children: [
                    Expanded(
@@ -249,16 +336,30 @@ class _BacktestConfigScreenState extends ConsumerState<BacktestConfigScreen> {
             ],
           ),
         ),
+          ],
+        ),
       ),
     );
   }
 
   Future<void> _runBacktest() async {
+    final balanceData = ref.read(paymentBalanceProvider).value;
+    final int credits = balanceData?.balance.toInt() ?? 0;
+
+    if (credits < 20) {
+      _showLowCreditsDialog();
+      return;
+    }
+
+    _showConfirmationDialog(() => _executeBacktest());
+  }
+
+  Future<void> _executeBacktest() async {
     setState(() => _isExecuting = true);
     try {
       final srv = ref.read(strategyServiceProvider);
       final payload = {
-        "strategy_code": widget.strategyCode,
+        "strategy_code": _currentStrategyCode,
         "symbol": _selectedSymbolObject ?? {"symbol_name": _selectedSymbolName},
         "timeframe": _selectedTimeframe.replaceAll(' Minutes', 'MIN').replaceAll(' Minute', 'MIN'),
         "leverage": _selectedLeverage.replaceAll('x', ''),
@@ -266,28 +367,54 @@ class _BacktestConfigScreenState extends ConsumerState<BacktestConfigScreen> {
         "initial_capital": _initialCapitalController.text,
         "commission_type": _selectedCommission.contains('Maker') ? 'maker' : 'taker',
         "commission_percent": '0.05',
-        if (widget.pineCode != null) "pine_code": widget.pineCode,
+        if (_currentPineCode != null) "pine_code": _currentPineCode,
       };
       
-      // 1. Prepare Backtest (only if we don't already have source)
+      // 1. Resolve Script/Source (Fetch if missing)
+      if (_currentPineCode == null && _currentPythonCode == null && _currentStrategySource == null) {
+        try {
+          // Try to fetch detail which might have strategy_json or code
+          final detail = await srv.fetchBacktestDetailRaw(_currentStrategyCode);
+          if (detail != null) {
+            if (detail['pine_code'] != null) _currentPineCode = detail['pine_code'];
+            if (detail['strategy_json'] != null) _currentStrategySource = detail['strategy_json'];
+          }
+          
+          // If still no source and we are owner/authorized, try specific pine endpoint
+          if (_currentPineCode == null && _currentStrategySource == null) {
+            final fetchedCode = await srv.fetchPineCode(_currentStrategyCode);
+            if (fetchedCode.isNotEmpty) {
+              _currentPineCode = fetchedCode;
+            }
+          }
+        } catch (e) {
+          debugPrint("Note: Could not resolve strategy source: $e");
+        }
+      }
+
+      // 2. Prepare Backtest (only for temporary AI strategies without source)
       dynamic strategyJson;
-      if (widget.strategySource != null) {
-        strategyJson = widget.strategySource;
-      } else if (widget.pineCode == null && widget.pythonCode == null && !widget.strategyCode.startsWith('COPILOT_STRAT')) {
-         final prepareData = await srv.prepareBacktest(payload);
-         strategyJson = prepareData["strategy_json"];
+      if (_currentStrategySource != null) {
+        strategyJson = _currentStrategySource;
+      } else if (_currentPineCode == null && _currentPythonCode == null) {
+         if (_currentStrategyCode.startsWith('COPILOT_STRAT')) {
+           final prepareData = await srv.prepareBacktest(payload);
+           strategyJson = prepareData["strategy_json"];
+           if (prepareData["pine_code"] != null) {
+             _currentPineCode = prepareData["pine_code"];
+           }
+         }
       }
       
-      // 2. Run Backtest
+      // 3. Run Backtest
       final int leverageVal = int.tryParse(payload["leverage"].toString()) ?? 10;
       final int capitalPercentVal = double.tryParse(payload["capital_percent"].toString())?.round() ?? 25;
       final int capitalVal = double.tryParse(payload["initial_capital"].toString())?.round() ?? 1000;
       final double commissionPercentVal = double.tryParse(payload["commission_percent"].toString()) ?? 0.05;
 
       final Map<String, dynamic> runPayload = {
-         if (!widget.strategyCode.startsWith('STRAT_'))
-           "strategy_code": widget.strategyCode,
-         "symbol": _selectedSymbolName, // Use String name as confirmed by manual curl test
+         "strategy_code": _currentStrategyCode,
+         "symbol": _selectedSymbolName, 
          "timeframe": payload["timeframe"],
          "leverage": leverageVal,
          "capital_percent": capitalPercentVal,
@@ -298,58 +425,48 @@ class _BacktestConfigScreenState extends ConsumerState<BacktestConfigScreen> {
       };
 
       if (strategyJson != null) {
-        // Flattened components for server's JSON engine
-        if (strategyJson is Map) {
-          runPayload.addAll(Map<String, dynamic>.from(strategyJson));
-          if (strategyJson['risk'] != null && strategyJson['risk'] is Map) {
-            runPayload.addAll(Map<String, dynamic>.from(strategyJson['risk']));
-          }
-        }
-        
-        // Multi-path strategy representation
         runPayload["json_strategy_code"] = strategyJson;
+        if (strategyJson is Map && strategyJson['risk'] != null && strategyJson['risk'] is Map) {
+           runPayload.addAll(Map<String, dynamic>.from(strategyJson['risk']));
+        }
       }
       
-      // Always include pine_code if available as a fallback
-      if (widget.pineCode != null) {
-        runPayload["pine_code"] = widget.pineCode;
+      if (_currentPineCode != null) {
+        runPayload["pine_code"] = _currentPineCode;
       }
-      if (widget.pythonCode != null) {
-        runPayload["python_backtest_code"] = widget.pythonCode;
+      if (_currentPythonCode != null) {
+        runPayload["python_backtest_code"] = _currentPythonCode;
       }
 
       final runData = await srv.runBacktest(runPayload);
       
-      // Extract the system UUID for persistent operations (deployment)
       final String? uuid = runData["backtest_result"] is Map ? runData["backtest_result"]["id"]?.toString() : runData["id"]?.toString();
-      final String? responseCode = runData["strategy"] is Map ? runData["strategy"]["strategy_code"]?.toString() : null;
-      
-      final backtestId = uuid ?? responseCode ?? widget.strategyCode;
-      
       final resultsData = runData["backtest_json"] ?? runData;
       
       if (!mounted) return;
+      
+      // Deduct credits locally for UI feedback
+      ref.read(paymentBalanceProvider.notifier).refresh();
+
       Navigator.push(
         context,
-                MaterialPageRoute(
-                  builder: (context) => BacktestResultsScreen(
-                    strategyCode: widget.strategyCode,
-                    backtestId: uuid,
-                    strategyName: "AI Strategy", // or from response
-                    symbol: _selectedSymbolName,
-                    timeframe: _selectedTimeframe,
-                    leverage: _selectedLeverage,
-                    capital: _initialCapitalController.text,
-                    initialData: Map<String, dynamic>.from(resultsData is Map ? resultsData : {}), // Pass the full response for immediate display
-                  ),
-                ),
+        MaterialPageRoute(
+          builder: (context) => BacktestResultsScreen(
+            strategyCode: _currentStrategyCode,
+            backtestId: uuid,
+            strategyName: _currentStrategyName,
+            symbol: _selectedSymbolName,
+            timeframe: _selectedTimeframe,
+            leverage: _selectedLeverage,
+            capital: _initialCapitalController.text,
+            initialData: Map<String, dynamic>.from(resultsData is Map ? resultsData : {}),
+          ),
+        ),
       );
     } catch (e) {
-      // Fallback UI test for mock assessment completion
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-      // Still allow navigation for testing if it's a known placeholder
-      if (widget.strategyCode == 'MACD_CROSSOVER') {
+      if (_currentStrategyCode == 'MACD_CROSSOVER') {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const BacktestResultsScreen(strategyCode: 'MACD_CROSSOVER')),
@@ -398,6 +515,177 @@ class _BacktestConfigScreenState extends ConsumerState<BacktestConfigScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildStrategySelectionDropdown() {
+    return ref.watch(selectStrategyProvider).when(
+      data: (strategiesList) {
+        // Create a copy and ensure current is included
+        final List<StrategyModel> strategies = strategiesList.cast<StrategyModel>().toList();
+        
+        bool currentExists = strategies.any((s) => s.strategyCode == _currentStrategyCode);
+        if (!currentExists) {
+          strategies.insert(0, StrategyModel(
+            id: 'temp', 
+            strategyCode: _currentStrategyCode, 
+            strategyName: _currentStrategyName,
+            createdAt: DateTime.now().toIso8601String(),
+            isDeployed: false,
+            brokerId: 0,
+            winRate: 0, totalPnl: 0, maxDrawdown: 0
+          ));
+        }
+
+        return Container(
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.04),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.08)),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _currentStrategyCode,
+              isExpanded: true,
+              dropdownColor: const Color(0xFF1E293B),
+              icon: const Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.white54),
+              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+              items: strategies.map<DropdownMenuItem<String>>((s) {
+                return DropdownMenuItem<String>(
+                  value: s.strategyCode,
+                  child: Text(s.strategyName, maxLines: 1, overflow: TextOverflow.ellipsis),
+                );
+              }).toList(),
+              onChanged: (val) {
+                if (val != null) {
+                  final selected = strategies.firstWhere((s) => s.strategyCode == val);
+                  setState(() {
+                    _currentStrategyName = selected.strategyName;
+                    _currentStrategyCode = selected.strategyCode;
+                    _currentPineCode = null;
+                    _currentPythonCode = null;
+                    _currentStrategySource = null;
+                  });
+                }
+              },
+            ),
+          ),
+        );
+      },
+      loading: () => const SizedBox(height: 38, child: Center(child: CircularProgressIndicator(color: AppColors.cyan, strokeWidth: 2))),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  void _showLowCreditsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassContainer(
+          borderRadius: 24,
+          color: AppColors.cardSurface,
+          opacity: 0.95,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.gold.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.monetization_on_outlined, color: AppColors.gold, size: 40),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Insufficient Credits",
+                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "Running a detailed backtest requires 20 Credits.\nPlease top up to continue.",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const CreditsStoreScreen()));
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.green,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text("Purchase Credits"),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showConfirmationDialog(VoidCallback onConfirm) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassContainer(
+          borderRadius: 24,
+          color: AppColors.cardSurface,
+          opacity: 0.9,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.science_outlined, color: AppColors.cyan, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                "Confirm Backtest",
+                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Running backtest for '$_currentStrategyName' will deduct 20 credits from your balance.",
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: const BorderSide(color: Colors.white24)),
+                      child: const Text("Cancel"),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        onConfirm();
+                      },
+                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.cyan, foregroundColor: Colors.black),
+                      child: const Text("Execute (20C)"),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

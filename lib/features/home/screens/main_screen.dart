@@ -7,7 +7,8 @@ import 'package:cryptoarth/features/home/screens/home_screen.dart';
 import 'package:cryptoarth/features/portfolio/screens/portfolio_screen.dart';
 import 'package:cryptoarth/features/marketplace/screens/marketplace_screen.dart';
 import 'package:cryptoarth/features/orders/screens/orders_screen.dart';
-import 'package:cryptoarth/features/tools/screens/calculator_screen.dart';
+import 'package:cryptoarth/features/profile/screens/profile_screen.dart';
+import 'package:cryptoarth/features/home/screens/marketplace_home_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final int initialIndex;
@@ -27,11 +28,11 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   final List<Widget> _screens = [
-    const HomeScreen(),
+    const MarketplaceHomeScreen(),
     const PortfolioScreen(),
-    const MarketplaceScreen(),
+    const HomeScreen(),
     const OrdersScreen(),
-    const CalculatorScreen(),
+    const ProfileScreen(),
   ];
 
   @override

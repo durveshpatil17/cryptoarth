@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cryptoarth/features/strategies/models/strategy_model.dart';
 import 'package:cryptoarth/features/strategies/services/strategy_service.dart';
@@ -70,4 +71,43 @@ class DashboardStrategyNotifier extends AsyncNotifier<List<StrategyModel>> {
 
 final dashboardStrategyProvider = AsyncNotifierProvider<DashboardStrategyNotifier, List<StrategyModel>>(() {
   return DashboardStrategyNotifier();
+});
+
+// Combined provider for selection dropdowns
+final selectStrategyProvider = FutureProvider<List<StrategyModel>>((ref) async {
+  List<StrategyModel> userStrategies = [];
+  List<StrategyModel> dashboardStrategies = [];
+
+  try {
+    userStrategies = await ref.watch(strategyProvider.future);
+  } catch (e) {
+    debugPrint("selectStrategyProvider: Error fetching user strategies: $e");
+  }
+
+  try {
+    dashboardStrategies = await ref.watch(dashboardStrategyProvider.future);
+  } catch (e) {
+    debugPrint("selectStrategyProvider: Error fetching dashboard strategies: $e");
+  }
+  
+  // Combine and deduplicate
+  // We prefer strategyCode as key if available, otherwise ID
+  final Map<String, StrategyModel> combinedMap = {};
+  
+  // 1. Marketplace strategies
+  for (var s in dashboardStrategies) {
+    final key = s.strategyCode.isNotEmpty ? s.strategyCode : s.id;
+    if (key.isNotEmpty) combinedMap[key] = s;
+  }
+  
+  // 2. User strategies take precedence
+  for (var s in userStrategies) {
+    final key = s.strategyCode.isNotEmpty ? s.strategyCode : s.id;
+    if (key.isNotEmpty) combinedMap[key] = s;
+  }
+  
+  final result = combinedMap.values.toList();
+  debugPrint("Strategy Selection List: Found ${result.length} strategies total.");
+  
+  return result;
 });

@@ -159,6 +159,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                      child: CustomTextField(
                       label: "First Name",
                       hint: "John",
+                      icon: Icons.person_outline,
                       controller: firstNameController,
                     ),
                    ),
@@ -167,6 +168,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                      child: CustomTextField(
                       label: "Last Name",
                       hint: "Doe",
+                      icon: Icons.person_outline,
                       controller: lastNameController,
                     ),
                    ),
@@ -179,6 +181,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               CustomTextField(
                 label: "Email Address",
                 hint: "trading@example.com",
+                icon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
                 controller: emailController,
               ),
@@ -190,6 +193,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 label: "Mobile Number",
                 hint: "Enter 10-digit number",
                 prefixText: "+91",
+                icon: Icons.phone_android,
                 keyboardType: TextInputType.phone,
                 controller: mobileController,
               ),

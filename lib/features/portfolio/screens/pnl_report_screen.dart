@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cryptoarth/features/portfolio/providers/pnl_provider.dart';
 import 'package:cryptoarth/features/orders/providers/order_provider.dart';
 import 'package:cryptoarth/core/utils/report_generator.dart';
+import 'package:cryptoarth/features/portfolio/providers/trading_mode_provider.dart';
+import 'package:cryptoarth/features/strategies/providers/strategy_provider.dart';
 
 class PnLReportScreen extends ConsumerStatefulWidget {
   const PnLReportScreen({super.key});
@@ -24,6 +26,12 @@ class _PnLReportScreenState extends ConsumerState<PnLReportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final mode = ref.watch(tradingModeProvider);
+    final isLive = mode == TradingMode.live;
+    
+    // Sync local selection if global mode changes (optional, but good for consistency)
+    _selectedTradeCategory = isLive ? "Live Trades" : "Paper Trades";
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -98,8 +106,8 @@ class _PnLReportScreenState extends ConsumerState<PnLReportScreen> {
                                 ),
                                 child: Row(
                                    children: [
-                                      _buildCompactToggle("Live", _selectedTradeCategory == "Live Trades"),
-                                      _buildCompactToggle("Paper", _selectedTradeCategory == "Paper Trades"),
+                                      _buildCompactToggle("Live", isLive, () => ref.read(tradingModeProvider.notifier).state = TradingMode.live),
+                                      _buildCompactToggle("Paper", !isLive, () => ref.read(tradingModeProvider.notifier).state = TradingMode.paper),
                                    ],
                                 ),
                              ),
@@ -108,7 +116,14 @@ class _PnLReportScreenState extends ConsumerState<PnLReportScreen> {
                        const SizedBox(height: 12),
                        
                        // Row 2: Strategy Dropdown
-                       _buildCompactDropdown(_selectedStrategy, _strategies, (v) => setState(() => _selectedStrategy = v!)),
+                       ref.watch(strategyProvider).when(
+                         data: (strategies) {
+                           final List<String> strategyNames = ["All Strategies", ...strategies.map((e) => e.strategyName)];
+                           return _buildCompactDropdown(_selectedStrategy, strategyNames, (v) => setState(() => _selectedStrategy = v!));
+                         },
+                         loading: () => const SizedBox(height: 36),
+                         error: (_,__) => _buildCompactDropdown("All Strategies", ["All Strategies"], (v){}),
+                       ),
                        
                        const SizedBox(height: 12),
                        
@@ -123,10 +138,14 @@ class _PnLReportScreenState extends ConsumerState<PnLReportScreen> {
                                 height: 36,
                                 width: 36,
                                 child: IconButton(
-                                   onPressed: () {},
-                                   icon: const Icon(Icons.search, size: 18),
+                                   onPressed: () {
+                                     // Trigger refreshes
+                                     ref.read(pnlProvider.notifier).refresh();
+                                     ref.read(orderProvider.notifier).refresh();
+                                   },
+                                   icon: const Icon(Icons.refresh, size: 18),
                                    style: IconButton.styleFrom(
-                                      backgroundColor: const Color(0xFF8B5CF6),
+                                      backgroundColor: AppColors.primary,
                                       foregroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                       padding: EdgeInsets.zero,
@@ -215,20 +234,20 @@ class _PnLReportScreenState extends ConsumerState<PnLReportScreen> {
      );
   }
 
-  Widget _buildCompactToggle(String text, bool isSelected) {
+  Widget _buildCompactToggle(String text, bool isSelected, VoidCallback onTap) {
      return GestureDetector(
-        onTap: () => setState(() => _selectedTradeCategory = "$text Trades"),
+        onTap: onTap,
         child: Container(
            padding: const EdgeInsets.symmetric(horizontal: 12),
            alignment: Alignment.center,
            decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF8B5CF6).withOpacity(0.2) : Colors.transparent,
+              color: isSelected ? AppColors.primary.withOpacity(0.2) : Colors.transparent,
               borderRadius: BorderRadius.circular(6),
            ),
            child: Text(
               text,
               style: TextStyle(
-                 color: isSelected ? const Color(0xFF8B5CF6) : Colors.white54,
+                 color: isSelected ? AppColors.primary : Colors.white54,
                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                  fontSize: 11,
               ),

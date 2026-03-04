@@ -298,6 +298,8 @@ class CopilotNotifier extends AsyncNotifier<List<Map<String, dynamic>>> {
     _sessionId = null;
   }
 
+  void startNewChat() => clearChat();
+
   Future<void> runBacktest(String messageId) async {
     final messages = state.value ?? [];
     final index = messages.indexWhere((m) => m['id'] == messageId);

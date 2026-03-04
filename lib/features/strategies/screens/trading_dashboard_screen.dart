@@ -1,32 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 import 'package:cryptoarth/shared/widgets/glass_container.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cryptoarth/features/portfolio/providers/portfolio_provider.dart';
+import 'package:cryptoarth/features/portfolio/models/position_model.dart';
 
-class TradingDashboardScreen extends StatelessWidget {
+class TradingDashboardScreen extends ConsumerWidget {
   const TradingDashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          title: const Text("Trading Dashboard"),
+          title: const Text("Trading Dashboard", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          backgroundColor: AppColors.background,
+          elevation: 0,
           bottom: const TabBar(
             indicatorColor: AppColors.primary,
             labelColor: AppColors.primary,
             unselectedLabelColor: AppColors.textSecondary,
+            labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
             tabs: [
               Tab(text: "Open Positions"),
               Tab(text: "Scanner"),
             ],
           ),
         ),
-        body: const TabBarView(
+        body: TabBarView(
           children: [
-            _PositionsTable(),
-            _ScannerTable(),
+            _PositionsTableView(),
+            const _ScannerTable(),
           ],
         ),
       ),
@@ -34,68 +40,68 @@ class TradingDashboardScreen extends StatelessWidget {
   }
 }
 
-class _PositionsTable extends StatelessWidget {
-  const _PositionsTable();
-
+class _PositionsTableView extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.vertical,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: GlassContainer(
-            color: AppColors.cardSurface,
-            opacity: 0.5,
-            padding: const EdgeInsets.all(16),
-            child: DataTable(
-              headingTextStyle: const TextStyle(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.bold,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final positionsAsync = ref.watch(portfolioProvider);
+
+    return positionsAsync.when(
+      data: (positions) {
+        if (positions.isEmpty) {
+          return const Center(child: Text("No open positions", style: TextStyle(color: Colors.white54)));
+        }
+        return RefreshIndicator(
+          onRefresh: () => ref.read(portfolioProvider.notifier).refresh(),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: GlassContainer(
+                  color: AppColors.cardSurface,
+                  opacity: 0.5,
+                  padding: const EdgeInsets.all(16),
+                  child: DataTable(
+                    headingTextStyle: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                    dataTextStyle: const TextStyle(color: Colors.white, fontSize: 12),
+                    columns: const [
+                      DataColumn(label: Text("Symbol")),
+                      DataColumn(label: Text("Side")),
+                      DataColumn(label: Text("Entry Price")),
+                      DataColumn(label: Text("Current")),
+                      DataColumn(label: Text("P&L (%)")),
+                      DataColumn(label: Text("P&L (\$)")),
+                    ],
+                    rows: positions.map((pos) => _buildRow(pos)).toList(),
+                  ),
+                ),
               ),
-              dataTextStyle: const TextStyle(color: Colors.white),
-              columns: const [
-                DataColumn(label: Text("Symbol")),
-                DataColumn(label: Text("Side")),
-                DataColumn(label: Text("Entry Price")),
-                DataColumn(label: Text("Current")),
-                DataColumn(label: Text("P&L (%)")),
-                DataColumn(label: Text("Status")),
-              ],
-              rows: _generateMockPositions(),
             ),
           ),
-        ),
-      ),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
+      error: (err, _) => Center(child: Text("Error: $err", style: const TextStyle(color: Colors.redAccent))),
     );
   }
 
-  List<DataRow> _generateMockPositions() {
-    return [
-      _buildRow("BTC/USD", "LONG", "45,230.50", "46,100.00", "+1.92%", true),
-      _buildRow("ETH/USD", "SHORT", "3,200.00", "3,150.00", "+1.56%", true),
-      _buildRow("SOL/USD", "LONG", "110.50", "108.20", "-2.08%", false),
-      _buildRow("ADA/USD", "LONG", "0.45", "0.45", "0.00%", true),
-      _buildRow("XRP/USD", "SHORT", "0.62", "0.60", "+3.22%", true),
-    ];
-  }
+  DataRow _buildRow(PositionModel pos) {
+    final bool isLong = pos.quantity >= 0;
+    final bool isProfit = pos.pnl >= 0;
+    final pnlColor = isProfit ? AppColors.green : Colors.redAccent;
 
-  DataRow _buildRow(String symbol, String side, String entry, String current, String pnl, bool isProfit) {
     return DataRow(cells: [
-      DataCell(Text(symbol, style: const TextStyle(fontWeight: FontWeight.bold))),
-      DataCell(Text(side, style: TextStyle(color: side == "LONG" ? AppColors.primary : Colors.redAccent))),
-      DataCell(Text(entry)),
-      DataCell(Text(current)),
-      DataCell(Text(pnl, style: TextStyle(color: isProfit ? AppColors.primary : Colors.redAccent))),
-      DataCell(Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: (isProfit ? AppColors.primary : Colors.redAccent).withOpacity(0.2),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(isProfit ? "PROFIT" : "LOSS", style: const TextStyle(fontSize: 10)),
-      )),
+      DataCell(Text(pos.symbol, style: const TextStyle(fontWeight: FontWeight.bold))),
+      DataCell(Text(isLong ? "LONG" : "SHORT", style: TextStyle(color: isLong ? AppColors.green : Colors.redAccent))),
+      DataCell(Text(pos.entryPrice.toStringAsFixed(2))),
+      DataCell(Text(pos.currentPrice.toStringAsFixed(2))),
+      DataCell(Text("${pos.pnlPercentage.toStringAsFixed(2)}%", style: TextStyle(color: pnlColor))),
+      DataCell(Text("\$${pos.pnl.toStringAsFixed(2)}", style: TextStyle(color: pnlColor))),
     ]);
   }
 }
@@ -105,6 +111,6 @@ class _ScannerTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text("Scanner Data Placeholder"));
+    return const Center(child: Text("Scanner Data Placeholder", style: TextStyle(color: Colors.white54)));
   }
 }

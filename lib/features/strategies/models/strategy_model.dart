@@ -1,6 +1,7 @@
 class StrategyModel {
   final String id;
   final String? deploymentId;
+  final String? userName;
   final String strategyName;
   final String strategyCode;
   final String createdAt;
@@ -14,6 +15,7 @@ class StrategyModel {
   StrategyModel({
     required this.id,
     this.deploymentId,
+    this.userName,
     required this.strategyName,
     required this.strategyCode,
     required this.createdAt,
@@ -52,6 +54,7 @@ class StrategyModel {
     return StrategyModel(
       id: strategyId,
       deploymentId: deploymentId,
+      userName: data['user_name']?.toString() ?? data['author']?.toString() ?? data['creator']?.toString(),
       strategyName: data['strategy_name']?.toString() ?? 'Unknown Strategy',
       strategyCode: strategyCode,
       createdAt: data['created_at']?.toString() ?? '',
@@ -68,6 +71,7 @@ class StrategyModel {
     return {
       'id': id,
       'deployment_id': deploymentId,
+      'user_name': userName,
       'strategy_name': strategyName,
       'strategy_code': strategyCode,
       'created_at': createdAt,

@@ -7,10 +7,9 @@ import 'package:cryptoarth/features/home/screens/main_screen.dart';
 import 'package:cryptoarth/features/strategies/screens/backtest_config_screen.dart';
 import 'package:cryptoarth/features/strategies/screens/code_generator_screen.dart';
 import 'package:cryptoarth/features/home/screens/chat_history_screen.dart';
+import 'package:cryptoarth/features/tools/screens/calculator_screen.dart';
+
 import 'package:cryptoarth/features/strategies/screens/templates_screen.dart';
-import 'package:cryptoarth/features/settings/screens/credits_screen.dart';
-import 'package:cryptoarth/features/tutorials/screens/tutorial_ai_screen.dart';
-import 'package:cryptoarth/features/tutorials/screens/tutorials_list_screen.dart';
 
 
 
@@ -18,7 +17,10 @@ import 'package:cryptoarth/features/tutorials/screens/tutorials_list_screen.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
 import 'package:cryptoarth/features/credits/providers/payment_balance_provider.dart';
-import 'package:cryptoarth/features/strategies/providers/copilot_provider.dart';
+import 'package:cryptoarth/features/broker/screens/broker_login_screen.dart';
+import 'package:cryptoarth/features/admin/screens/admin_panel_screen.dart';
+import 'package:cryptoarth/features/portfolio/screens/pnl_report_screen.dart';
+import 'package:cryptoarth/features/signals/screens/scanner_screen.dart';
 
 class CustomDrawer extends ConsumerWidget {
   const CustomDrawer({super.key});
@@ -88,40 +90,6 @@ class CustomDrawer extends ConsumerWidget {
           
           const SizedBox(height: 24),
           
-          // New Chat Button
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.cardSurface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
-              ),
-              child: ListTile(
-                leading: const Icon(Icons.chat_bubble_outline, color: AppColors.cyan),
-                title: const Text(
-                  "New Chat",
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                onTap: () {
-                  ref.read(copilotProvider.notifier).clearChat();
-                  Navigator.pop(context);
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => const MainScreen()),
-                    (route) => false,
-                  );
-                },
-                // Add left border indicator simulation if needed, or just keep simple for now
-                minLeadingWidth: 20,
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 16),
-          
           // Menu Items
           Expanded(
             child: SingleChildScrollView(
@@ -129,76 +97,47 @@ class CustomDrawer extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   children: [
-                    _buildMenuItem(Icons.science_outlined, "Backtest", onTap: () {
-                      Navigator.pop(context); // Close drawer
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const BacktestConfigScreen()),
-                      );
-                    }),
-                    _buildMenuItem(Icons.code, "Code Generator", onTap: () {
-                      Navigator.pop(context); // Close drawer
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const CodeGeneratorScreen()),
-                      );
-                    }),
-                    _buildMenuItem(Icons.history, "Chat History", onTap: () {
-                      Navigator.pop(context); // Close drawer
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const ChatHistoryScreen()),
-                      );
-                    }),
-                    _buildMenuItem(Icons.analytics_outlined, "Execution History", onTap: () {
-                      Navigator.pop(context); // Close drawer
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const ExecutionHistoryScreen()),
-                      );
-                    }),
-                    _buildMenuItem(Icons.bookmark_border, "Templates", onTap: () {
-                      Navigator.pop(context); // Close drawer
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const TemplatesScreen()),
-                      );
-                    }),
-                    _buildMenuItem(Icons.monetization_on_outlined, "Credits", onTap: () {
-                      Navigator.pop(context); // Close drawer
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const CreditsScreen()),
-                      );
-                    }),
-                    _buildMenuItem(Icons.shopping_bag_outlined, "Marketplace", onTap: () {
-                      Navigator.pop(context); // Close drawer
+                    _buildMenuItem(Icons.home_outlined, "Home", onTap: () {
+                      Navigator.pop(context);
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (context) => const MainScreen(initialIndex: 2)),
+                        MaterialPageRoute(builder: (context) => const MainScreen(initialIndex: 0)),
                         (route) => false,
                       );
                     }),
-                    _buildMenuItem(Icons.bar_chart, "Portfolio / P&L", onTap: () {
-                      Navigator.pop(context); // Close drawer
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (context) => const MainScreen(initialIndex: 1)),
-                        (route) => false,
-                      );
-                    }),
-                    _buildMenuItem(Icons.play_circle_outline, "Tutorial AI", onTap: () {
-                      Navigator.pop(context); // Close drawer
+                    _buildMenuItem(Icons.currency_exchange, "Broker Login", onTap: () {
+                      Navigator.pop(context);
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const TutorialAIScreen()),
+                        MaterialPageRoute(builder: (context) => const BrokerLoginScreen()),
                       );
                     }),
-                    _buildMenuItem(Icons.video_library_outlined, "Video Tutorials", onTap: () {
-                      Navigator.pop(context); // Close drawer
+                    _buildMenuItem(Icons.radar_outlined, "Scanner", onTap: () {
+                      Navigator.pop(context);
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const TutorialsListScreen()),
+                        MaterialPageRoute(builder: (context) => const ScannerScreen()),
+                      );
+                    }),
+                    _buildMenuItem(Icons.calculate_outlined, "Margin Calculator", onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const CalculatorScreen()),
+                      );
+                    }),
+                    _buildMenuItem(Icons.assessment_outlined, "PnL Report", onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const PnLReportScreen()),
+                      );
+                    }),
+                    _buildMenuItem(Icons.admin_panel_settings_outlined, "Admin Panel", onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AdminPanelScreen()),
                       );
                     }),
                   ],
@@ -223,7 +162,7 @@ class CustomDrawer extends ConsumerWidget {
                   style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
                 ),
                 onTap: () {
-                   Navigator.pop(context); // Close drawer
+                   Navigator.pop(context);
                    ref.read(authProvider.notifier).logout(context);
                 },
               ),

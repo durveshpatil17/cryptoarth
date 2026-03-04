@@ -28,14 +28,19 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text("Order Book", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: const Text("Order Book", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: AppColors.background,
-        automaticallyImplyLeading: false,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Colors.white70),
+          onPressed: () {
+            final ScaffoldState? root = context.findRootAncestorStateOfType<ScaffoldState>();
+            root?.openDrawer();
+          },
+        ),
         actions: [
           IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none, size: 20, color: Colors.white)),
-          const ProfileAvatar(),
-          const SizedBox(width: 16),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
@@ -63,31 +68,32 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                      children: [
                         Expanded(
                            child: Container(
-                              height: 36,
-                              padding: const EdgeInsets.all(2),
+                              height: 38,
+                              padding: const EdgeInsets.all(3),
                               decoration: BoxDecoration(
                                  color: AppColors.background,
-                                 borderRadius: BorderRadius.circular(8),
+                                 borderRadius: BorderRadius.circular(10),
                                  border: Border.all(color: Colors.white.withOpacity(0.1)),
                               ),
                               child: Row(
                                  children: [
-                                    Expanded(child: _buildModeOption("Live", _mode == "Live")),
-                                    Expanded(child: _buildModeOption("Paper", _mode == "Paper")),
+                                    Expanded(child: _buildModeOption("Live", _mode == "Live", AppColors.purple)),
+                                    const SizedBox(width: 4),
+                                    Expanded(child: _buildModeOption("Paper", _mode == "Paper", AppColors.cyan)),
                                  ],
                               ),
                            ),
                         ),
                         const SizedBox(width: 12),
                         SizedBox(
-                           height: 36,
-                           width: 36,
+                           height: 38,
+                           width: 38,
                            child: IconButton(
                               onPressed: () => ref.read(orderProvider.notifier).refresh(),
-                              icon: const Icon(Icons.refresh, size: 18, color: Colors.white70),
+                              icon: const Icon(Icons.refresh, size: 20, color: Colors.white70),
                               style: IconButton.styleFrom(
-                                 backgroundColor: AppColors.background,
-                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Colors.white.withOpacity(0.1))),
+                                 backgroundColor: AppColors.cardSurface,
+                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: Colors.white.withOpacity(0.1))),
                                  padding: EdgeInsets.zero,
                               ),
                            ),
@@ -139,11 +145,11 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
 
   Widget _buildCompactDropdown(String label, String value, List<String> items, Function(String?) onChanged) {
      return Container(
-        height: 36,
+        height: 38,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
            color: AppColors.background,
-           borderRadius: BorderRadius.circular(8),
+           borderRadius: BorderRadius.circular(10),
            border: Border.all(color: Colors.white.withOpacity(0.1)),
         ),
         child: DropdownButtonHideUnderline(
@@ -161,19 +167,19 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
      );
   }
 
-  Widget _buildModeOption(String text, bool isSelected) {
+  Widget _buildModeOption(String text, bool isSelected, Color color) {
      return GestureDetector(
         onTap: () => setState(() => _mode = text),
         child: Container(
            decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFFD946EF).withOpacity(0.2) : Colors.transparent,
-              borderRadius: BorderRadius.circular(6),
+              color: isSelected ? color.withOpacity(0.2) : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
            ),
            alignment: Alignment.center,
            child: Text(
               text, 
               style: TextStyle(
-                 color: isSelected ? const Color(0xFFD946EF) : Colors.white54, 
+                 color: isSelected ? color : Colors.white54, 
                  fontSize: 11, 
                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
               )
@@ -197,9 +203,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
      return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-           color: AppColors.cardSurface,
-           borderRadius: BorderRadius.circular(12),
-           border: Border.all(color: Colors.white.withOpacity(0.05)),
+           color: AppColors.cardSurface.withOpacity(0.5),
+           borderRadius: BorderRadius.circular(16),
+           border: Border.all(color: Colors.white.withOpacity(0.08)),
         ),
         child: Column(
            children: [

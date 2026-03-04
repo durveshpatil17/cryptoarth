@@ -97,6 +97,7 @@ class ApiEndpoints {
   static const String strategyDeepThinkV1 = "/auth/strategy/deep-think-optimize/";
   static const String copilotStream = "/auth/strategy/copilot/stream/";
   static const String copilotConversions = "/auth/strategy/copilot/fetch-conversions/";
+  static const String codeConversion = "/auth/strategy/copilot/code-conversion/";
   static const String checkOpenPosition = "/auth/strategy/backtest/check-open-position/";
 
   // Payments / Admin / System

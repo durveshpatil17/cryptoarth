@@ -3,18 +3,32 @@ import 'package:dio/dio.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:cryptoarth/core/network/api_client.dart';
 
 class ReportGenerator {
-  static final Dio _dio = Dio();
+  static final ApiClient _apiClient = ApiClient();
 
   static Future<void> downloadPdfFromUrl(String url, String filename) async {
     try {
-      final response = await _dio.get(
+      // Use ApiClient to get auth headers automatically
+      final response = await _apiClient.get(
         url,
         options: Options(responseType: ResponseType.bytes),
       );
+      
       if (response.statusCode == 200) {
-        await Printing.sharePdf(bytes: response.data, filename: filename);
+        // If the response is already bytes (depends on how ApiClient is used)
+        // Extract from dynamic response data
+        final Uint8List data;
+        if (response.data is Uint8List) {
+          data = response.data;
+        } else if (response.data is List<int>) {
+          data = Uint8List.fromList(response.data);
+        } else {
+           // Fallback for cases where it might be returned as string or other
+           throw Exception("PDF download returned non-binary data");
+        }
+        await Printing.sharePdf(bytes: data, filename: filename);
       } else {
         throw Exception("Failed to download file: ${response.statusCode}");
       }

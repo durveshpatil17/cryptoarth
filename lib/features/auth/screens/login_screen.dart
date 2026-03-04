@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 import 'package:cryptoarth/shared/widgets/custom_button.dart';
 import 'package:cryptoarth/shared/widgets/custom_text_field.dart';
@@ -74,75 +75,42 @@ class LoginScreen extends ConsumerWidget {
       ),
 
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
-
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
-
             children: [
-
               const SizedBox(height: 20),
-
               /// Badge
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(30),
-                  border: Border.all(
-                    color: AppColors.primary.withOpacity(0.3),
-                  ),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
                 ),
-
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-
-                    Icon(
-                      Icons.shield_outlined,
-                      color: AppColors.primary,
-                      size: 16,
-                    ),
-
+                    Icon(Icons.lock_outline, color: AppColors.primary, size: 14),
                     SizedBox(width: 8),
-
                     Text(
-                      "SECURE SIGN IN",
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        letterSpacing: 1,
-                      ),
+                      "SECURE LOGIN",
+                      style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2),
                     ),
                   ],
                 ),
               ),
-
               const SizedBox(height: 32),
-
               const Text(
-                "Sign In to Your Account",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
+                "Welcome Back!",
+                style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
               ),
-
               const SizedBox(height: 12),
-
               const Text(
                 "Enter your mobile number to access dashboard",
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 16,
-                ),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
               ),
-
               const SizedBox(height: 48),
 
               /// Mobile field
@@ -150,8 +118,11 @@ class LoginScreen extends ConsumerWidget {
                 label: "Mobile Number",
                 hint: "Enter 10-digit number",
                 prefixText: "+91",
+                icon: Icons.phone_android,
                 keyboardType: TextInputType.phone,
                 controller: mobileController,
+                maxLength: 10,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               ),
 
               const SizedBox(height: 24),
@@ -162,21 +133,15 @@ class LoginScreen extends ConsumerWidget {
                 : CustomButton(
                     text: "SEND OTP",
                     icon: Icons.bolt,
-                    onPressed: () => _sendOtp(context, ref),
+                     onPressed: () => _sendOtp(context, ref),
                   ),
 
-              const Spacer(),
+              const SizedBox(height: 50),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-
-                  const Text(
-                    "New to CryptoArth?",
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
+                   const Text("New to CryptoArth?", style: TextStyle(color: AppColors.textSecondary)),
 
                   TextButton(
                     onPressed: () {

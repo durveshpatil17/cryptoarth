@@ -7,16 +7,18 @@ import 'package:cryptoarth/shared/widgets/custom_button.dart';
 import 'package:cryptoarth/shared/widgets/stats_card.dart';
 import 'package:cryptoarth/features/auth/screens/login_screen.dart';
 import 'package:cryptoarth/features/auth/screens/signup_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
 
 
-class WelcomeScreen extends StatefulWidget {
+class WelcomeScreen extends ConsumerStatefulWidget {
   const WelcomeScreen({super.key});
 
   @override
-  State<WelcomeScreen> createState() => _WelcomeScreenState();
+  ConsumerState<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> {
+class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   Timer? _carouselTimer;
@@ -119,14 +121,18 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.insights, color: AppColors.cyan, size: 28),
-                            const SizedBox(width: 10),
-                            Text(
-                              "Crypto Arth",
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.5,
+                            const Icon(Icons.insights, color: AppColors.cyan, size: 24),
+                            const SizedBox(width: 8),
+                            const Flexible(
+                              child: Text(
+                                "Crypto Arth",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 20,
+                                  letterSpacing: -0.5,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             Container(
@@ -136,7 +142,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                 color: AppColors.primary.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(4),
                               ),
-                              child: const Text("PRO", style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold)),
+                              child: const Text("PRO", style: TextStyle(color: AppColors.primary, fontSize: 8, fontWeight: FontWeight.bold)),
                             )
                           ],
                         ),
@@ -314,6 +320,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         text: "Start Trading Free Now",
                         icon: Icons.rocket_launch,
                         onPressed: () {
+                          ref.read(authProvider.notifier).setLandingSeen();
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (context) => const SignupScreen()),
@@ -327,6 +334,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           const Text("Already a Pro?", style: TextStyle(color: Colors.white54, fontSize: 13)),
                           TextButton(
                             onPressed: () {
+                              ref.read(authProvider.notifier).setLandingSeen();
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(builder: (context) => LoginScreen()),

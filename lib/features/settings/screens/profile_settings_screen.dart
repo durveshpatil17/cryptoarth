@@ -211,12 +211,14 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
                   CustomTextField(
                     label: "Full Name",
                     hint: "Enter your full name",
+                    icon: Icons.person_outline,
                     controller: _nameController,
                   ),
                   const SizedBox(height: 16),
                   CustomTextField(
                     label: "Email Address",
                     hint: "Enter your email",
+                    icon: Icons.email_outlined,
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                   ),
@@ -224,6 +226,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
                   CustomTextField(
                     label: "Phone Number",
                     hint: "Enter phone number",
+                    icon: Icons.phone_android_outlined,
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
                   ),
@@ -272,6 +275,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
                   CustomTextField(
                     label: "Date of Birth",
                     hint: "DD/MM/YYYY",
+                    icon: Icons.calendar_today_outlined,
                     controller: _dobController,
                   ),
                   

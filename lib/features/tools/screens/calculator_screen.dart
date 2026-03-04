@@ -26,18 +26,95 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
 
   final List<String> _symbols = ["BTCUSD", "ETHUSD", "SOLUSD"];
 
+  // Calculated Results
+  double _margin = 0.0;
+  double _risk = 0.0;
+  double _reward = 0.0;
+  double _totalFees = 0.0;
+  double _netProfit = 0.0;
+  double _positionSize = 0.0;
+  double _totalCapitalUSD = 0.0;
+
+  void _calculate() {
+    setState(() {
+      final double capitalINR = double.tryParse(_capitalController.text) ?? 15000;
+      final double usdRate = double.tryParse(_usdRateController.text) ?? 83;
+      final double leverage = double.tryParse(_leverageController.text) ?? 25;
+      final double capitalUsedPct = double.tryParse(_capitalUsedController.text) ?? 25;
+      final double slValue = double.tryParse(_stopLossController.text) ?? 2;
+      final double targetValue = double.tryParse(_targetController.text) ?? 5;
+      final double tradesPerDay = double.tryParse(_tradesController.text) ?? 4;
+
+      // 1. Convert Capital to USD
+      _totalCapitalUSD = capitalINR / usdRate;
+      
+      // 2. Used Capital (Margin)
+      _margin = _totalCapitalUSD * (capitalUsedPct / 100);
+      
+      // 3. Position Size
+      _positionSize = _margin * leverage;
+
+      // 4. Fees (Maker 0.02%, Taker 0.05% - per side)
+      final double feeRate = _orderType == "Maker" ? 0.0002 : 0.0005;
+      // Fee on entry + Fee on exit
+      final double perTradeFees = _positionSize * feeRate * 2;
+      _totalFees = perTradeFees * tradesPerDay;
+
+      // 5. Risk & Reward
+      if (_stopLossUnit == "%") {
+        _risk = _positionSize * (slValue / 100);
+      } else {
+        _risk = slValue;
+      }
+
+      if (_targetUnit == "%") {
+        _reward = _positionSize * (targetValue / 100);
+      } else {
+        _reward = targetValue;
+      }
+
+      // 6. Net Profit per trade
+      _netProfit = _reward - perTradeFees;
+    });
+  }
+
+  void _reset() {
+    setState(() {
+      _capitalController.text = "15000";
+      _leverageController.text = "25";
+      _capitalUsedController.text = "25";
+      _stopLossController.text = "2";
+      _targetController.text = "5";
+      _tradesController.text = "4";
+      _usdRateController.text = "83";
+      _calculate();
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _calculate();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text("Calculator", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: const Text("Margin Calculator", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: AppColors.background,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white70),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none, size: 20, color: Colors.white)),
-          const ProfileAvatar(),
-          const SizedBox(width: 16),
+          IconButton(
+            onPressed: _reset, 
+            icon: const Icon(Icons.refresh_rounded, size: 20, color: Colors.white70)
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: SingleChildScrollView(
@@ -60,7 +137,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                      children: [
                        const Text(
-                         "Margin & Risk",
+                         "Trade Configuration",
                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                        ),
                        Container(
@@ -69,7 +146,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                              color: AppColors.cyan.withOpacity(0.1),
                              borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text("BTC/USD", style: TextStyle(color: AppColors.cyan, fontSize: 10, fontWeight: FontWeight.bold)),
+                          child: Text(_selectedSymbol, style: const TextStyle(color: AppColors.cyan, fontSize: 10, fontWeight: FontWeight.bold)),
                        ),
                      ],
                    ),
@@ -80,7 +157,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                       children: [
                          Expanded(child: _buildCompactInput("Capital (₹)", _capitalController)),
                          const SizedBox(width: 12),
-                         Expanded(child: _buildCompactDropdown("Symbol", _selectedSymbol, _symbols)),
+                         Expanded(child: _buildCompactInput("USD Rate (₹)", _usdRateController)),
                       ],
                    ),
                    const SizedBox(height: 12),
@@ -116,14 +193,16 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                    // Calculate Button
                    SizedBox(
                      width: double.infinity,
-                     height: 40,
+                     height: 44,
                      child: ElevatedButton(
-                       onPressed: () {},
+                       onPressed: _calculate,
                        style: ElevatedButton.styleFrom(
                          backgroundColor: AppColors.primary,
+                         foregroundColor: Colors.white,
+                         elevation: 0,
                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                        ),
-                       child: const Text("Calculate", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                       child: const Text("Update Calculation", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                      ),
                    ),
                 ],
@@ -144,17 +223,44 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
               child: Column(
                 children: [
                    const Text(
-                     "Results Preview",
-                     style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                     "ESTIMATED TRADING METRICS (USD)",
+                     style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.1),
                    ),
-                   const SizedBox(height: 16),
+                   const SizedBox(height: 20),
                    Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                         _buildResultItem("Margin", "\$180.72", AppColors.cyan),
-                         _buildResultItem("Risk", "\$45.18", Colors.redAccent),
-                         _buildResultItem("Reward", "\$112.95", AppColors.green),
+                         _buildResultItem("Position Size", "\$${_positionSize.toStringAsFixed(2)}", Colors.white),
+                         _buildResultItem("Risk (Loss)", "\$${_risk.toStringAsFixed(2)}", Colors.redAccent),
+                         _buildResultItem("Reward (Profit)", "\$${_reward.toStringAsFixed(2)}", AppColors.green),
                       ],
+                   ),
+                   const Padding(
+                     padding: EdgeInsets.symmetric(vertical: 16.0),
+                     child: Divider(color: Colors.white10, height: 1),
+                   ),
+                   Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                         _buildResultItem("Margin Used", "\$${_margin.toStringAsFixed(2)}", AppColors.cyan),
+                         _buildResultItem("ROE / Trade", "${((_reward/_margin)*100).toStringAsFixed(1)}%", AppColors.green),
+                         _buildResultItem("Est. Daily Fees", "\$${_totalFees.toStringAsFixed(2)}", Colors.orangeAccent),
+                      ],
+                   ),
+                   const SizedBox(height: 16),
+                   Container(
+                     padding: const EdgeInsets.all(12),
+                     decoration: BoxDecoration(
+                       color: Colors.white.withOpacity(0.03),
+                       borderRadius: BorderRadius.circular(12),
+                     ),
+                     child: Row(
+                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                       children: [
+                         const Text("Net Profit (Target hit - Fees)", style: TextStyle(color: Colors.white60, fontSize: 11)),
+                         Text("\$${_netProfit.toStringAsFixed(2)}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                       ],
+                     ),
                    ),
                 ],
               ),

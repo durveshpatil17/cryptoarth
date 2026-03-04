@@ -16,13 +16,17 @@ class OrderModel {
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
+    final String rawOrderId = (json['order_id'] ?? json['id'] ?? json['trade_id'] ?? '').toString();
+    final String rawQty = (json['quantity'] ?? json['qty'] ?? json['size'] ?? '').toString();
+    final String rawPrice = (json['price'] ?? json['avg_price'] ?? json['entry_price'] ?? '').toString();
+
     return OrderModel(
-      orderId: int.tryParse(json['order_id']?.toString() ?? '') ?? 0,
+      orderId: int.tryParse(rawOrderId) ?? 0,
       symbol: json['symbol']?.toString() ?? 'Unknown',
-      quantity: num.tryParse(json['quantity']?.toString() ?? '') ?? 0,
-      price: num.tryParse(json['price']?.toString() ?? '') ?? 0,
+      quantity: num.tryParse(rawQty) ?? 0,
+      price: num.tryParse(rawPrice) ?? 0,
       status: json['status']?.toString() ?? 'UNKNOWN',
-      timestamp: json['timestamp']?.toString() ?? '',
+      timestamp: json['timestamp']?.toString() ?? json['created_at']?.toString() ?? '',
     );
   }
 

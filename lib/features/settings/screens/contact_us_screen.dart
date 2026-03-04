@@ -142,15 +142,15 @@ class ContactUsScreen extends StatelessWidget {
             // Form Fields
             const Row(
               children: [
-                Expanded(child: CustomTextField(label: "First Name *", hint: "Enter first name")),
-                SizedBox(width: 16),
-                Expanded(child: CustomTextField(label: "Last Name *", hint: "Enter last name")),
+                Expanded(child: CustomTextField(label: "First Name *", hint: "Enter first name", icon: Icons.person_outline)),
+                const SizedBox(width: 16),
+                Expanded(child: CustomTextField(label: "Last Name *", hint: "Enter last name", icon: Icons.person_outline)),
               ],
             ),
             const SizedBox(height: 16),
-            const CustomTextField(label: "Email Address *", hint: "example@gmail.com", keyboardType: TextInputType.emailAddress),
+            const CustomTextField(label: "Email Address *", hint: "example@gmail.com", keyboardType: TextInputType.emailAddress, icon: Icons.email_outlined),
             const SizedBox(height: 16),
-            const CustomTextField(label: "Phone Number *", hint: "98XXX XXXXX", keyboardType: TextInputType.phone),
+            const CustomTextField(label: "Phone Number *", hint: "98XXX XXXXX", keyboardType: TextInputType.phone, icon: Icons.phone_android_outlined),
             const SizedBox(height: 16),
             
             // Message Field (Custom height)

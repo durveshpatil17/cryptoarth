@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 
 class CustomTextField extends StatelessWidget {
@@ -8,6 +9,10 @@ class CustomTextField extends StatelessWidget {
   final TextEditingController? controller;
   final TextInputType keyboardType;
   final bool obscureText;
+  final List<TextInputFormatter>? inputFormatters;
+  final int? maxLength;
+  final int maxLines;
+  final IconData? icon;
 
   const CustomTextField({
     super.key,
@@ -17,6 +22,10 @@ class CustomTextField extends StatelessWidget {
     this.controller,
     this.keyboardType = TextInputType.text,
     this.obscureText = false,
+    this.inputFormatters,
+    this.maxLength,
+    this.maxLines = 1,
+    this.icon,
   });
 
   @override
@@ -26,8 +35,10 @@ class CustomTextField extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Icon(Icons.phone_android, color: AppColors.textSecondary, size: 16), // Example icon, maybe make configurable
-            const SizedBox(width: 8),
+            if (icon != null) ...[
+              Icon(icon, color: AppColors.textSecondary, size: 16),
+              const SizedBox(width: 8),
+            ],
             Text(
               label,
               style: const TextStyle(
@@ -40,6 +51,7 @@ class CustomTextField extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (prefixText != null) ...[
               Container(
@@ -68,19 +80,23 @@ class CustomTextField extends StatelessWidget {
                   color: AppColors.cardSurface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.primary.withOpacity(0.5), // Active state style from screenshot
+                    color: AppColors.primary.withOpacity(0.5),
                   ),
                 ),
                 child: TextField(
                   controller: controller,
                   keyboardType: keyboardType,
                   obscureText: obscureText,
+                  inputFormatters: inputFormatters,
+                  maxLength: maxLength,
+                  maxLines: maxLines,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                   ),
                   decoration: InputDecoration(
                     hintText: hint,
+                    counterText: "",
                     hintStyle: TextStyle(
                       color: AppColors.textSecondary.withOpacity(0.5),
                       fontSize: 15,
