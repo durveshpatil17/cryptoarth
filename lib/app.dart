@@ -18,7 +18,7 @@ class CryptoarthApp extends ConsumerWidget {
       title: 'Cryptoarth',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: authState.isLoading 
+      home: authState.isCheckingSession
         ? const Scaffold(
             backgroundColor: AppColors.background,
             body: Center(child: CircularProgressIndicator(color: AppColors.primary)),

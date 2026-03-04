@@ -14,6 +14,7 @@ final authServiceProvider = Provider<AuthService>((ref) {
 
 class AuthState {
   final bool isLoading;
+  final bool isCheckingSession;
   final bool isAuthenticated;
   final bool hasSeenLanding;
   final UserModel? user;
@@ -21,6 +22,7 @@ class AuthState {
 
   AuthState({
     this.isLoading = false,
+    this.isCheckingSession = false,
     this.isAuthenticated = false,
     this.hasSeenLanding = false,
     this.user,
@@ -29,6 +31,7 @@ class AuthState {
 
   AuthState copyWith({
     bool? isLoading,
+    bool? isCheckingSession,
     bool? isAuthenticated,
     bool? hasSeenLanding,
     UserModel? user,
@@ -36,6 +39,7 @@ class AuthState {
   }) {
     return AuthState(
       isLoading: isLoading ?? this.isLoading,
+      isCheckingSession: isCheckingSession ?? this.isCheckingSession,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       hasSeenLanding: hasSeenLanding ?? this.hasSeenLanding,
       user: user ?? this.user,
@@ -59,7 +63,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> _checkInitialAuth() async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isCheckingSession: true);
     try {
       final token = await TokenStorage.getToken();
       final hasSeenLanding = await PersistentStorage.shouldShowLanding() == false;
@@ -68,18 +72,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
         final profileData = await _authService.fetchProfile();
         final user = UserModel.fromJson(profileData);
         state = state.copyWith(
-          isLoading: false,
+          isCheckingSession: false,
           isAuthenticated: true,
-          hasSeenLanding: true, // If authenticated, they must have seen it
+          hasSeenLanding: true, 
           user: user,
           error: null,
         );
       } else {
-        state = state.copyWith(isLoading: false, isAuthenticated: false, hasSeenLanding: hasSeenLanding);
+        state = state.copyWith(isCheckingSession: false, isAuthenticated: false, hasSeenLanding: hasSeenLanding);
       }
     } catch (e) {
-      await TokenStorage.deleteToken(); // Clear faulty token
-      state = state.copyWith(isLoading: false, isAuthenticated: false, error: 'Session expired or invalid token');
+      await TokenStorage.deleteToken();
+      state = state.copyWith(isCheckingSession: false, isAuthenticated: false, error: 'Session expired or invalid token');
     }
   }
 
