@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Solid green circular background -->
+  <circle cx="16" cy="16" r="15" fill="#10b981"/>
+  <!-- Exchange icon in pure black, centered and scaled -->
+  <g transform="translate(5, 5) scale(0.92)">
+    <path d="M16.05 12.05L21 17L16.05 21.95L14.64 20.54L17.17 18H3V16H17.17L14.64 13.46L16.05 12.05ZM7.95 2.05L3 7L7.95 11.95L9.36 10.54L6.83 8H21V6H6.83L9.36 3.46L7.95 2.05Z" fill="#000000"/>
+  </g>
+</svg>
+

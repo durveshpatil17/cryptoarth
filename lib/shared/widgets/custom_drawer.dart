@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cryptoarth/features/strategies/screens/execution_history_screen.dart';
 
 import 'package:cryptoarth/shared/theme/app_colors.dart';
@@ -42,29 +43,27 @@ class CustomDrawer extends ConsumerWidget {
             child: Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 48,
+                  height: 48,
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    gradient: const LinearGradient(
-                      colors: [AppColors.cyan, AppColors.purple],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
                   ),
-                  child: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+                  child: SvgPicture.asset("assets/images/favicon.svg"),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    RichText(
-                      text: const TextSpan(
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        children: [
-                          TextSpan(text: "Crypto", style: TextStyle(color: AppColors.cyan)),
-                          TextSpan(text: "Arth AI", style: TextStyle(color: AppColors.purple)),
-                        ],
+                    const Text(
+                      "Crypto Arth",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
                       ),
                     ),
                     const SizedBox(height: 4),

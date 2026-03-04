@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 import 'package:cryptoarth/shared/widgets/custom_button.dart';
 import 'package:cryptoarth/shared/widgets/custom_text_field.dart';
@@ -130,7 +131,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               ),
 
               const SizedBox(height: 24),
-
+              SvgPicture.asset("assets/images/favicon.svg", height: 50, width: 50),
+              const SizedBox(height: 16),
               const Text(
                 "Join Crypto Arth Pro",
                 style: TextStyle(

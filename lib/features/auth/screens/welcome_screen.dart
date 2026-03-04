@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:ui';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 import 'package:cryptoarth/shared/widgets/glass_container.dart';
 import 'package:cryptoarth/shared/widgets/custom_button.dart';
@@ -121,7 +122,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.insights, color: AppColors.cyan, size: 24),
+                            SvgPicture.asset("assets/images/favicon.svg", height: 26, width: 26),
                             const SizedBox(width: 8),
                             const Flexible(
                               child: Text(

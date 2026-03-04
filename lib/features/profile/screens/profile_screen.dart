@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 import 'package:cryptoarth/shared/widgets/glass_container.dart';
 import 'package:cryptoarth/shared/widgets/profile_avatar.dart';
@@ -15,7 +16,14 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text("My Profile", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SvgPicture.asset("assets/images/favicon.svg", height: 22, width: 22),
+            const SizedBox(width: 10),
+            const Text("My Profile", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(

@@ -3,6 +3,7 @@ import 'package:cryptoarth/shared/theme/app_colors.dart';
 import 'package:cryptoarth/shared/widgets/profile_avatar.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cryptoarth/features/orders/providers/order_provider.dart';
 
 class OrdersScreen extends ConsumerStatefulWidget {
@@ -28,7 +29,14 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text("Order Book", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SvgPicture.asset("assets/images/favicon.svg", height: 22, width: 22),
+            const SizedBox(width: 10),
+            const Text("Order Book", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(

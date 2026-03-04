@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 import 'package:cryptoarth/shared/widgets/custom_button.dart';
 import 'package:cryptoarth/shared/widgets/custom_text_field.dart';
@@ -102,6 +103,8 @@ class LoginScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 32),
+              SvgPicture.asset("assets/images/favicon.svg", height: 60, width: 60),
+              const SizedBox(height: 24),
               const Text(
                 "Welcome Back!",
                 style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
