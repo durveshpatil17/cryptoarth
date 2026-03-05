@@ -11,6 +11,8 @@ class StrategyModel {
   final num totalPnl;
   final num maxDrawdown;
   final bool isActive;
+  final bool isOwner;
+  final String? ownerId;
 
   StrategyModel({
     required this.id,
@@ -25,6 +27,8 @@ class StrategyModel {
     this.totalPnl = 0.0,
     this.maxDrawdown = 0.0,
     this.isActive = false,
+    this.isOwner = false,
+    this.ownerId,
   });
 
   factory StrategyModel.fromJson(Map<String, dynamic> json) {
@@ -64,6 +68,8 @@ class StrategyModel {
       totalPnl: num.tryParse(data['total_pnl']?.toString() ?? '') ?? 0.0,
       maxDrawdown: num.tryParse(data['max_drawdown']?.toString() ?? '') ?? 0.0,
       isActive: isActive,
+      isOwner: data['is_owner'] == true || data['is_owner'] == 1 || data['is_owner'] == '1',
+      ownerId: data['owner_id']?.toString() ?? data['user_id']?.toString(),
     );
   }
 

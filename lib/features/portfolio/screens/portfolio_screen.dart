@@ -15,6 +15,7 @@ import 'package:cryptoarth/features/portfolio/providers/trading_mode_provider.da
 import 'package:cryptoarth/features/strategies/providers/strategy_provider.dart';
 import 'package:cryptoarth/features/strategies/providers/backtest_provider.dart';
 import 'package:cryptoarth/core/utils/report_generator.dart';
+import 'package:cryptoarth/features/strategies/widgets/strategy_card.dart';
 
 class PortfolioScreen extends ConsumerStatefulWidget {
   const PortfolioScreen({super.key});
@@ -33,7 +34,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -66,9 +67,8 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
             root?.openDrawer();
           },
         ),
-        actions: [
-          _buildModeToggle(context),
-          const SizedBox(width: 8),
+        actions: const [
+          SizedBox(width: 8),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(100),
@@ -99,7 +99,6 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
                   tabs: const [
                     Tab(text: "Open"),
                     Tab(text: "Closed"),
-                    Tab(text: "P&L"),
                   ],
                 ),
               ),
@@ -112,44 +111,90 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
         children: [
           _buildOpenPositionsTab(),
           _buildClosedPositionsTab(),
-          _buildPnLReportTab(),
         ],
       ),
     );
   }
 
+  Widget _buildMyStrategiesTab() {
+     return ref.watch(strategyProvider).when(
+       data: (strategies) {
+         if (strategies.isEmpty) {
+           return const Center(child: Text("No strategies found", style: TextStyle(color: Colors.white54)));
+         }
+          return RefreshIndicator(
+            onRefresh: () => ref.read(strategyProvider.notifier).refresh(),
+            color: AppColors.cyan,
+            backgroundColor: AppColors.cardSurface,
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: strategies.length,
+              itemBuilder: (context, index) {
+                final strategy = strategies[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: StrategyCard(
+                    data: strategy, 
+                    isBrokerConnected: true, 
+                    onAction: () {},
+                  ),
+                );
+              },
+            ),
+          );
+       },
+       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
+       error: (e, s) => Center(child: Text("Error: $e", style: const TextStyle(color: Colors.redAccent))),
+     );
+  }
+
+
   Widget _buildModeToggle(BuildContext context) {
     final mode = ref.watch(tradingModeProvider);
-    final isLive = mode == TradingMode.live;
+    final bool isLive = mode == TradingMode.live;
     
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildToggleOption("PAPER", !isLive, AppColors.cyan, () {
+            ref.read(tradingModeProvider.notifier).state = TradingMode.paper;
+          }),
+          _buildToggleOption("LIVE", isLive, Colors.redAccent, () {
+            ref.read(tradingModeProvider.notifier).state = TradingMode.live;
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggleOption(String label, bool isSelected, Color activeColor, VoidCallback onTap) {
     return GestureDetector(
-      onTap: () {
-        ref.read(tradingModeProvider.notifier).state = isLive ? TradingMode.paper : TradingMode.live;
-      },
+      onTap: onTap,
       child: Container(
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isLive ? Colors.redAccent.withOpacity(0.1) : AppColors.cyan.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isLive ? Colors.redAccent.withOpacity(0.5) : AppColors.cyan.withOpacity(0.5)),
+          color: isSelected ? activeColor.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: isSelected ? Border.all(color: activeColor.withOpacity(0.5)) : null,
+          boxShadow: isSelected ? [
+            BoxShadow(color: activeColor.withOpacity(0.1), blurRadius: 4, spreadRadius: 0)
+          ] : null,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 8, height: 8,
-              decoration: BoxDecoration(
-                color: isLive ? Colors.redAccent : AppColors.cyan,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(color: (isLive ? Colors.redAccent : AppColors.cyan).withOpacity(0.5), blurRadius: 4, spreadRadius: 1)
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(isLive ? "LIVE" : "PAPER", style: TextStyle(color: isLive ? Colors.redAccent : AppColors.cyan, fontSize: 10, fontWeight: FontWeight.bold)),
-          ],
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? activeColor : Colors.white38,
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.5,
+          ),
         ),
       ),
     );
@@ -180,8 +225,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
               error: (_,__) => const SizedBox(width: 100, height: 32),
             ),
             const SizedBox(width: 8),
-            // Strategy Filter
-            ref.watch(strategyProvider).when(
+            ref.watch(selectStrategyProvider).when(
               data: (strategies) {
                 final List<String> strategyNames = ["All Strategies", ...strategies.map((e) => e.strategyName)];
                 return SizedBox(
@@ -257,40 +301,22 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
             child: Column(
               children: [
                 // Broker Balance & Realized PnL Header Widget
-                ref.watch(brokerBalanceProvider).when(
-                  data: (balanceModel) {
-                    final double totalBal = (balanceModel?.balance ?? 0).toDouble();
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.cardSurface.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withOpacity(0.08)),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.account_balance_wallet, color: AppColors.gold.withOpacity(0.8), size: 20),
-                              const SizedBox(width: 8),
-                              const Text("Broker Balance", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                          Text(totalBal > 0 ? "\$${totalBal.toStringAsFixed(2)}" : "Not Connected", 
-                            style: TextStyle(
-                              color: totalBal > 0 ? Colors.white : Colors.white54, 
-                              fontSize: 14, 
-                              fontWeight: FontWeight.bold
-                            )
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  loading: () => const SizedBox.shrink(),
-                  error: (e, s) => const SizedBox.shrink(),
+                // Live/Paper Toggle and Status
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardSurface.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("Trading Mode", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
+                      _buildModeToggle(context),
+                    ],
+                  ),
                 ),
 
                 // Total Unrealized P&L Header

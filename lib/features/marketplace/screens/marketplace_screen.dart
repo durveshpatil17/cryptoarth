@@ -26,16 +26,13 @@ class MarketplaceScreen extends ConsumerStatefulWidget {
 }
 
 class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
-  int _selectedTab = 0; // 0: Discover, 1: Live Deployments
+  int _selectedTab = 0; // 0: Discover, 1: My Strategies
+  int _currentPage = 0;
+  static const int _itemsPerPage = 4;
 
   void _undeployStrategy(StrategyModel strategy) {
-    // The backend confirmed that undeployment requires the integer record ID 
-    // from the user's deployed list, passed under the key 'strategyid'.
-    // Important: It likely needs to be an actual integer type in the JSON.
     String? rawId = strategy.deploymentId;
     
-    // If we're on the discover tab, we might not have the deploymentId directly.
-    // We search the user's active deployments by strategy ID or code.
     if (rawId == null) {
       final userStrategies = ref.read(strategyProvider).value ?? [];
       for (var s in userStrategies) {
@@ -54,7 +51,6 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
       return;
     }
 
-    // Try to parse to int, fallback to string if not numeric
     final idToPass = int.tryParse(rawId) ?? rawId;
 
     ref.read(strategyProvider.notifier).undeployStrategy(idToPass).then((_) {
@@ -154,10 +150,12 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
                  ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 16), // Reduced from 24
 
               // Strategy List
               _buildStrategyList(),
+              
+              const SizedBox(height: 120), // Added significant bottom space
             ],
           ),
         ),
@@ -193,98 +191,94 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
   }
 
   Widget _buildStrategyList() {
-    if (_selectedTab == 0) {
-      // "Discover" Tab - Shows Dashboard Strategies
-      return ref.watch(dashboardStrategyProvider).when(
-            data: (strategies) {
-              if (strategies.isEmpty) {
-                return const Center(
-                    child: Text("No strategies available",
-                        style: TextStyle(color: Colors.white54)));
-              }
-              return Column(
-                children: strategies.map((s) {
-                  return Column(
-                    children: [
-                      StrategyCard(
-                        data: s,
-                        isBrokerConnected: true,
-                        onAction: () {
-                          if (s.isDeployed) {
-                            _undeployStrategy(s);
-                          } else {
-                            _deployStrategy(s.id);
-                          }
-                        },
-                        isLive: false,
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                  );
-                }).toList(),
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
-            error: (e, s) => Center(child: Text("Error: $e", style: const TextStyle(color: Colors.red))),
+    final asyncData = _selectedTab == 0 
+        ? ref.watch(dashboardStrategyProvider) 
+        : ref.watch(strategyProvider);
+
+    return asyncData.when(
+      data: (allStrategies) {
+        if (allStrategies.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 60),
+              child: Text(_selectedTab == 0 ? "No marketplace strategies" : "No user strategies", 
+                style: const TextStyle(color: Colors.white54)),
+            ),
           );
-    } else {
-      // "My Strategies" Tab
-      final allStrategiesAsync = ref.watch(strategyProvider);
-      final deployedListAsync = ref.watch(deployedStrategyProvider);
+        }
 
-      return allStrategiesAsync.when(
-        data: (userStrategies) => deployedListAsync.when(
-          data: (deployedStrategies) {
-            final deployedStrategiesInUserList = userStrategies.where((s) => s.isDeployed).toList();
+        // Pagination Logic
+        final startIndex = _currentPage * _itemsPerPage;
+        final endIndex = (startIndex + _itemsPerPage < allStrategies.length) 
+            ? startIndex + _itemsPerPage 
+            : allStrategies.length;
+        
+        final paginatedList = allStrategies.sublist(
+          startIndex >= allStrategies.length ? 0 : startIndex,
+          endIndex
+        );
 
-            if (deployedStrategiesInUserList.isEmpty) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 60.0),
-                  child: Column(
-                    children: [
-                      Icon(Icons.rocket_outlined, size: 64, color: Colors.white.withOpacity(0.1)),
-                      const SizedBox(height: 16),
-                      const Text("No active deployments", style: TextStyle(color: Colors.white54, fontSize: 16)),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () => setState(() => _selectedTab = 0),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        ),
-                        child: const Text("Deploy a Strategy", style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                    ],
+        final totalPages = (allStrategies.length / _itemsPerPage).ceil();
+
+        return Column(
+          children: [
+            ...paginatedList.map((s) => Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: StrategyCard(
+                data: s,
+                isBrokerConnected: true,
+                onAction: () => s.isDeployed ? _undeployStrategy(s) : _deployStrategy(s.id),
+                isLive: s.isDeployed,
+              ),
+            )),
+            
+            if (totalPages > 1) ...[
+              const SizedBox(height: 16),
+              _buildPagination(totalPages),
+            ],
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
+      error: (e, s) => Center(child: Text("Error: $e", style: const TextStyle(color: Colors.red))),
+    );
+  }
+
+  Widget _buildPagination(int totalPages) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(totalPages, (index) {
+            final bool isSelected = _currentPage == index;
+            return GestureDetector(
+              onTap: () => setState(() => _currentPage = index),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.cyan.withOpacity(0.1) : Colors.transparent,
+                  border: Border.all(color: isSelected ? AppColors.cyan : Colors.white.withOpacity(0.1)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(
+                    "${index + 1}",
+                    style: TextStyle(
+                      color: isSelected ? AppColors.cyan : Colors.white60,
+                      fontWeight: isSelected ? FontWeight.w900 : FontWeight.normal,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
-              );
-            }
-
-            return Column(
-              children: deployedStrategiesInUserList.map((s) {
-                return Column(
-                  children: [
-                    StrategyCard(
-                      data: s,
-                      isBrokerConnected: true,
-                      onAction: () => _undeployStrategy(s),
-                      isLive: true,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                );
-              }).toList(),
+              ),
             );
-          },
-          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
-          error: (e, s) => Center(child: Text("Error: $e", style: const TextStyle(color: Colors.red))),
+          }),
         ),
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
-        error: (e, s) => Center(child: Text("Error: $e", style: const TextStyle(color: Colors.red))),
-      );
-    }
+      ),
+    );
   }
 }

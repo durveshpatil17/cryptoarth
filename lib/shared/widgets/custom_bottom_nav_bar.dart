@@ -28,11 +28,11 @@ class CustomBottomNavBar extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Expanded(child: _buildNavItem(0, Icons.home_filled, "Home")),
-              Expanded(child: _buildNavItem(1, Icons.work_outline, "Portfolio")),
-              Expanded(child: _buildNavItem(2, Icons.auto_awesome, "AI Builder")),
-              Expanded(child: _buildNavItem(3, Icons.receipt_long_outlined, "Orders")),
-              Expanded(child: _buildNavItem(4, Icons.person_outline, "Me")),
+              Expanded(child: _buildNavItem(0, Icons.home_filled, "Home", Colors.blueAccent)),
+              Expanded(child: _buildNavItem(1, Icons.work_outline, "Portfolio", Colors.orangeAccent)),
+              Expanded(child: _buildNavItem(2, Icons.auto_awesome, "AI Builder", Colors.purpleAccent)),
+              Expanded(child: _buildNavItem(3, Icons.receipt_long_outlined, "Orders", Colors.greenAccent)),
+              Expanded(child: _buildNavItem(4, Icons.person_outline, "Me", Colors.cyanAccent)),
             ],
           ),
         ),
@@ -40,7 +40,7 @@ class CustomBottomNavBar extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(int index, IconData icon, String label, Color color) {
     final bool isSelected = currentIndex == index;
     return GestureDetector(
       onTap: () => onTap(index),
@@ -56,14 +56,14 @@ class CustomBottomNavBar extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isSelected ? AppColors.cyan : AppColors.textSecondary,
+              color: isSelected ? color : AppColors.textSecondary,
               size: 24,
             ),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? AppColors.cyan : AppColors.textSecondary,
+                color: isSelected ? color : AppColors.textSecondary,
                 fontSize: 10,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),

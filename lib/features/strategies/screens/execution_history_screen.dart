@@ -15,6 +15,8 @@ import 'package:cryptoarth/features/strategies/widgets/strategy_detailed_report.
 import 'package:cryptoarth/features/strategies/widgets/technical_chart_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cryptoarth/core/utils/time_utils.dart';
+import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
+import 'package:cryptoarth/features/broker/providers/broker_provider.dart';
 
 class ExecutionHistoryScreen extends ConsumerStatefulWidget {
   const ExecutionHistoryScreen({super.key});
@@ -28,6 +30,8 @@ class _ExecutionHistoryScreenState
     extends ConsumerState<ExecutionHistoryScreen> {
   @override
   Widget build(BuildContext context) {
+    final currentUser = ref.watch(authProvider).user;
+    
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -49,7 +53,7 @@ class _ExecutionHistoryScreenState
               ),
             ),
             Text(
-              "Backtest results",
+              "My backtest results",
               style: TextStyle(
                 color: Colors.white.withOpacity(0.5),
                 fontSize: 12,
@@ -95,7 +99,29 @@ class _ExecutionHistoryScreenState
       body: ref
           .watch(backtestProvider)
           .when(
-            data: (results) {
+            data: (allResults) {
+              // Filter results: ONLY show strategies owned by the user (strict privacy)
+              final results = allResults.where((r) {
+                // 1. Check direct ownership flag from API (Most reliable)
+                if (r.isOwner) return true;
+                
+                if (currentUser == null) return false;
+
+                // 2. Check by ID (Safe)
+                bool isIdMatch = r.ownerId != null && r.ownerId == currentUser.id.toString();
+                if (isIdMatch) return true;
+
+                // 3. Check by exact Name/Phone (Safest fallback)
+                if (r.userName != null) {
+                  final ownerLower = r.userName!.toLowerCase();
+                  final bool nameMatch = currentUser.name != null && ownerLower == currentUser.name!.toLowerCase();
+                  final bool phoneMatch = currentUser.phone != null && ownerLower == currentUser.phone!;
+                  if (nameMatch || phoneMatch) return true;
+                }
+                
+                return false;
+              }).toList();
+
               if (results.isEmpty) {
                 return Center(
                   child: Column(
@@ -1381,87 +1407,104 @@ class _ExecutionHistoryScreenState
   }
 
   Widget _buildExecutionCard(BacktestModel result) {
-    bool isMobile = MediaQuery.of(context).size.width < 600;
-    bool isProfit = result.pnl >= 0;
+    final bool isProfit = result.pnl >= 0;
     final String timeStr = TimeUtils.formatRelativeTime(result.createdAt);
+    
+    // Extract symbol if possible, else use ID/Code
+    String symbol = result.strategyCode;
+    if (symbol.length > 10) symbol = "ETHUSD";
+
+    final brokerState = ref.watch(brokerProvider);
+    final connectedBrokers = brokerState.value ?? [];
+    final bool hasBrokers = connectedBrokers.isNotEmpty;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      child: GlassContainer(
-        padding: const EdgeInsets.all(20),
-        borderRadius: 24,
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF111827),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Section
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      result.strategyCode,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(
-                          "COMPLETED",
-                          style: TextStyle(
-                            color: AppColors.green,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          "• $timeStr",
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.3),
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                ElevatedButton(
-                  onPressed: () => _showDeployDialog(result),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.green.withOpacity(0.1),
-                    foregroundColor: AppColors.green,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 0,
-                    ),
-                    minimumSize: const Size(0, 28),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(color: AppColors.green.withOpacity(0.3)),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          color: AppColors.green,
-                          shape: BoxShape.circle,
+                      Text(
+                        result.strategyCode.toUpperCase(),
+                        style: const TextStyle(
+                          color: AppColors.cyan,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.8,
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      const Text(
-                        "Activate",
+                      const SizedBox(height: 4),
+                      Text(
+                        result.strategyCode.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // P&L Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: (isProfit ? AppColors.green : Colors.redAccent).withOpacity(0.04),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: (isProfit ? AppColors.green : Colors.redAccent).withOpacity(0.08)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isProfit ? Icons.trending_up : Icons.trending_down,
+                            color: isProfit ? const Color(0xFF34D399) : Colors.redAccent,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            "${isProfit ? '+' : ''}${result.pnl.toStringAsFixed(2)}%",
+                            style: TextStyle(
+                              color: isProfit ? const Color(0xFF34D399) : Colors.redAccent,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        "RESULT P&L",
                         style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                          color: Colors.white.withOpacity(0.35),
+                          fontSize: 8,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.4,
                         ),
                       ),
                     ],
@@ -1469,471 +1512,170 @@ class _ExecutionHistoryScreenState
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+          ),
 
-            // Stats Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Meta Row
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
               children: [
-                _buildStatItem(result.totalTrades.toString(), "TRADES"),
-                _buildStatItem(
-                  "${result.winRate.toStringAsFixed(1)}%",
-                  "WIN RATE",
-                  color: AppColors.green,
-                ),
-                _buildStatItem(
-                  "${isProfit ? '+' : ''}${result.pnl.toStringAsFixed(2)}%",
-                  "RETURN",
-                  color: isProfit ? AppColors.green : Colors.redAccent,
-                ),
-                _buildStatItem(
-                  "${result.drawdown.toStringAsFixed(1)}%",
-                  "MAX DD",
-                  color: Colors.orangeAccent,
+                _buildMetaStatItem(Icons.person_outline, result.userName ?? "Admin"),
+                const SizedBox(width: 10),
+                Text("•", style: TextStyle(color: Colors.white.withOpacity(0.1))),
+                const SizedBox(width: 10),
+                _buildMetaStatItem(Icons.access_time, timeStr),
+                const Spacer(),
+                // Status Indicator
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: (result.status.toLowerCase() == 'success' ? AppColors.green : Colors.orangeAccent).withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: result.status.toLowerCase() == 'success' ? AppColors.green : Colors.orangeAccent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        result.status.toUpperCase(),
+                        style: TextStyle(
+                          color: result.status.toLowerCase() == 'success' ? AppColors.green : Colors.orangeAccent, 
+                          fontSize: 9, 
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
-            ),
-
-            const SizedBox(height: 24),
-            Divider(color: Colors.white.withOpacity(0.05), height: 1),
-            const SizedBox(height: 16),
-
-            // Action Grid
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: isMobile ? 4 : 5,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 1.0, // Forced equal dimensions
-              children: [
-                _buildActionItem(
-                  Icons.science_outlined,
-                  "Backtest",
-                  const Color(0xFFFFB800),
-                  onTap: () async {
-                    final messenger = ScaffoldMessenger.of(context);
-                    try {
-                      messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text("Loading strategy source..."),
-                        ),
-                      );
-
-                      String pineCode = "";
-                      try {
-                        pineCode = await ref
-                            .read(backtestProvider.notifier)
-                            .fetchPineCode(result.strategyCode);
-                      } catch (e) {
-                        // FALLBACK: If dedicated pine-code endpoint fails, check strategy detail for code or JSON
-                        final service = ref.read(strategyServiceProvider);
-                        final detailRaw = await service.fetchBacktestDetailRaw(
-                          result.strategyCode,
-                        );
-                        final strat = detailRaw['strategy'] ?? detailRaw;
-                        pineCode =
-                            strat['pine_code'] ??
-                            strat['pine_script'] ??
-                            strat['code'] ??
-                            "";
-                        if (pineCode.isEmpty && strat['backtest_json'] is Map) {
-                          pineCode = _generatePineFromData(strat);
-                        }
-                      }
-
-                      if (mounted) {
-                        _showBacktestOptions(result, pineCode: pineCode);
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        _showBacktestOptions(result);
-                      }
-                    }
-                  },
-                ),
-                _buildActionItem(
-                  Icons.show_chart_outlined,
-                  "Chart",
-                  AppColors.cyan,
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder:
-                          (context) => TechnicalChartScreen(
-                            strategyCode: result.strategyCode,
-                            strategyName:
-                                result
-                                    .strategyCode, // Falling back to code if name not in BacktestModel
-                            backtestId: result.id,
-                          ),
-                    );
-                  },
-                ),
-                _buildActionItem(
-                  Icons.edit_outlined,
-                  "Edit",
-                  const Color(0xFFFFB800),
-                  onTap: () async {
-                    final messenger = ScaffoldMessenger.of(context);
-                    try {
-                      messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text("Loading strategy source..."),
-                        ),
-                      );
-
-                      String pineCode = "";
-                      try {
-                        pineCode = await ref
-                            .read(backtestProvider.notifier)
-                            .fetchPineCode(result.strategyCode);
-                      } catch (e) {
-                        // FALLBACK: If dedicated pine-code endpoint fails, check strategy detail for code or JSON
-                        final service = ref.read(strategyServiceProvider);
-                        final detailRaw = await service.fetchBacktestDetailRaw(
-                          result.strategyCode,
-                        );
-                        final strat = detailRaw['strategy'] ?? detailRaw;
-                        pineCode =
-                            strat['pine_code'] ??
-                            strat['pine_script'] ??
-                            strat['code'] ??
-                            "";
-                        if (pineCode.isEmpty && strat['backtest_json'] is Map) {
-                          pineCode = _generatePineFromData(strat);
-                        }
-                      }
-
-                      if (mounted) {
-                        _showEditStrategyDialog(result, pineCode: pineCode);
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        _showEditStrategyDialog(result);
-                      }
-                    }
-                  },
-                ),
-                _buildActionItem(
-                  Icons.code,
-                  "Pine",
-                  const Color(0xFF10B981),
-                  onTap: () async {
-                    try {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Fetching Pine script..."),
-                        ),
-                      );
-
-                      String code = "";
-                      try {
-                        code = await ref
-                            .read(backtestProvider.notifier)
-                            .fetchPineCode(result.strategyCode);
-                      } catch (e) {
-                        // FALLBACK: If dedicated pine-code endpoint fails, check strategy detail for code or JSON
-                        final service = ref.read(strategyServiceProvider);
-                        final detail = await service.fetchBacktestDetail(
-                          result.strategyCode,
-                        );
-                        // BacktestDetail usually returns a BacktestModel but internally the API response for /detail/
-                        // contains the full strategy object including backtest_json.
-                        // Let's call the raw GET to find the source.
-                        final detailRaw = await service.fetchBacktestDetailRaw(
-                          result.strategyCode,
-                        );
-                        final strat = detailRaw['strategy'] ?? detailRaw;
-
-                        code =
-                            strat['pine_code'] ??
-                            strat['pine_script'] ??
-                            strat['code'] ??
-                            "";
-
-                        if (code.isEmpty && strat['backtest_json'] is Map) {
-                          // Last resort: Generate from JSON
-                          code = _generatePineFromData(strat);
-                        }
-                      }
-
-                      if (code.isEmpty)
-                        throw Exception(
-                          "No Pine code available even in detail.",
-                        );
-
-                      if (mounted) {
-                        await ReportGenerator.downloadTextFile(
-                          code,
-                          "${result.strategyCode.replaceAll(' ', '_')}.pine",
-                        );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Pine script ready to save!"),
-                            backgroundColor: AppColors.green,
-                          ),
-                        );
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("Failed to fetch Pine code: $e"),
-                            backgroundColor: Colors.redAccent,
-                          ),
-                        );
-                      }
-                    }
-                  },
-                ),
-                _buildActionItem(
-                  Icons.insert_chart_outlined,
-                  "Report",
-                  const Color(0xFF8B5CF6),
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder:
-                          (context) => StrategyDetailedReport(
-                            strategyCode: result.strategyCode,
-                            backtestId: result.id,
-                          ),
-                    );
-                  },
-                ),
-                _buildActionItem(
-                  Icons.share_outlined,
-                  "Share",
-                  AppColors.cyan,
-                  onTap: () {
-                    _showShareWithPhoneDialog(context, result, (userMap) async {
-                      try {
-                        final userId = userMap['id'] ?? userMap['user_id'];
-                        if (userId == null)
-                          throw "User ID not found in search result";
-
-                        await ref
-                            .read(backtestProvider.notifier)
-                            .shareStrategy(result.strategyCode, userId);
-
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Strategy Shared Successfully!"),
-                              backgroundColor: AppColors.green,
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("Failed to share strategy: $e"),
-                              backgroundColor: Colors.redAccent,
-                            ),
-                          );
-                        }
-                      }
-                    });
-                  },
-                ),
-                _buildActionItem(
-                  Icons.auto_awesome_outlined,
-                  "Improve",
-                  const Color(0xFF8B5CF6),
-                  onTap: () async {
-                    try {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Starting AI Improvement..."),
-                        ),
-                      );
-                      await ref
-                          .read(backtestProvider.notifier)
-                          .improveStrategy(result.strategyCode);
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Improvement task submitted!"),
-                            backgroundColor: AppColors.green,
-                          ),
-                        );
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("Failed to start improvement: $e"),
-                            backgroundColor: Colors.redAccent,
-                          ),
-                        );
-                      }
-                    }
-                  },
-                ),
-                _buildActionItem(
-                  Icons.psychology_outlined,
-                  "Deep Think",
-                  const Color(0xFF8B5CF6),
-                  onTap: () async {
-                    try {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Starting Deep Think Optimization..."),
-                        ),
-                      );
-                      await ref
-                          .read(backtestProvider.notifier)
-                          .deepThinkOptimizeV2(result.strategyCode);
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Deep Think task submitted!"),
-                            backgroundColor: AppColors.green,
-                          ),
-                        );
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("Failed to start Deep Think: $e"),
-                            backgroundColor: Colors.redAccent,
-                          ),
-                        );
-                      }
-                    }
-                  },
-                ),
-                _buildActionItem(
-                  Icons.picture_as_pdf_outlined,
-                  "PDF",
-                  const Color(0xFFEF4444),
-                  onTap: () async {
-                    if (result.id != null) {
-                      try {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Fetching PDF report from server..."),
-                          ),
-                        );
-                        final url = await ref
-                            .read(backtestProvider.notifier)
-                            .fetchBacktestReportPdfUrl(result.id!);
-                        await ReportGenerator.downloadPdfFromUrl(
-                          url,
-                          "backtest_report_${result.strategyCode}.pdf",
-                        );
-                      } catch (e) {
-                        // Fallback to local generation if backend fails
-                        ReportGenerator.downloadBacktestReport(
-                          result.strategyCode,
-                          result.winRate.toDouble(),
-                          result.pnl.toDouble(),
-                          result.drawdown.toDouble(),
-                        );
-                      }
-                    } else {
-                      ReportGenerator.downloadBacktestReport(
-                        result.strategyCode,
-                        result.winRate.toDouble(),
-                        result.pnl.toDouble(),
-                        result.drawdown.toDouble(),
-                      );
-                    }
-                  },
-                ),
-                _buildActionItem(
-                  Icons.delete_outline,
-                  "Delete",
-                  const Color(0xFFEF4444),
-                  onTap: () async {
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder:
-                          (context) => AlertDialog(
-                            backgroundColor: const Color(0xFF0F172A),
-                            title: const Text(
-                              "Delete Strategy",
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            content: const Text(
-                              "Are you sure you want to delete this strategy from history?",
-                              style: TextStyle(color: Colors.white70),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text("Cancel"),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text(
-                                  "Delete",
-                                  style: TextStyle(color: Colors.redAccent),
-                                ),
-                              ),
-                            ],
-                          ),
-                    );
-
-                    if (confirmed == true) {
-                      try {
-                        await ref
-                            .read(backtestProvider.notifier)
-                            .deleteStrategy(result.strategyCode);
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Strategy deleted successfully!"),
-                              backgroundColor: AppColors.green,
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("Failed to delete strategy: $e"),
-                              backgroundColor: Colors.redAccent,
-                            ),
-                          );
-                        }
-                      }
-                    }
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String value, String label, {Color? color}) {
-    bool isMobile = MediaQuery.of(context).size.width < 600;
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              color: color ?? Colors.white,
-              fontSize: isMobile ? 13 : 15,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.4),
-              fontSize: 7,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
+
+          const SizedBox(height: 16),
+
+          // Metrics Grid
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withOpacity(0.03)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildMainStatMetric("${isProfit ? '+' : ''}${result.pnl.toStringAsFixed(2)}%", "PNL", color: isProfit ? const Color(0xFF34D399) : Colors.redAccent),
+                _buildStatDivider(),
+                _buildMainStatMetric("${result.winRate.toStringAsFixed(1)}%", "Win Rate"),
+                _buildStatDivider(),
+                _buildMainStatMetric("-${result.drawdown.toStringAsFixed(1)}%", "Max DD", color: Colors.orangeAccent),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+          Divider(color: Colors.white.withOpacity(0.04), height: 1),
+
+          // Action Buttons
+          IntrinsicHeight(
+            child: Row(
+              children: [
+                _buildActionGridItem(Icons.share_outlined, "Share", () => _showShareWithPhoneDialog(context, result, (p) {})),
+                _buildStatVerticalDivider(),
+                _buildActionGridItem(Icons.auto_graph_outlined, "Chart", () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => TechnicalChartScreen(
+                      strategyCode: result.strategyCode,
+                      strategyName: result.strategyCode,
+                      backtestId: result.id,
+                    ),
+                  );
+                }),
+                _buildStatVerticalDivider(),
+                _buildActionGridItem(Icons.edit_note_outlined, "Edit", () async {
+                  String code = await _fetchCode(result.strategyCode);
+                  if (mounted) _showEditStrategyDialog(result, pineCode: code);
+                }),
+                _buildStatVerticalDivider(),
+                _buildActionGridItem(Icons.rocket_launch_outlined, "Deploy", () => _showDeployDialog(result), color: const Color(0xFF10B981)),
+              ],
+            ),
+          ),
+
+          Divider(color: Colors.white.withOpacity(0.04), height: 1),
+
+          // Broker footer: Dynamic connected brokers
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                if (hasBrokers)
+                  SizedBox(
+                    height: 28,
+                    child: Stack(
+                      children: connectedBrokers.asMap().entries.map((entry) {
+                        final idx = entry.key;
+                        final broker = entry.value;
+                        return Padding(
+                          padding: EdgeInsets.only(left: idx * 20.0),
+                          child: _buildBrokerLogo(broker.brokerName),
+                        );
+                      }).toList(),
+                    ),
+                  )
+                else
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 14),
+                  ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: hasBrokers ? const Color(0xFF10B981) : Colors.redAccent,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            hasBrokers ? "Exchanging on ${connectedBrokers.length} Brokers" : "Execution Offline",
+                            style: TextStyle(
+                              color: hasBrokers ? const Color(0xFF10B981) : Colors.redAccent,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        hasBrokers ? connectedBrokers.map((b) => b.brokerName).join(", ") : "Setup broker in settings",
+                        style: TextStyle(color: Colors.white.withOpacity(0.25), fontSize: 9),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -1941,41 +1683,135 @@ class _ExecutionHistoryScreenState
     );
   }
 
-  Widget _buildActionItem(
-    IconData icon,
-    String label,
-    Color color, {
-    VoidCallback? onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.1)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 9,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+  Widget _buildBrokerLogo(String name) {
+    Color color = Colors.grey;
+    String letter = "B";
+    
+    final n = name.toLowerCase();
+    if (n.contains("delta")) {
+      color = const Color(0xFF3B82F6);
+      letter = "D";
+    } else if (n.contains("coindcx")) {
+      color = const Color(0xFFEF4444);
+      letter = "C";
+    } else if (n.contains("mudrex")) {
+      color = const Color(0xFFF59E0B);
+      letter = "M";
+    }
+
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFF111827), width: 2),
+      ),
+      child: Center(
+        child: Text(
+          letter,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11),
         ),
       ),
     );
+  }
+
+  Widget _buildMetaStatItem(IconData icon, String label) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.cyan, size: 14),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.6),
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMainStatMetric(String value, String label, {Color? color}) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            color: color ?? Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.4),
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatDivider() {
+    return Container(
+      width: 1,
+      height: 24,
+      color: Colors.white.withOpacity(0.05),
+    );
+  }
+
+  Widget _buildStatVerticalDivider() {
+    return VerticalDivider(
+      color: Colors.white.withOpacity(0.05),
+      width: 1,
+      thickness: 1,
+    );
+  }
+
+  Widget _buildActionGridItem(IconData icon, String label, VoidCallback onTap, {Color? color}) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color ?? AppColors.cyan, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color ?? AppColors.cyan,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<String> _fetchCode(String strategyCode) async {
+    try {
+      return await ref.read(backtestProvider.notifier).fetchPineCode(strategyCode);
+    } catch (e) {
+      final service = ref.read(strategyServiceProvider);
+      final detailRaw = await service.fetchBacktestDetailRaw(strategyCode);
+      final strat = detailRaw['strategy'] ?? detailRaw;
+      String code = strat['pine_code'] ?? strat['pine_script'] ?? strat['code'] ?? "";
+      if (code.isEmpty && strat['backtest_json'] is Map) {
+        code = _generatePineFromData(strat);
+      }
+      return code;
+    }
   }
 
   List<FlSpot> _getSpotsFromData(dynamic data) {

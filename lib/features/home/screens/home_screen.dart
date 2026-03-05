@@ -497,8 +497,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildRibbonItem("PORTFOLIO", "\$${brokerBalance.toStringAsFixed(0)}", Colors.white),
-          Container(width: 1, height: 16, color: Colors.white.withOpacity(0.06)),
           _buildRibbonItem("TODAY PNL", "${todayPnL >= 0 ? '+' : ''}\$${todayPnL.toStringAsFixed(1)}", todayPnL >= 0 ? AppColors.green : Colors.redAccent),
           Container(width: 1, height: 16, color: Colors.white.withOpacity(0.06)),
           _buildRibbonItem("CREDITS", "$credits", AppColors.gold),
@@ -694,6 +692,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
        });
        // Focus the input automatically
        // (Assuming FocusNode would be better but simple setState works for now given the architecture)
+       
+       // Proactively start the message sending if coming from templates
+       Future.delayed(const Duration(milliseconds: 100), () {
+          _sendMessage();
+       });
      }
   }
 

@@ -32,10 +32,18 @@ class ProfileAvatar extends ConsumerWidget {
       }
     }
 
-    return PopupMenuButton<String>(
-      offset: const Offset(0, 50),
-      color: const Color(0xFF0F172A),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return GestureDetector(
+      onTap: () {
+        // If we are in the main navigation context, we can switch tabs
+        // otherwise we just push the ProfileScreen.
+        // For simplicity and common UX, pushing ProfileScreen is fine, 
+        // but the user wants to get to "Me" tab.
+        // Actually, many apps push a profile page. Let's push ProfileSettingsScreen as it's the most direct.
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfileSettingsScreen()),
+        );
+      },
       child: CircleAvatar(
         radius: radius,
         backgroundColor: const Color(0xFF8B5CF6),
@@ -48,35 +56,6 @@ class ProfileAvatar extends ConsumerWidget {
           ),
         ),
       ),
-      onSelected: (value) {
-        if (value == 'logout') {
-          ref.read(authProvider.notifier).logout(context);
-        } else if (value == 'profile') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const ProfileSettingsScreen()),
-          );
-        } else if (value == 'broker') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const BrokerLoginScreen()),
-          );
-        } else if (value == 'contact') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const ContactUsScreen()),
-          );
-        }
-      },
-      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-        _buildMenuItem('profile', Icons.shield_outlined, 'Profile Settings'),
-        _buildMenuItem('broker', Icons.link, 'Broker Login'),
-        _buildMenuItem('webhook', Icons.code, 'Webhook'),
-        _buildMenuItem('tour', Icons.timeline, 'View Tour Guide'),
-        _buildMenuItem('contact', Icons.headphones, 'Contact Us'),
-        const PopupMenuDivider(height: 1),
-        _buildMenuItem('logout', Icons.logout, 'Logout', isDestructive: true),
-      ],
     );
   }
 

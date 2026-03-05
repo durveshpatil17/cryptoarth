@@ -131,8 +131,10 @@ class _BrokerConnectionDialogState extends ConsumerState<BrokerConnectionDialog>
                     try {
                       if (widget.brokerName == "Delta Exchange") {
                         await ref.read(brokerProvider.notifier).connectDelta(_apiKeyController.text, _apiSecretController.text);
-                      } else {
+                      } else if (widget.brokerName == "CoinDCX") {
                         await ref.read(brokerProvider.notifier).connectCoinDCX(_apiKeyController.text, _apiSecretController.text);
+                      } else if (widget.brokerName == "Mudrex") {
+                        await ref.read(brokerProvider.notifier).connectMudrex(_apiKeyController.text, _apiSecretController.text);
                       }
                       if (mounted) {
                         Navigator.pop(context);

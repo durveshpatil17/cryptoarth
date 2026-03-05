@@ -12,9 +12,10 @@ class BrokerLoginScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final brokerState = ref.watch(brokerProvider);
-    final connectedBrokerName = brokerState.value?.brokerName;
-    final isDeltaConnected = connectedBrokerName == 'Delta Exchange';
-    final isCoinDCXConnected = connectedBrokerName == 'CoinDCX';
+    final connectedBrokers = brokerState.value ?? [];
+    final isDeltaConnected = connectedBrokers.any((b) => b.brokerName == 'Delta Exchange');
+    final isCoinDCXConnected = connectedBrokers.any((b) => b.brokerName == 'CoinDCX');
+    final isMudrexConnected = connectedBrokers.any((b) => b.brokerName == 'Mudrex');
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -59,6 +60,16 @@ class BrokerLoginScreen extends ConsumerWidget {
             tags: const ["Spot Trading", "Futures", "High Security", "24/7 Support"],
             isConnected: isCoinDCXConnected,
             logoColor: Colors.blueGrey, // Placeholder for logo
+          ),
+          const SizedBox(height: 16),
+          BrokerCard(
+            name: "Mudrex",
+            rating: 4.8,
+            userCount: "800K+",
+            description: "Mudrex makes investment in crypto simple and safe. Automate your trading with a click.",
+            tags: const ["Auto Trading", "Mutual Funds", "Safe", "Reliable"],
+            isConnected: isMudrexConnected,
+            logoColor: Colors.orangeAccent,
           ),
         ],
       ),

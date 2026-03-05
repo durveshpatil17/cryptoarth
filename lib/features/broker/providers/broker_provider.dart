@@ -6,13 +6,11 @@ final brokerServiceProvider = Provider<BrokerService>((ref) {
   return BrokerService();
 });
 
-class BrokerNotifier extends AsyncNotifier<BrokerModel?> {
+class BrokerNotifier extends AsyncNotifier<List<BrokerModel>> {
   @override
-  Future<BrokerModel?> build() async {
-    // There is no explicit GET /auth/broker/ info endpoint provided in instructions,
-    // assuming it returns null initially until connected or parsed from other data.
-    // However, we must provide connect and test methods here.
-    return null; 
+  Future<List<BrokerModel>> build() async {
+    // Return empty list initially
+    return []; 
   }
 
   Future<bool> testConnection(String apiKey, String apiSecret, String broker) async {
@@ -23,20 +21,63 @@ class BrokerNotifier extends AsyncNotifier<BrokerModel?> {
   Future<void> connectDelta(String apiKey, String apiSecret) async {
     final service = ref.read(brokerServiceProvider);
     await service.connectDeltaBroker(apiKey, apiSecret);
-    state = AsyncValue.data(BrokerModel(brokerName: "Delta Exchange", isConnected: true, apiKey: apiKey, createdAt: DateTime.now().toIso8601String()));
+    
+    final newBroker = BrokerModel(
+      brokerName: "Delta Exchange", 
+      isConnected: true, 
+      apiKey: apiKey, 
+      createdAt: DateTime.now().toIso8601String()
+    );
+    
+    final currentList = state.value ?? [];
+    // Avoid duplicates
+    if (!currentList.any((b) => b.brokerName == newBroker.brokerName)) {
+      state = AsyncValue.data([...currentList, newBroker]);
+    }
   }
 
   Future<void> connectCoinDCX(String apiKey, String apiSecret) async {
     final service = ref.read(brokerServiceProvider);
     await service.connectCoinDCX(apiKey, apiSecret);
-    state = AsyncValue.data(BrokerModel(brokerName: "CoinDCX", isConnected: true, apiKey: apiKey, createdAt: DateTime.now().toIso8601String()));
+    
+    final newBroker = BrokerModel(
+      brokerName: "CoinDCX", 
+      isConnected: true, 
+      apiKey: apiKey, 
+      createdAt: DateTime.now().toIso8601String()
+    );
+    
+    final currentList = state.value ?? [];
+     // Avoid duplicates
+    if (!currentList.any((b) => b.brokerName == newBroker.brokerName)) {
+      state = AsyncValue.data([...currentList, newBroker]);
+    }
   }
 
-  void disconnect() {
-    state = const AsyncValue.data(null);
+  // Support for Mudrex (Mock or actual if endpoint added)
+  Future<void> connectMudrex(String apiKey, String apiSecret) async {
+    // Assuming backend handles it or we mock for now
+    await Future.delayed(const Duration(seconds: 1)); 
+    
+    final newBroker = BrokerModel(
+      brokerName: "Mudrex", 
+      isConnected: true, 
+      apiKey: apiKey, 
+      createdAt: DateTime.now().toIso8601String()
+    );
+    
+    final currentList = state.value ?? [];
+    if (!currentList.any((b) => b.brokerName == newBroker.brokerName)) {
+      state = AsyncValue.data([...currentList, newBroker]);
+    }
+  }
+
+  void disconnect(String brokerName) {
+    final currentList = state.value ?? [];
+    state = AsyncValue.data(currentList.where((b) => b.brokerName != brokerName).toList());
   }
 }
 
-final brokerProvider = AsyncNotifierProvider<BrokerNotifier, BrokerModel?>(() {
+final brokerProvider = AsyncNotifierProvider<BrokerNotifier, List<BrokerModel>>(() {
   return BrokerNotifier();
 });

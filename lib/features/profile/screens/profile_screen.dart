@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
+import 'package:cryptoarth/shared/widgets/app_tour.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 import 'package:cryptoarth/shared/widgets/glass_container.dart';
@@ -8,11 +11,12 @@ import 'package:cryptoarth/features/tutorials/screens/tutorial_ai_screen.dart';
 import 'package:cryptoarth/features/tutorials/screens/tutorials_list_screen.dart';
 import 'package:cryptoarth/features/profile/screens/contact_us_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authProvider).user;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -40,34 +44,37 @@ class ProfileScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Profile Header Card
-            _buildProfileHeader(),
+            _buildProfileHeader(ref),
               
             const SizedBox(height: 32),
             
             // Settings Groups
             _buildSectionTitle("ACCOUNT"),
-            _buildOption(Icons.person_outline, "Profile Settings", () {
+            _buildOption(Icons.person_outline, "Profile Settings", Colors.blueAccent, () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileSettingsScreen()));
             }),
-            _buildOption(Icons.webhook_outlined, "Webhook", () {
+            _buildOption(Icons.webhook_outlined, "Webhook", Colors.orangeAccent, () {
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Webhook settings coming soon")));
             }),
             
             const SizedBox(height: 24),
             _buildSectionTitle("LEARNING"),
-            _buildOption(Icons.map_outlined, "View Tour Guide", () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Tour Guide coming soon")));
+            _buildOption(Icons.map_outlined, "View Tour Guide", Colors.amberAccent, () {
+              showDialog(
+                context: context,
+                builder: (context) => AppTour(onFinish: () => Navigator.pop(context)),
+              );
             }),
-            _buildOption(Icons.psychology_outlined, "Tutorial AI", () {
+            _buildOption(Icons.psychology_outlined, "Tutorial AI", Colors.purpleAccent, () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const TutorialAIScreen()));
             }),
-            _buildOption(Icons.video_library_outlined, "Video Tutorials", () {
+            _buildOption(Icons.video_library_outlined, "Video Tutorials", Colors.redAccent, () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const TutorialsListScreen()));
             }),
             
             const SizedBox(height: 24),
             _buildSectionTitle("SUPPORT"),
-             _buildOption(Icons.contact_support_outlined, "Contact Us", () {
+             _buildOption(Icons.contact_support_outlined, "Contact Us", Colors.greenAccent, () {
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const ContactUsScreen()));
              }),
             
@@ -84,7 +91,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(WidgetRef ref) {
     return GlassContainer(
       padding: const EdgeInsets.all(20),
       borderRadius: 24,
@@ -94,15 +101,15 @@ class ProfileScreen extends StatelessWidget {
         children: [
           const ProfileAvatar(radius: 30),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Durvesh Patil",
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                  ref.watch(authProvider).user?.name ?? "CryptoArth User",
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   "Pro Trader • Active Strategy",
                   style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
@@ -129,7 +136,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOption(IconData icon, String title, VoidCallback onTap) {
+  Widget _buildOption(IconData icon, String title, Color color, VoidCallback onTap) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
@@ -142,7 +149,7 @@ class ProfileScreen extends StatelessWidget {
           opacity: 0.3,
           child: Row(
             children: [
-              Icon(icon, color: Colors.white70, size: 20),
+              Icon(icon, color: color, size: 20),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(

@@ -85,16 +85,31 @@ class _MarketplaceHomeScreenState extends ConsumerState<MarketplaceHomeScreen> {
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: _buildTopNav(brokerBalance),
       ),
-      body: Column(
-        children: [
-          _buildLivePrices(),
-          const SizedBox(height: 12),
-          _buildTabToggle(),
-          const SizedBox(height: 8),
-          Expanded(
-            child: _buildStrategyList(),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          _refreshAll();
+          // Also refresh balance explicitly just in case
+          ref.read(brokerBalanceProvider.notifier).refresh();
+        },
+        color: AppColors.cyan,
+        backgroundColor: AppColors.cardSurface,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height - kToolbarHeight - MediaQuery.of(context).padding.top - 80,
+            child: Column(
+              children: [
+                _buildLivePrices(),
+                const SizedBox(height: 12),
+                _buildTabToggle(),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: _buildStrategyList(),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -120,26 +135,6 @@ class _MarketplaceHomeScreenState extends ConsumerState<MarketplaceHomeScreen> {
               "Marketplace",
               style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
               overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: AppColors.purple.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.purple.withOpacity(0.3)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.account_balance_wallet_outlined, color: AppColors.purple, size: 10),
-                const SizedBox(width: 4),
-                Text(
-                  "\$${balance.toStringAsFixed(0)}",
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                ),
-              ],
             ),
           ),
         ],
@@ -292,7 +287,7 @@ class _MarketplaceHomeScreenState extends ConsumerState<MarketplaceHomeScreen> {
 
   Widget _buildPaginationControls(int totalPages) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
+      padding: const EdgeInsets.only(bottom: 0, top: 4.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

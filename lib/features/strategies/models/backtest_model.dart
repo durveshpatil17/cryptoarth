@@ -7,6 +7,9 @@ class BacktestModel {
   final num drawdown;
   final int totalTrades;
   final String? createdAt;
+  final String? userName;
+  final String? ownerId;
+  final bool isOwner;
 
   BacktestModel({
     this.id,
@@ -17,6 +20,9 @@ class BacktestModel {
     required this.drawdown,
     this.totalTrades = 0,
     this.createdAt,
+    this.userName,
+    this.ownerId,
+    this.isOwner = false,
   });
 
   factory BacktestModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +35,9 @@ class BacktestModel {
       drawdown: num.tryParse(json['drawdown']?.toString() ?? json['max_drawdown_percent']?.toString() ?? '0') ?? 0,
       totalTrades: int.tryParse(json['total_trades']?.toString() ?? '0') ?? 0,
       createdAt: json['created_at']?.toString(),
+      userName: json['user_name']?.toString() ?? json['username']?.toString() ?? json['owner_name']?.toString(),
+      ownerId: json['owner_id']?.toString() ?? json['user_id']?.toString(),
+      isOwner: json['is_owner'] == true || json['is_owner'] == 1 || json['is_owner'] == '1',
     );
   }
 
