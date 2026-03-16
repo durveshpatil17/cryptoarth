@@ -17,6 +17,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:cryptoarth/core/utils/time_utils.dart';
 import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
 import 'package:cryptoarth/features/broker/providers/broker_provider.dart';
+import 'package:cryptoarth/shared/widgets/luxury_background.dart';
 
 class ExecutionHistoryScreen extends ConsumerStatefulWidget {
   const ExecutionHistoryScreen({super.key});
@@ -26,14 +27,35 @@ class ExecutionHistoryScreen extends ConsumerStatefulWidget {
       _ExecutionHistoryScreenState();
 }
 
-class _ExecutionHistoryScreenState
-    extends ConsumerState<ExecutionHistoryScreen> {
+class _ExecutionHistoryScreenState extends ConsumerState<ExecutionHistoryScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _breatheController;
+  late Animation<double> _breatheAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _breatheController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    _breatheAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
+      CurvedAnimation(parent: _breatheController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _breatheController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUser = ref.watch(authProvider).user;
     
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.richBlack,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -41,128 +63,96 @@ class _ExecutionHistoryScreenState
           icon: const Icon(Icons.arrow_back, color: Colors.white70),
           onPressed: () => Navigator.pop(context),
         ),
+        centerTitle: true,
         title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "Execution History",
+              "STRATEGY VAULT",
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
               ),
             ),
             Text(
-              "My backtest results",
+              "EXECUTIVE EXECUTION HISTORY",
               style: TextStyle(
-                color: Colors.white.withOpacity(0.5),
-                fontSize: 12,
+                color: AppColors.cyan.withOpacity(0.5),
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.2,
               ),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.sync, color: AppColors.cyan),
+            icon: const Icon(Icons.sync, color: AppColors.cyan, size: 20),
             onPressed: () async {
+              // ... sync logic ...
               try {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Syncing AI strategies...")),
-                );
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Syncing AI strategies...")),);
                 await ref.read(backtestProvider.notifier).syncDeepThink();
-                if (mounted)
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Sync completed!"),
-                      backgroundColor: AppColors.green,
-                    ),
-                  );
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Sync completed!"), backgroundColor: AppColors.green,),);
               } catch (e) {
-                if (mounted)
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text("Sync failed: $e"),
-                      backgroundColor: Colors.redAccent,
-                    ),
-                  );
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Sync failed: $e"), backgroundColor: Colors.redAccent,),);
               }
             },
-            tooltip: "Sync AI Strategies",
           ),
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white70),
+            icon: const Icon(Icons.refresh, color: Colors.white54, size: 20),
             onPressed: () => ref.read(backtestProvider.notifier).refresh(),
           ),
           const SizedBox(width: 8),
         ],
       ),
-      body: ref
-          .watch(backtestProvider)
-          .when(
+      body: LuxuryBackground(
+        child: ref.watch(backtestProvider).when(
             data: (allResults) {
-              // Filter results: ONLY show strategies owned by the user (strict privacy)
               final results = allResults.where((r) {
-                // 1. Check direct ownership flag from API (Most reliable)
                 if (r.isOwner) return true;
-                
                 if (currentUser == null) return false;
-
-                // 2. Check by ID (Safe)
                 bool isIdMatch = r.ownerId != null && r.ownerId == currentUser.id.toString();
                 if (isIdMatch) return true;
-
-                // 3. Check by exact Name/Phone (Safest fallback)
                 if (r.userName != null) {
                   final ownerLower = r.userName!.toLowerCase();
                   final bool nameMatch = currentUser.name != null && ownerLower == currentUser.name!.toLowerCase();
                   final bool phoneMatch = currentUser.phone != null && ownerLower == currentUser.phone!;
                   if (nameMatch || phoneMatch) return true;
                 }
-                
                 return false;
               }).toList();
 
               if (results.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.history,
-                        color: Colors.white.withOpacity(0.1),
-                        size: 64,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        "No execution history found",
-                        style: TextStyle(color: Colors.white.withOpacity(0.3)),
-                      ),
-                    ],
-                  ),
-                );
+                 return Center(
+                   child: GlassContainer(
+                     borderRadius: 20,
+                     padding: const EdgeInsets.all(40),
+                     child: Column(
+                       mainAxisSize: MainAxisSize.min,
+                       children: [
+                         Icon(Icons.history, color: Colors.white10, size: 64),
+                         const SizedBox(height: 16),
+                         Text("NO TRANSACTIONS FOUND", style: TextStyle(color: Colors.white24, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                       ],
+                     ),
+                   ),
+                 );
               }
 
               return ListView.builder(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 120, 16, 100),
                 itemCount: results.length,
                 itemBuilder: (context, index) {
-                  final result = results[index];
-                  return _buildExecutionCard(result);
+                  return _buildExecutionCard(results[index]);
                 },
               );
             },
-            loading:
-                () => const Center(
-                  child: CircularProgressIndicator(color: AppColors.cyan),
-                ),
-            error:
-                (e, s) => Center(
-                  child: Text(
-                    "Error: $e",
-                    style: const TextStyle(color: Colors.redAccent),
-                  ),
-                ),
+            loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
+            error: (e, s) => Center(child: Text("Vault Error: $e", style: const TextStyle(color: Colors.redAccent))),
           ),
+      ),
     );
   }
 
@@ -170,6 +160,7 @@ class _ExecutionHistoryScreenState
     return [
       BacktestModel(
         strategyCode: "STRG-F2FDFB",
+        strategyName: "Mock Strategy 1",
         status: "Success",
         pnl: -63.53,
         winRate: 28.1,
@@ -177,6 +168,7 @@ class _ExecutionHistoryScreenState
       ),
       BacktestModel(
         strategyCode: "STRG-E5DF75",
+        strategyName: "Mock Strategy 2",
         status: "Success",
         pnl: -63.53,
         winRate: 28.1,
@@ -1407,278 +1399,373 @@ class _ExecutionHistoryScreenState
   }
 
   Widget _buildExecutionCard(BacktestModel result) {
-    final bool isProfit = result.pnl >= 0;
-    final String timeStr = TimeUtils.formatRelativeTime(result.createdAt);
-    
-    // Extract symbol if possible, else use ID/Code
-    String symbol = result.strategyCode;
-    if (symbol.length > 10) symbol = "ETHUSD";
-
-    final brokerState = ref.watch(brokerProvider);
-    final connectedBrokers = brokerState.value ?? [];
-    final bool hasBrokers = connectedBrokers.isNotEmpty;
-
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        color: const Color(0xFF0B1221),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Section
+          // 1. Header Section
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        result.strategyCode.toUpperCase(),
-                        style: const TextStyle(
-                          color: AppColors.cyan,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        result.strategyCode.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // P&L Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: (isProfit ? AppColors.green : Colors.redAccent).withOpacity(0.04),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: (isProfit ? AppColors.green : Colors.redAccent).withOpacity(0.08)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
                       Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            isProfit ? Icons.trending_up : Icons.trending_down,
-                            color: isProfit ? const Color(0xFF34D399) : Colors.redAccent,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 4),
                           Text(
-                            "${isProfit ? '+' : ''}${result.pnl.toStringAsFixed(2)}%",
-                            style: TextStyle(
-                              color: isProfit ? const Color(0xFF34D399) : Colors.redAccent,
-                              fontSize: 17,
+                            result.strategyCode.toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
                               fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        "RESULT P&L",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.35),
-                          fontSize: 8,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Meta Row
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                _buildMetaStatItem(Icons.person_outline, result.userName ?? "Admin"),
-                const SizedBox(width: 10),
-                Text("•", style: TextStyle(color: Colors.white.withOpacity(0.1))),
-                const SizedBox(width: 10),
-                _buildMetaStatItem(Icons.access_time, timeStr),
-                const Spacer(),
-                // Status Indicator
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: (result.status.toLowerCase() == 'success' ? AppColors.green : Colors.orangeAccent).withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: result.status.toLowerCase() == 'success' ? AppColors.green : Colors.orangeAccent,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        result.status.toUpperCase(),
-                        style: TextStyle(
-                          color: result.status.toLowerCase() == 'success' ? AppColors.green : Colors.orangeAccent, 
-                          fontSize: 9, 
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Metrics Grid
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withOpacity(0.03)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildMainStatMetric("${isProfit ? '+' : ''}${result.pnl.toStringAsFixed(2)}%", "PNL", color: isProfit ? const Color(0xFF34D399) : Colors.redAccent),
-                _buildStatDivider(),
-                _buildMainStatMetric("${result.winRate.toStringAsFixed(1)}%", "Win Rate"),
-                _buildStatDivider(),
-                _buildMainStatMetric("-${result.drawdown.toStringAsFixed(1)}%", "Max DD", color: Colors.orangeAccent),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-          Divider(color: Colors.white.withOpacity(0.04), height: 1),
-
-          // Action Buttons
-          IntrinsicHeight(
-            child: Row(
-              children: [
-                _buildActionGridItem(Icons.share_outlined, "Share", () => _showShareWithPhoneDialog(context, result, (p) {})),
-                _buildStatVerticalDivider(),
-                _buildActionGridItem(Icons.auto_graph_outlined, "Chart", () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => TechnicalChartScreen(
-                      strategyCode: result.strategyCode,
-                      strategyName: result.strategyCode,
-                      backtestId: result.id,
-                    ),
-                  );
-                }),
-                _buildStatVerticalDivider(),
-                _buildActionGridItem(Icons.edit_note_outlined, "Edit", () async {
-                  String code = await _fetchCode(result.strategyCode);
-                  if (mounted) _showEditStrategyDialog(result, pineCode: code);
-                }),
-                _buildStatVerticalDivider(),
-                _buildActionGridItem(Icons.rocket_launch_outlined, "Deploy", () => _showDeployDialog(result), color: const Color(0xFF10B981)),
-              ],
-            ),
-          ),
-
-          Divider(color: Colors.white.withOpacity(0.04), height: 1),
-
-          // Broker footer: Dynamic connected brokers
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                if (hasBrokers)
-                  SizedBox(
-                    height: 28,
-                    child: Stack(
-                      children: connectedBrokers.asMap().entries.map((entry) {
-                        final idx = entry.key;
-                        final broker = entry.value;
-                        return Padding(
-                          padding: EdgeInsets.only(left: idx * 20.0),
-                          child: _buildBrokerLogo(broker.brokerName),
-                        );
-                      }).toList(),
-                    ),
-                  )
-                else
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 14),
-                  ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: hasBrokers ? const Color(0xFF10B981) : Colors.redAccent,
-                              shape: BoxShape.circle,
+                              letterSpacing: 0.5,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            hasBrokers ? "Exchanging on ${connectedBrokers.length} Brokers" : "Execution Offline",
+                          Icon(Icons.edit_outlined, color: Colors.white.withOpacity(0.3), size: 14),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Text(
+                            "QUANT_AI  •  BTCUSD  •  15MIN",
                             style: TextStyle(
-                              color: hasBrokers ? const Color(0xFF10B981) : Colors.redAccent,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
+                              color: AppColors.purple,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ],
                       ),
-                      Text(
-                        hasBrokers ? connectedBrokers.map((b) => b.brokerName).join(", ") : "Setup broker in settings",
-                        style: TextStyle(color: Colors.white.withOpacity(0.25), fontSize: 9),
-                      ),
                     ],
+                  ),
+                ),
+                // Activate Button
+                InkWell(
+                  onTap: () => _showDeployDialog(result),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.green.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.green.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.play_circle_fill, color: AppColors.green, size: 12),
+                        const SizedBox(width: 8),
+                        const Text(
+                          "Activate",
+                          style: TextStyle(
+                            color: AppColors.green,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
+
+          // 2. Stats Section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildEliteStat("77", "TRADES"),
+                _buildEliteStat("${(result.winRate ?? 0.0).toStringAsFixed(1)}%", "WIN RATE", color: AppColors.green),
+                _buildEliteStat("${(result.pnl ?? 0.0).toStringAsFixed(2)}%", "RETURN", color: (result.pnl ?? 0) >= 0 ? AppColors.green : Colors.redAccent),
+                _buildEliteStat("${(result.drawdown ?? 0.0).toStringAsFixed(1)}%", "MAX DD", color: Colors.redAccent),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // 3. Actions Grid (2 rows of 5)
+          Column(
+            children: [
+              // Row 1
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
+                ),
+                child: IntrinsicHeight(
+                  child: Row(
+                    children: [
+                      _buildGridAction(Icons.analytics, "Backtest", Colors.amber, () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => BacktestConfigScreen(strategyCode: result.strategyCode, strategyName: result.strategyName)));
+                      }),
+                      _buildGridDivider(),
+                      _buildGridAction(Icons.show_chart, "Chart", AppColors.cyan, () {
+                        showDialog(context: context, builder: (context) => TechnicalChartScreen(strategyCode: result.strategyCode, strategyName: result.strategyName, backtestId: result.id));
+                      }),
+                      _buildGridDivider(),
+                      _buildGridAction(Icons.edit, "Edit", Colors.amber, () async {
+                        final code = await _fetchCode(result.strategyCode);
+                        if (mounted) _showEditStrategyDialog(result, pineCode: code);
+                      }),
+                      _buildGridDivider(),
+                      _buildGridAction(Icons.code, "Pine", AppColors.green, () async {
+                        final code = await _fetchCode(result.strategyCode);
+                        if (mounted) _showPineCodeDialog(context, code);
+                      }),
+                      _buildGridDivider(),
+                      _buildGridAction(Icons.bar_chart, "Report", AppColors.purple, () {
+                        showDialog(context: context, builder: (context) => StrategyDetailedReport(strategyCode: result.strategyCode, backtestId: result.id));
+                      }),
+                    ],
+                  ),
+                ),
+              ),
+              // Row 2
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
+                ),
+                child: IntrinsicHeight(
+                  child: Row(
+                    children: [
+                      _buildGridAction(Icons.share, "Share", AppColors.cyan, () {
+                        _showShareWithPhoneDialog(context, result, (userMap) async {
+                          try {
+                            final userId = userMap['user_id'] ?? userMap['id'];
+                            await ref.read(backtestProvider.notifier).shareStrategy(result.strategyCode, userId);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Access shared successfully!"), backgroundColor: AppColors.green)
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Failed to share access: $e"), backgroundColor: Colors.redAccent)
+                              );
+                            }
+                          }
+                        });
+                      }),
+                      _buildGridDivider(),
+                      _buildGridAction(Icons.settings_suggest, "Improve", AppColors.purple, () async {
+                        try { await ref.read(backtestProvider.notifier).syncDeepThink(); } catch(e) {}
+                      }),
+                      _buildGridDivider(),
+                      _buildGridAction(Icons.psychology, "Deep Think", AppColors.purple, () async {
+                        try { await ref.read(backtestProvider.notifier).syncDeepThink(); } catch(e) {}
+                      }),
+                      _buildGridDivider(),
+                      _buildGridAction(Icons.picture_as_pdf, "PDF", AppColors.cyan, () {
+                        ReportGenerator.generateBacktestPdf(result);
+                      }),
+                      _buildGridDivider(),
+                      _buildGridAction(Icons.delete_outline, "Delete", Colors.redAccent, () async {
+                        final confirmed = await _showDeleteConfirmation();
+                        if (confirmed == true) {
+                          ref.read(backtestProvider.notifier).deleteBacktest(result.id);
+                        }
+                      }),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+
+  Future<bool?> _showDeleteConfirmation() async {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        title: const Text("Delete Backtest", style: TextStyle(color: Colors.white)),
+        content: const Text("Are you sure you want to delete this backtest record?", style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Delete", style: TextStyle(color: Colors.redAccent))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEliteStat(String value, String label, {Color? color}) {
+    return Column(
+      children: [
+        Text(value, style: TextStyle(color: color ?? Colors.white, fontSize: 18, fontWeight: FontWeight.w900, fontFeatures: const [FontFeature.tabularFigures()])),
+        const SizedBox(height: 4),
+        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+      ],
+    );
+  }
+
+  Widget _buildGridAction(IconData icon, String label, Color color, VoidCallback onTap) {
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              children: [
+                Icon(icon, color: color.withOpacity(0.8), size: 14),
+                const SizedBox(height: 6),
+                Text(label, style: TextStyle(color: color.withOpacity(0.8), fontSize: 8, fontWeight: FontWeight.w900)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGridDivider() {
+    return VerticalDivider(color: Colors.white.withOpacity(0.05), width: 1, thickness: 1);
+  }
+
+  void _showPineCodeDialog(BuildContext context, String code) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: const Color(0xFF0F172A),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("PINE SCRIPT", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  IconButton(icon: const Icon(Icons.copy, color: AppColors.cyan, size: 18), onPressed: () => Clipboard.setData(ClipboardData(text: code))),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Flexible(child: SingleChildScrollView(child: Text(code, style: const TextStyle(color: Colors.white70, fontSize: 10, fontFamily: 'monospace')))),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRefinedStat(String label, String value, {Color? color, bool isStatus = false, Color? statusColor}) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.2),
+              fontSize: 8,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          if (isStatus)
+            Row(
+              children: [
+                FadeTransition(
+                  opacity: _breatheAnimation,
+                  child: Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: statusColor!.withOpacity(0.5),
+                          blurRadius: 4,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            )
+          else
+            Text(
+              value,
+              style: TextStyle(
+                color: color ?? Colors.white.withOpacity(0.9),
+                fontSize: 15,
+                fontWeight: FontWeight.w900,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRefinedDivider() {
+    return Container(
+      height: 25,
+      width: 1,
+      margin: const EdgeInsets.symmetric(horizontal: 10),
+      color: Colors.white.withOpacity(0.04),
+    );
+  }
+
+  Widget _buildMiniAction(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: GlassContainer(
+        borderRadius: 12,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        color: Colors.white,
+        opacity: 0.03,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: Colors.white54),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1875,7 +1962,7 @@ class _ExecutionHistoryScreenState
                     try {
                       await ref
                           .read(backtestProvider.notifier)
-                          .setBacktestTradeMode(result.strategyCode, "Paper");
+                          .setBacktestTradeMode(result.strategyCode, 0);
                       if (mounted)
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -1906,7 +1993,7 @@ class _ExecutionHistoryScreenState
                     try {
                       await ref
                           .read(backtestProvider.notifier)
-                          .setBacktestTradeMode(result.strategyCode, "Live");
+                          .setBacktestTradeMode(result.strategyCode, 1);
                       if (mounted)
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(

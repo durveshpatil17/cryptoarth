@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cryptoarth/features/strategies/providers/strategy_provider.dart';
 import 'package:cryptoarth/features/strategies/providers/deployed_strategy_provider.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cryptoarth/features/strategies/models/strategy_model.dart';
 import 'package:cryptoarth/features/strategies/models/deployed_strategy_model.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
@@ -17,6 +18,7 @@ import 'package:cryptoarth/features/strategies/widgets/technical_chart_screen.da
 import 'package:cryptoarth/features/strategies/screens/backtest_config_screen.dart';
 
 import 'package:cryptoarth/features/strategies/widgets/strategy_card.dart';
+import 'package:cryptoarth/shared/widgets/luxury_background.dart';
 
 class MarketplaceScreen extends ConsumerStatefulWidget {
   const MarketplaceScreen({super.key});
@@ -31,29 +33,17 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
   static const int _itemsPerPage = 4;
 
   void _undeployStrategy(StrategyModel strategy) {
-    String? rawId = strategy.deploymentId;
+    final String code = strategy.strategyCode;
     
-    if (rawId == null) {
-      final userStrategies = ref.read(strategyProvider).value ?? [];
-      for (var s in userStrategies) {
-        if (s.id == strategy.id || (s.strategyCode.isNotEmpty && s.strategyCode == strategy.strategyCode)) {
-          rawId = s.deploymentId;
-          break;
-        }
-      }
-    }
-
-    if (rawId == null) {
+    if (code.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Active deployment record not found locally. Refreshing..."), backgroundColor: Colors.orange),
+        const SnackBar(content: Text("Strategy code not found locally. Refreshing..."), backgroundColor: Colors.orange),
       );
       _refreshAll();
       return;
     }
 
-    final idToPass = int.tryParse(rawId) ?? rawId;
-
-    ref.read(strategyProvider.notifier).undeployStrategy(idToPass).then((_) {
+    ref.read(strategyProvider.notifier).undeployStrategy(code).then((_) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Strategy undeployed successfully"),
@@ -84,13 +74,12 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
     ref.read(dashboardStrategyProvider.notifier).refresh();
   }
 
-  void _deployStrategy(String strategyId) {
-    // Hardcoding brokerId to 1 for demo
-    ref.read(strategyProvider.notifier).deployStrategy(strategyId, 1).then((_) {
+  void _deployStrategy(String strategyCode, bool isLive) {
+    ref.read(strategyProvider.notifier).deployStrategy(strategyCode, isLive: isLive).then((_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Strategy deployed successfully"),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: Text("Strategy deployed in ${isLive ? 'LIVE' : 'PAPER'} mode"),
+          backgroundColor: isLive ? Colors.orangeAccent : Colors.blueAccent,
         ),
       );
       ref.read(strategyProvider.notifier).refresh();
@@ -108,54 +97,51 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.digitalVoidBlack,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text(
-          "Strategy Marketplace",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        backgroundColor: AppColors.background,
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+        leadingWidth: 60,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 20),
+          child: IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white70),
+            onPressed: () {
+              final ScaffoldState? root = context.findRootAncestorStateOfType<ScaffoldState>();
+              root?.openDrawer();
+            },
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'MARKETPLACE',
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white, letterSpacing: 0.8),
+            ),
+            Text(
+              'DISCOVER & DEPLOY ELITE ALGORITHMS',
+              style: TextStyle(fontSize: 8, color: AppColors.cyan.withOpacity(0.5), fontWeight: FontWeight.w900, letterSpacing: 1.2),
+            ),
+          ],
         ),
         actions: [
-          IconButton(
-            onPressed: () {}, 
-            icon: const Icon(Icons.search, color: Colors.white70),
-          ),
-          const SizedBox(width: 8),
+          SvgPicture.asset("assets/images/favicon.svg", height: 22, width: 22),
+          const SizedBox(width: 16),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+      body: LuxuryBackground(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Custom Tab Bar
-              Container(
-                 padding: const EdgeInsets.all(4),
-                 decoration: BoxDecoration(
-                    color: AppColors.cardSurface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
-                 ),
-                 child: Row(
-                    children: [
-                       Expanded(child: _buildTabButton(0, "Pre-Defined", "All", const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFD946EF)]))), // Purple-Pink Gradient
-                       Expanded(child: _buildTabButton(1, "My Strategies", "Active", null)),
-                    ],
-                 ),
-              ),
-
-              const SizedBox(height: 16), // Reduced from 24
-
-              // Strategy List
+               const SizedBox(height: 120),
               _buildStrategyList(),
-              
-              const SizedBox(height: 120), // Added significant bottom space
+              const SizedBox(height: 120),
             ],
           ),
         ),
@@ -227,7 +213,7 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
               child: StrategyCard(
                 data: s,
                 isBrokerConnected: true,
-                onAction: () => s.isDeployed ? _undeployStrategy(s) : _deployStrategy(s.id),
+                onAction: (isLive) => s.isDeployed ? _undeployStrategy(s) : _deployStrategy(s.strategyCode, isLive),
                 isLive: s.isDeployed,
               ),
             )),

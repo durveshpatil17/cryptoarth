@@ -12,6 +12,8 @@ import 'package:cryptoarth/features/credits/providers/payment_balance_provider.d
 import 'package:cryptoarth/features/credits/screens/credits_store_screen.dart';
 import 'code_generator_screen.dart';
 
+import 'package:cryptoarth/shared/widgets/luxury_background.dart';
+
 class BacktestConfigScreen extends ConsumerStatefulWidget {
   final String strategyCode;
   final String strategyName;
@@ -100,54 +102,42 @@ class _BacktestConfigScreenState extends ConsumerState<BacktestConfigScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.digitalVoidBlack,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Colors.white70),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Row(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [AppColors.purple, AppColors.cyan],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+            const Text(
+              "BACKTEST LAB",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: 0.8,
               ),
-              child: const Icon(Icons.settings_outlined, size: 16, color: Colors.white),
             ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Backtest",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  _currentStrategyName,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.white.withOpacity(0.5),
-                  ),
-                ),
-              ],
+            Text(
+              "STRATEGY PERFORMANCE SIMULATOR",
+              style: TextStyle(
+                fontSize: 8,
+                color: AppColors.cyan.withOpacity(0.5),
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.2,
+              ),
             ),
           ],
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      body: LuxuryBackground(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 120, 16, 40),
         child: Column(
           children: [
             // Header Strategy Selector Area
@@ -321,22 +311,22 @@ class _BacktestConfigScreenState extends ConsumerState<BacktestConfigScreen> {
               
               const SizedBox(height: 16),
 
-              // Run Button Compact
-              SizedBox(
-                width: double.infinity,
-                height: 40,
-                child: GradientButton(
-                  text: _isExecuting ? "Executing..." : "Run Backtest",
-                  icon: _isExecuting ? Icons.hourglass_empty : Icons.play_arrow,
-                  onPressed: () {
-                    if (!_isExecuting) _runBacktest();
-                  },
-                ),
-              ),
-            ],
+               SizedBox(
+                 width: double.infinity,
+                 height: 40,
+                 child: GradientButton(
+                   text: _isExecuting ? "Executing..." : "Run Backtest",
+                   icon: _isExecuting ? Icons.hourglass_empty : Icons.play_arrow,
+                   onPressed: () {
+                     if (!_isExecuting) _runBacktest();
+                   },
+                 ),
+               ),
+              ],
+            ),
           ),
-        ),
           ],
+        ),
         ),
       ),
     );

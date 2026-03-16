@@ -3,6 +3,7 @@ import 'package:cryptoarth/core/network/api_client.dart';
 import 'package:cryptoarth/core/network/api_endpoints.dart';
 import 'package:cryptoarth/features/portfolio/models/position_model.dart';
 import 'package:cryptoarth/features/portfolio/models/pnl_model.dart';
+import 'package:cryptoarth/features/portfolio/models/user_order_details_model.dart';
 
 class PortfolioService {
   final ApiClient _apiClient = ApiClient();
@@ -50,6 +51,31 @@ class PortfolioService {
   Future<String?> fetchPnlReportPdfUrl() async {
     // Generate full URL since it usually returns a download stream or link
     return "${ApiEndpoints.baseUrl}${ApiEndpoints.pnlReportPdf}";
+  }
+
+  Future<List<UserOrderDetailsModel>> fetchUserOrderDetails({
+    required String startDate,
+    required String endDate,
+    String? strategy,
+    String? tradeMode,
+  }) async {
+    try {
+      final response = await _apiClient.post(ApiEndpoints.userOrderDetails, {
+        'start_date': startDate,
+        'end_date': endDate,
+        'strategy': strategy ?? "",
+        'owner': "",
+        'trade_mode': tradeMode ?? "1",
+      });
+
+      if (response.statusCode == 200 && response.data != null) {
+        final List<dynamic> data = ApiClient.extractList(response.data);
+        return data.map((json) => UserOrderDetailsModel.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      throw Exception('Failed to fetch user order details: $e');
+    }
   }
 
   Future<List<dynamic>> fetchUserWatchlist() async {

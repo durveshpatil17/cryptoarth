@@ -13,6 +13,7 @@ import 'package:cryptoarth/shared/widgets/gradient_button.dart';
 import 'package:cryptoarth/core/utils/report_generator.dart';
 import 'package:cryptoarth/features/strategies/providers/strategy_provider.dart';
 import 'package:cryptoarth/features/marketplace/screens/marketplace_screen.dart';
+import 'package:cryptoarth/shared/widgets/luxury_background.dart';
 
 class BacktestResultsScreen extends ConsumerStatefulWidget {
   final String strategyCode;
@@ -134,7 +135,14 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _backtestData = BacktestModel(strategyCode: widget.strategyCode, status: 'MOCK', pnl: -10021235.0, winRate: 50.0, drawdown: 100.0);
+          _backtestData = BacktestModel(
+            strategyCode: widget.strategyCode, 
+            status: 'MOCK', 
+            pnl: -10021235.0, 
+            winRate: 50.0, 
+            drawdown: 100.0,
+            strategyName: widget.strategyName ?? 'Mock Strategy',
+          );
           _chartSpots = [const FlSpot(0, 0), const FlSpot(1, -2), const FlSpot(2, -5), const FlSpot(3, -10)];
           _isLoading = false;
         });
@@ -175,11 +183,12 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
           ],
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: LuxuryBackground(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // Date Filter & Exports
             _buildHeaderActions(),
             const SizedBox(height: 24),
@@ -236,8 +245,9 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildHeaderActions() {
     return Column(
@@ -761,7 +771,7 @@ class _BacktestResultsScreenState extends ConsumerState<BacktestResultsScreen> {
                          ScaffoldMessenger.of(context).showSnackBar(
                            const SnackBar(content: Text("Deploying Strategy to Live Market...")),
                          );
-                         ref.read(strategyProvider.notifier).deployStrategy(widget.strategyCode, 1).then((_) {
+                         ref.read(strategyProvider.notifier).deployStrategy(widget.strategyCode).then((_) {
                            if (!mounted) return;
                            ScaffoldMessenger.of(context).showSnackBar(
                              const SnackBar(content: Text("Strategy deployed successfully!"), backgroundColor: AppColors.green),

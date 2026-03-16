@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cryptoarth/features/strategies/models/strategy_model.dart';
 import 'package:cryptoarth/features/strategies/services/strategy_service.dart';
 import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
+import 'package:cryptoarth/features/strategies/models/deployed_strategy_model.dart';
 
 final strategyServiceProvider = Provider<StrategyService>((ref) {
   return StrategyService();
@@ -24,22 +25,32 @@ class StrategyNotifier extends AsyncNotifier<List<StrategyModel>> {
     state = await AsyncValue.guard(() => _fetchStrategies());
   }
 
-  Future<void> deployStrategy(String strategyId, int brokerId) async {
+  Future<void> deployStrategy(String strategyCode, {bool isLive = false}) async {
     try {
-      final user = ref.read(authProvider).user;
       final service = ref.read(strategyServiceProvider);
-      await service.deployStrategy(strategyId, brokerId, userId: user?.id);
+      // Set trade mode first if necessary
+      await service.setBacktestTradeMode(strategyCode, isLive ? 1 : 0);
+      await service.deployStrategy(strategyCode);
       ref.invalidateSelf(); // refresh list
     } catch (e) {
       throw Exception('Deploy failed: $e');
     }
   }
 
-  Future<void> undeployStrategy(dynamic strategyId) async {
+  Future<void> switchTradeMode(String strategyCode, bool isLive) async {
     try {
-      final user = ref.read(authProvider).user;
       final service = ref.read(strategyServiceProvider);
-      await service.undeployStrategy(strategyId, userId: user?.id);
+      await service.setBacktestTradeMode(strategyCode, isLive ? 1 : 0);
+      ref.invalidateSelf();
+    } catch (e) {
+      throw Exception('Mode switch failed: $e');
+    }
+  }
+
+  Future<void> undeployStrategy(String strategyCode) async {
+    try {
+      final service = ref.read(strategyServiceProvider);
+      await service.undeployStrategy(strategyCode);
       ref.invalidateSelf(); // refresh list
     } catch (e) {
       throw Exception('Undeploy failed: $e');
@@ -60,7 +71,7 @@ class DashboardStrategyNotifier extends AsyncNotifier<List<StrategyModel>> {
 
   Future<List<StrategyModel>> _fetchDashboardStrategies() async {
     final service = ref.read(strategyServiceProvider);
-    return await service.fetchDashboardStrategies(cards: true, lite: false);
+    return await service.fetchDashboardStrategies(cards: true, lite: true);
   }
 
   Future<void> refresh() async {
@@ -110,4 +121,15 @@ final selectStrategyProvider = FutureProvider<List<StrategyModel>>((ref) async {
   debugPrint("Strategy Selection List: Found ${result.length} strategies total.");
   
   return result;
+});
+
+// Returns only currently deployed strategies for filtering in Portfolio/Orders
+final deployedStrategyListProvider = FutureProvider<List<StrategyModel>>((ref) async {
+  final all = await ref.watch(selectStrategyProvider.future);
+  return all.where((s) => s.isDeployed).toList();
+});
+
+final deployedStrategiesProvider = FutureProvider<List<DeployedStrategyModel>>((ref) async {
+  final service = ref.read(strategyServiceProvider);
+  return await service.fetchDeployedStrategies();
 });

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
@@ -7,7 +8,10 @@ import 'package:cryptoarth/shared/widgets/glass_container.dart';
 import 'package:cryptoarth/shared/widgets/profile_avatar.dart';
 import 'package:cryptoarth/shared/widgets/strategy_response_card.dart';
 import 'package:cryptoarth/features/strategies/screens/backtest_config_screen.dart';
+import 'package:cryptoarth/shared/widgets/luxury_background.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:cryptoarth/features/credits/screens/credits_store_screen.dart';
+import 'package:cryptoarth/features/credits/screens/credits_dashboard_screen.dart';
 
 import 'package:cryptoarth/features/strategies/screens/templates_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -321,67 +325,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     });
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          // Background Depth Effects
-          Positioned(
-            top: -100,
-            left: MediaQuery.of(context).size.width * 0.2,
-            child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.05),
-              ),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                child: Container(color: Colors.transparent),
-              ),
-            ),
-          ),
-          
-          SafeArea(
-            child: Column(
-              children: [
-                // Precisely Aligned Top Nav
-                _buildTopNav(),
-                
-                const SizedBox(height: 16),
-                
-                // Precisely Aligned Account Ribbon
-                _buildAccountRibbon(),
-                
-                const SizedBox(height: 32),
-
-                Expanded(
-                  child: chatState.when(
-                    data: (messages) => messages.isEmpty 
-                      ? _buildWelcomeCenter() 
-                      : _buildChatList(messages, false),
-                    loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
-                    error: (err, stack) => _buildErrorState(err.toString()),
-                  ),
+      backgroundColor: AppColors.digitalVoidBlack,
+      body: LuxuryBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildTopNav(),
+              const SizedBox(height: 12),
+              _buildAccountRibbon(),
+              const SizedBox(height: 12),
+              Expanded(
+                child: chatState.when(
+                  data: (messages) => messages.isEmpty 
+                    ? _buildWelcomeCenter() 
+                    : _buildChatList(messages, false),
+                  loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
+                  error: (err, stack) => _buildErrorState(err.toString()),
                 ),
-
-                // Floating Input (Only when active chat)
-                if (chatState.value != null && chatState.value!.isNotEmpty)
-                   _buildFloatingInputArea(),
-              ],
-            ),
+              ),
+              if (chatState.value != null && chatState.value!.isNotEmpty)
+                 _buildFloatingInputArea(),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildTopNav() {
     return AppBar(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.menu, color: Colors.white70),
+        icon: Icon(Icons.menu, color: AppColors.getBackground(context) == AppColors.obsidianBlack ? Colors.white70 : Colors.black87),
         onPressed: () {
           final ScaffoldState? root = context.findRootAncestorStateOfType<ScaffoldState>();
           root?.openDrawer();
@@ -390,11 +366,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SvgPicture.asset("assets/images/favicon.svg", height: 22, width: 22),
-          const SizedBox(width: 10),
-          const Text(
-            "AI Builder",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
+            ),
+            child: SvgPicture.asset("assets/images/favicon.svg", height: 20, width: 20),
+          ),
+          const SizedBox(width: 12),
+          ShaderMask(
+            shaderCallback: (bounds) => AppColors.aiBuilderGradient.createShader(bounds),
+            child: const Text(
+              "AI BUILDER",
+              style: TextStyle(
+                color: Colors.white, 
+                fontWeight: FontWeight.w800, 
+                fontSize: 14, 
+                letterSpacing: 2.2,
+              ),
+            ),
           ),
         ],
       ),
@@ -415,11 +406,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => GlassContainer(
-        borderRadius: 32,
-        color: AppColors.background,
-        opacity: 0.95,
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: GlassContainer(
+          borderRadius: 32,
+          color: AppColors.background,
+          opacity: 0.9,
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -437,47 +433,62 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
               style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 2),
             ),
             const SizedBox(height: 24),
-            _buildSettingsItem(Icons.chat_bubble_outline, "New Chat", () {
+            _buildSettingsItem(Icons.chat_bubble_outline, "New Chat", AppColors.cyan, () {
               Navigator.pop(context);
               ref.read(copilotProvider.notifier).startNewChat();
             }),
-            _buildSettingsItem(Icons.science_outlined, "Backtest", () {
+            _buildSettingsItem(Icons.science_outlined, "Backtest", AppColors.orange, () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (context) => const BacktestConfigScreen()));
             }),
-            _buildSettingsItem(Icons.code, "Code Generator", () {
+            _buildSettingsItem(Icons.code_rounded, "Code Generator", AppColors.primary, () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (context) => const CodeGeneratorScreen()));
             }),
-            _buildSettingsItem(Icons.history_outlined, "Chat History", () {
+            _buildSettingsItem(Icons.history_outlined, "Chat History", AppColors.purple, () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatHistoryScreen()));
             }),
-            _buildSettingsItem(Icons.list_alt_outlined, "Execution History", () {
+            _buildSettingsItem(Icons.list_alt_outlined, "Execution History", AppColors.cyan, () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (context) => const ExecutionHistoryScreen()));
             }),
-            _buildSettingsItem(Icons.dashboard_customize_outlined, "Templates", () {
+            _buildSettingsItem(Icons.dashboard_customize_outlined, "Templates", Colors.pinkAccent, () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (context) => const TemplatesScreen()));
             }),
-            _buildSettingsItem(Icons.monetization_on_outlined, "Credits", () {
+            _buildSettingsItem(Icons.monetization_on_outlined, "Credits", AppColors.gold, () {
               Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const CreditsStoreScreen()));
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const CreditsDashboardScreen()));
             }),
           ],
-        ),
-      ),
-    );
+        ), // Closes Column
+       ), // Closes GlassContainer
+      ), // Closes Container
+    ); // Closes showModalBottomSheet
   }
 
-  Widget _buildSettingsItem(IconData icon, String title, VoidCallback onTap) {
+  Widget _buildSettingsItem(IconData icon, String title, Color color, VoidCallback onTap) {
     return ListTile(
-      onTap: onTap,
-      leading: Icon(icon, color: Colors.white70, size: 22),
-      title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 14)),
-      trailing: const Icon(Icons.chevron_right, color: Colors.white10, size: 16),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      contentPadding: const EdgeInsets.symmetric(vertical: 2),
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: color, size: 20),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+      ),
+      trailing: const Icon(Icons.chevron_right, color: Colors.white12, size: 16),
     );
   }
 
@@ -508,9 +519,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
   Widget _buildRibbonItem(String label, String value, Color color) {
     return Column(
       children: [
-        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 7, fontWeight: FontWeight.bold, letterSpacing: 1)),
+        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 7, fontWeight: FontWeight.bold, letterSpacing: 1)),
         const SizedBox(height: 2),
-        Text(value, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w900)),
+        Text(
+          value, 
+          style: TextStyle(
+            color: color, 
+            fontSize: 11, 
+            fontWeight: FontWeight.w900,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          )
+        ),
       ],
     );
   }
@@ -520,7 +539,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: Colors.redAccent, size: 40),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                 BoxShadow(color: Colors.redAccent.withOpacity(0.3), blurRadius: 15, spreadRadius: 2),
+              ],
+            ),
+            child: const Icon(Icons.error_outline, color: Colors.redAccent, size: 40),
+          ),
           const SizedBox(height: 16),
           Text("Something went wrong", style: TextStyle(color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.bold)),
           TextButton(onPressed: () => ref.invalidate(copilotProvider), child: const Text("Tap to retry")),
@@ -637,42 +665,67 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
 
   // Cleaned up redundant builders...
 
-  Widget _buildWelcomeCenter() {
-     return SingleChildScrollView(
-       physics: const BouncingScrollPhysics(),
-       padding: const EdgeInsets.symmetric(horizontal: 24),
-       child: Column(
-         children: [
-            const SizedBox(height: 48),
-            
-            SvgPicture.asset("assets/images/favicon.svg", height: 60, width: 60),
-            
-            const SizedBox(height: 24),
+   Widget _buildWelcomeCenter() {
+      return SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          children: [
+             const SizedBox(height: 24),
+             
+             // Top Gradient Sparkle Icon
+             Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                   shape: BoxShape.circle,
+                   gradient: const LinearGradient(
+                      colors: [AppColors.purple, AppColors.cyan],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                   ),
+                   boxShadow: [
+                      BoxShadow(
+                         color: AppColors.purple.withOpacity(0.35),
+                         blurRadius: 24,
+                         spreadRadius: 2,
+                      ),
+                   ],
+                ),
+                child: const Center(
+                   child: Icon(Icons.auto_awesome, color: Colors.white, size: 30),
+                ),
+             ),
+             
+             const SizedBox(height: 20),
 
-            // Hero Title: Precision Scaled
-            ShaderMask(
-              shaderCallback: (bounds) => AppColors.primaryGradient.createShader(bounds),
-              child: const Text(
-                "Build Your Alpha.",
-                style: TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -1.2, height: 1.1),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              "Describe your trading idea.\nAI handles code and execution.",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13, height: 1.4, fontWeight: FontWeight.w500),
-            ),
-            
-            const SizedBox(height: 48),
+             // Hero Title: Precisely Refined
+             const Text(
+                "Build Your Strategy with AI",
+                style: TextStyle(
+                   color: Colors.white, 
+                   fontSize: 22, 
+                   fontWeight: FontWeight.w900, 
+                   letterSpacing: -0.5, 
+                   height: 1.1
+                ),
+             ),
+             const SizedBox(height: 8),
+             Text(
+                "Describe your trading idea in plain English. Our AI will create a complete strategy in seconds.",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11.5, height: 1.4, fontWeight: FontWeight.normal),
+             ),
+             
+             const SizedBox(height: 32),
 
-            // Precisely Refined Command Bar
-            _buildCommandIsland(),
+             // Precisely Refined Command Bar
+             _buildCommandIsland(),
 
-            const SizedBox(height: 32),
+             const SizedBox(height: 24),
 
-            // Premium Decorative Blueprint Carousel
-            _buildBlueprintCarousel(),
+             // Premium Decorative Blueprint Carousel
+             _buildBlueprintCarousel(),
 
             const SizedBox(height: 80),
          ],
@@ -704,27 +757,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     return Container(
       height: 64,
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.04),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white.withOpacity(0.07)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 40, offset: const Offset(0, 12)),
+          BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 30, offset: const Offset(0, 10)),
         ],
       ),
       child: Row(
         children: [
-          const SizedBox(width: 8),
-          Icon(Icons.add, color: Colors.white.withOpacity(0.2), size: 20),
-          const SizedBox(width: 12),
+          Icon(Icons.code, color: AppColors.primary.withOpacity(0.5), size: 18),
+          const SizedBox(width: 16),
           Expanded(
             child: TextField(
               controller: _controller,
-              style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
-              decoration: const InputDecoration(
-                hintText: "Describe a strategy...",
-                hintStyle: TextStyle(color: Colors.white24, fontSize: 14, fontWeight: FontWeight.w400),
+              style: const TextStyle(
+                color: Colors.white, 
+                fontSize: 14, 
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.1,
+              ),
+              decoration: InputDecoration(
+                hintText: "DESCRIBE STRATEGY PROTOCOL...",
+                hintStyle: TextStyle(
+                  color: Colors.white.withOpacity(0.15), 
+                  fontSize: 11, 
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.5,
+                ),
                 border: InputBorder.none,
                 isCollapsed: true,
               ),
@@ -735,13 +797,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
           GestureDetector(
             onTap: _sendMessage,
             child: Container(
-              width: 44,
-              height: 44,
-              decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
-              child: const Icon(Icons.arrow_upward, color: Colors.black, size: 20),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+              ),
+              child: const Icon(Icons.send_rounded, color: AppColors.primary, size: 18),
             ),
           ),
-          const SizedBox(width: 4),
         ],
       ),
     );
@@ -839,16 +903,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
 
   Widget _buildBlueprintCarousel() {
      final List<Map<String, dynamic>> homeBlueprints = [
-        {"name": "EMA Crossover Pro", "icon": Icons.timeline, "prompt": "Create a trading strategy using EMA crossover: Fast EMA 9, Slow EMA 21, Buy when fast crosses above slow, Sell when fast crosses below slow, Timeframe 5m, Risk per trade 1%, Max trades per day 5, Trailing SL 10"},
-        {"name": "Bollinger Reversal", "icon": Icons.waves, "prompt": "Create Bollinger Bands strategy: Period 20, Deviation 2, Buy when price touches lower band and closes above, Sell when price touches upper band and closes below, TF 15m, Risk 1%, Max trades 4/day, Trailing SL 10 points"},
-        {"name": "EMA RSI MACD", "icon": Icons.hub_outlined, "prompt": "Create multi indicator strategy using EMA 20, RSI 14 and MACD: Buy when EMA bullish, RSI above 50 and MACD positive, Sell opposite, TF 5m, Risk 1%, Max trades 4/day, Trailing SL 10 points, Loss limit 3%, Profit target 6%"},
-        {"name": "RSI Reversal", "icon": Icons.auto_graph, "prompt": "Build an RSI based strategy: RSI 14, Buy when RSI crosses above 30, Sell when RSI crosses below 70, Timeframe 15m, Risk per trade 1.5%, Max trades per day 4, Trailing SL 12 points, Daily loss limit 3%, Daily profit 6%"},
+        {
+           "name": "EMA Crossover Strategy", 
+           "desc": "Classic 9/21 EMA crossover with trend confirmation. Perfect for momentum trading.",
+           "color": Colors.blueAccent, 
+           "icon": Icons.show_chart, 
+           "prompt": "Create a trading strategy using EMA crossover: Fast EMA 9, Slow EMA 21, Buy when fast crosses above slow, Sell when fast crosses below slow, Timeframe 5m, Risk per trade 1%, Max trades per day 5, Trailing SL 10"
+        },
+        {
+           "name": "RSI Oversold/Overbought", 
+           "desc": "Buy when RSI < 30 (oversold), sell when RSI > 70 (overbought). Optimal for counters.",
+           "color": Colors.pinkAccent, 
+           "icon": Icons.bar_chart, 
+           "prompt": "Build an RSI based strategy: RSI 14, Buy when RSI crosses above 30, Sell when RSI crosses below 70, Timeframe 15m, Risk per trade 1.5%, Max trades per day 4, Trailing SL 12 points, Daily loss limit 3%, Daily profit 6%"
+        },
+        {
+           "name": "MACD Signal Line Cross", 
+           "desc": "Trade MACD and signal line crossovers with histogram confirmation for strong trends.",
+           "color": Colors.tealAccent, 
+           "icon": Icons.timeline, 
+           "prompt": "Create multi indicator strategy using EMA 20, RSI 14 and MACD: Buy when EMA bullish, RSI above 50 and MACD positive, Sell opposite, TF 5m, Risk 1%, Max trades 4/day, Trailing SL 10 points, Loss limit 3%, Profit target 6%"
+        },
+        {
+           "name": "Bollinger Band Squeeze", 
+           "desc": "Catch breakouts when Bollinger Bands squeeze and expand. High volatility trigger.",
+           "color": Colors.orangeAccent, 
+           "icon": Icons.gps_fixed, 
+           "prompt": "Create Bollinger Bands strategy: Period 20, Deviation 2, Buy when price touches lower band and closes above, Sell when price touches upper band and closes below, TF 15m, Risk 1%, Max trades 4/day, Trailing SL 10 points"
+        },
      ];
 
      return Column(
         children: [
            SizedBox(
-              height: 120,
+              height: 190,
               child: PageView.builder(
                  controller: _pageController,
                  onPageChanged: (index) => setState(() => _currentCarouselIndex = index),
@@ -891,7 +979,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                     mainAxisSize: MainAxisSize.min,
                     children: [
                        Text(
-                          "Explore More Blueprints", 
+                          "Explore More Templates", 
                           style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, fontWeight: FontWeight.bold)
                        ),
                        const SizedBox(width: 8),
@@ -915,35 +1003,84 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
            width: double.infinity,
            padding: const EdgeInsets.all(16),
            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.02),
+              color: const Color(0xFF1E293B).withOpacity(0.4),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Colors.white.withOpacity(0.05)),
-              boxShadow: [
-                 BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4)),
-              ],
            ),
-           child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                 Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                       color: AppColors.cyan.withOpacity(0.05),
-                       shape: BoxShape.circle,
-                    ),
-                    child: Icon(blueprint['icon'], color: AppColors.cyan, size: 16),
+           child: Stack(
+             children: [
+               Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                     Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                           Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                 color: blueprint['color'],
+                                 shape: BoxShape.circle,
+                                 boxShadow: [
+                                    BoxShadow(color: (blueprint['color'] as Color).withOpacity(0.3), blurRadius: 12)
+                                 ]
+                              ),
+                              child: Center(
+                                 child: Container(
+                                    decoration: BoxDecoration(
+                                       color: Colors.white.withOpacity(0.9),
+                                       borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    padding: const EdgeInsets.all(4),
+                                    child: Icon(blueprint['icon'], color: blueprint['color'] as Color, size: 18),
+                                 ),
+                              ),
+                           ),
+                           Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                 color: AppColors.green.withOpacity(0.1),
+                                 borderRadius: BorderRadius.circular(12),
+                                 border: Border.all(color: AppColors.green.withOpacity(0.2)),
+                              ),
+                              child: const Row(
+                                 children: [
+                                    Icon(Icons.bolt, color: AppColors.green, size: 10),
+                                    SizedBox(width: 4),
+                                    Text("10s", style: TextStyle(color: AppColors.green, fontSize: 9, fontWeight: FontWeight.bold)),
+                                 ],
+                              ),
+                           ),
+                        ],
+                     ),
+                     const SizedBox(height: 16),
+                     Text(
+                        blueprint['name'],
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                     ),
+                     const SizedBox(height: 6),
+                     Text(
+                        blueprint['desc'],
+                        style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, height: 1.4),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                     ),
+                  ],
+               ),
+               Positioned(
+                 right: 0,
+                 bottom: 2,
+                 child: Row(
+                    children: [
+                       const Text("Indicators", style: TextStyle(color: AppColors.cyan, fontSize: 10, fontWeight: FontWeight.bold)),
+                       const SizedBox(width: 16),
+                       Text("Use Now", style: TextStyle(color: AppColors.purple.withOpacity(0.9), fontSize: 11, fontWeight: FontWeight.w900)),
+                       const SizedBox(width: 4),
+                       Icon(Icons.auto_awesome, color: AppColors.purple.withOpacity(0.9), size: 14),
+                    ],
                  ),
-                 const SizedBox(height: 12),
-                 Text(
-                    blueprint['name'],
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: -0.2),
-                 ),
-                 const SizedBox(height: 4),
-                 Text(
-                    "Prompt Blueprint",
-                    style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                 ),
-              ],
+               ),
+             ],
            ),
         ),
      );

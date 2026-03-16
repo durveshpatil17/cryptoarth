@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
+import 'package:flutter/services.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cryptoarth/features/strategies/providers/strategy_provider.dart';
 import 'package:cryptoarth/features/strategies/models/strategy_model.dart';
+import 'package:cryptoarth/shared/widgets/luxury_background.dart';
 
 class TemplatesScreen extends ConsumerStatefulWidget {
   const TemplatesScreen({super.key});
@@ -26,107 +28,121 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
   final List<PromptBlueprint> _allBlueprints = [
     PromptBlueprint(
       name: "Accumulation Distribution",
-      tags: ["#Indicator", "#Volume"],
+      tags: ["#INDICATORS", "#VOLUME"],
       prompt: "Create A/D strategy: Enter when accumulation distribution confirms price trend, Risk 1%, Max trades 4/day, Trailing SL 10 points, Daily loss 3%, Profit target 5%",
     ),
     PromptBlueprint(
       name: "ADX Trend Strength",
-      tags: ["#Indicator", "#Trend"],
+      tags: ["#INDICATORS", "#TREND"],
       prompt: "Create ADX strategy: Enter when ADX above 25 with trend direction confirmation, Risk 1%, Max trades 3/day, Trailing SL 12 points, Daily loss 3%, Profit target 6%",
     ),
     PromptBlueprint(
       name: "ATR Volatility",
-      tags: ["#Indicator", "#Volatility"],
+      tags: ["#INDICATORS", "#VOLATILITY"],
       prompt: "Create ATR strategy: Trade breakout when ATR expands above average, Risk 1%, Max trades 4/day, Trailing SL ATR based, Daily loss 3%, Profit target 6%",
     ),
     PromptBlueprint(
       name: "Bollinger Reversal",
-      tags: ["#Volatility", "#Reversal"],
+      tags: ["#CHART PATTERNS", "#REVERSAL"],
       prompt: "Create Bollinger Bands strategy: Period 20, Deviation 2, Buy when price touches lower band and closes above, Sell when price touches upper band and closes below, TF 15m, Risk 1%, Max trades 4/day, Trailing SL 10 points",
     ),
     PromptBlueprint(
       name: "CCI Strategy",
-      tags: ["#Indicator", "#Momentum"],
+      tags: ["#INDICATORS", "#MOMENTUM"],
       prompt: "Build CCI strategy: Buy when CCI crosses above 100 and sell below -100, Risk 1%, Max trades 4/day, Trailing SL 10 points, Daily loss 3%, Profit target 5%",
     ),
     PromptBlueprint(
       name: "Chandelier Exit",
-      tags: ["#Indicator", "#Trend"],
+      tags: ["#INDICATORS", "#TREND"],
       prompt: "Create chandelier exit strategy: Trail stop based on ATR chandelier exit in trending market, Risk 1%, Max trades 3/day, Daily loss 3%, Profit target 6%",
     ),
     PromptBlueprint(
       name: "Donchian Channel",
-      tags: ["#Indicator", "#Breakout"],
+      tags: ["#INDICATORS", "#BREAKOUT"],
       prompt: "Build Donchian channel strategy: Buy on upper band breakout and sell on lower band breakout, Risk 1%, Max trades 4/day, Trailing SL 12 points, Daily loss 3%, Profit target 6%",
     ),
     PromptBlueprint(
       name: "Elder Ray Index",
-      tags: ["#Indicator", "#Trend"],
+      tags: ["#INDICATORS", "#TREND"],
       prompt: "Create Elder Ray strategy: Buy when bull power positive and bear power rising, Risk 1%, Max trades 3/day, Trailing SL 12 points, Daily loss 3%, Profit target 6%",
     ),
     PromptBlueprint(
       name: "EMA Crossover Pro",
-      tags: ["#Trend", "#Intraday", "#Indicator"],
+      tags: ["#TREND", "#INDICATORS"],
       prompt: "Create a trading strategy using EMA crossover: Fast EMA 9, Slow EMA 21, Buy when fast crosses above slow, Sell when fast crosses below slow, Timeframe 5m, Risk per trade 1%, Max trades per day 5, Trailing SL 10",
     ),
     PromptBlueprint(
       name: "EMA RSI MACD Combo",
-      tags: ["#Confirmation", "#Pro"],
+      tags: ["#INDICATORS", "#TREND"],
       prompt: "Create multi indicator strategy using EMA 20, RSI 14 and MACD: Buy when EMA bullish, RSI above 50 and MACD positive, Sell opposite, TF 5m, Risk 1%, Max trades 4/day, Trailing SL 10 points, Loss limit 3%, Profit target 6%",
     ),
     PromptBlueprint(
       name: "Fibonacci Retracement",
-      tags: ["#Indicator", "#Retracement"],
+      tags: ["#INDICATORS", "#RETRACEMENT"],
       prompt: "Create Fibonacci strategy: Trade retracement from 38.2% or 61.8% with trend filter, Risk 1%, Max trades 4/day, Trailing SL 10 points, Daily loss 3%, Profit target 6%",
     ),
     PromptBlueprint(
       name: "Ichimoku Cloud",
-      tags: ["#Indicator", "#Trend"],
+      tags: ["#INDICATORS", "#TREND"],
       prompt: "Create Ichimoku strategy: Buy when price above cloud and Tenkan crosses Kijun, Risk 1%, Max trades 4/day, Trailing SL 12 points, Daily loss 3%, Profit target 6%",
     ),
     PromptBlueprint(
       name: "Keltner Channel",
-      tags: ["#Indicator", "#Volatility"],
+      tags: ["#INDICATORS", "#VOLATILITY"],
       prompt: "Build Keltner channel strategy: Buy above upper band and sell below lower band, Risk 1%, Max trades 4/day, Trailing SL 12 points, Daily loss 3%, Profit target 6%",
     ),
     PromptBlueprint(
       name: "MACD Momentum",
-      tags: ["#Momentum", "#Trend"],
+      tags: ["#INDICATORS", "#MOMENTUM"],
       prompt: "Build MACD strategy: MACD 12,26,9, Buy when MACD crosses above signal, Sell when crosses below, TF 10m, Risk 1%, Max trades 5/day, Trailing SL 12 points, Daily loss limit 3%, Daily profit 6%",
     ),
     PromptBlueprint(
       name: "Momentum Indicator",
-      tags: ["#Indicator", "#Momentum"],
+      tags: ["#INDICATORS", "#MOMENTUM"],
       prompt: "Build momentum strategy: Buy when momentum positive and rising, sell when negative, Risk 1%, Max trades 4/day, Trailing SL 10 points, Daily loss 3%, Profit target 5%",
     ),
     PromptBlueprint(
       name: "On Balance Volume",
-      tags: ["#Indicator", "#Volume"],
+      tags: ["#INDICATORS", "#VOLUME"],
       prompt: "Create OBV strategy: Enter trade when OBV confirms price breakout, Risk 1%, Max trades 4/day, Trailing SL 10 points, Daily loss 3%, Profit target 5%",
     ),
     PromptBlueprint(
       name: "Parabolic SAR",
-      tags: ["#Indicator", "#Trend"],
+      tags: ["#INDICATORS", "#TREND"],
       prompt: "Build Parabolic SAR strategy: Buy when price above SAR and sell when below, Risk 1%, Max trades 4/day, Trailing SL using SAR, Daily loss 3%, Profit target 5%",
     ),
     PromptBlueprint(
       name: "Pivot Points",
-      tags: ["#Indicator", "#SupportResistance"],
+      tags: ["#INDICATORS", "#PRICE ACTION"],
       prompt: "Build pivot points strategy: Buy above pivot support and sell below pivot resistance, Risk 1%, Max trades 4/day, Trailing SL 10 points, Daily loss 3%, Profit target 5%",
     ),
     PromptBlueprint(
       name: "ROC Momentum",
-      tags: ["#Indicator", "#Momentum"],
+      tags: ["#INDICATORS", "#MOMENTUM"],
       prompt: "Create ROC strategy: Trade when ROC crosses above or below zero with trend filter, Risk 1%, Max trades 4/day, Trailing SL 10 points, Daily loss 3%, Profit target 5%",
     ),
     PromptBlueprint(
       name: "RSI Reversal",
-      tags: ["#Momentum", "#Reversal"],
+      tags: ["#INDICATORS", "#REVERSAL"],
       prompt: "Build an RSI based strategy: RSI 14, Buy when RSI crosses above 30, Sell when RSI crosses below 70, Timeframe 15m, Risk per trade 1.5%, Max trades per day 4, Trailing SL 12 points, Daily loss limit 3%, Daily profit 6%",
     ),
   ];
 
   List<PromptBlueprint> _filteredBlueprints = [];
+  String _selectedFilter = "All";
+
+  final List<String> _categories = [
+    "All",
+    "Indicators",
+    "Chart Patterns",
+    "Candlestick Patterns",
+    "Price Action",
+    "Crypto Institutional",
+    "Forex & Commodities",
+    "Options Sell",
+    "Mathematical",
+    "Wave Theory",
+  ];
 
   @override
   void initState() {
@@ -144,20 +160,25 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
 
   void _onSearchChanged() {
     setState(() {
-      _filteredBlueprints = _allBlueprints
-          .where((b) => b.name.toLowerCase().contains(_searchController.text.toLowerCase()) || 
-                       b.prompt.toLowerCase().contains(_searchController.text.toLowerCase()))
-          .toList();
+      _filteredBlueprints = _allBlueprints.where((b) {
+        final matchesSearch = b.name.toLowerCase().contains(_searchController.text.toLowerCase()) || 
+                             b.prompt.toLowerCase().contains(_searchController.text.toLowerCase());
+        
+        final filterTag = "#${_selectedFilter.toUpperCase()}";
+        final matchesFilter = _selectedFilter == "All" || b.tags.contains(filterTag);
+        
+        return matchesSearch && matchesFilter;
+      }).toList();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.digitalVoidBlack,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        titleSpacing: 0,
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Padding(
@@ -165,58 +186,162 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
           child: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+                icon: const Icon(Icons.arrow_back, color: Colors.white70),
                 onPressed: () => Navigator.pop(context),
               ),
-              const Expanded(
-                child: Text(
-                  'Prompt Blueprints',
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white, letterSpacing: -0.5),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'AI TEMPLATES',
+                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white, letterSpacing: 0.8),
+                    ),
+                    Text(
+                      'READY TO DEPLOY STRATEGY BLUEPRINTS',
+                      style: TextStyle(fontSize: 8, color: AppColors.cyan.withOpacity(0.5), fontWeight: FontWeight.w900, letterSpacing: 1.2),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-            child: Container(
-              height: 44,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.02),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
-              ),
-              child: TextField(
-                controller: _searchController,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: "Search blueprints...",
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 13),
-                  prefixIcon: Icon(Icons.search, color: Colors.white.withOpacity(0.2), size: 18),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                ),
+      body: LuxuryBackground(
+        child: Column(
+          children: [
+            const SizedBox(height: 120),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.04),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withOpacity(0.08)),
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                        decoration: InputDecoration(
+                          hintText: "SEARCH BLUEPRINTS...",
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.15), fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
+                          prefixIcon: Icon(Icons.search, color: Colors.white.withOpacity(0.2), size: 18),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _buildFilterButton(),
+                ],
               ),
             ),
-          ),
-          
-          Expanded(
-            child: _filteredBlueprints.isEmpty 
-              ? const Center(child: Text("No blueprints found", style: TextStyle(color: Colors.white54)))
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: _filteredBlueprints.length,
-                  itemBuilder: (context, index) {
-                    return _buildTemplateCard(_filteredBlueprints[index]);
-                  },
+            
+            if (_selectedFilter != "All")
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.cyan.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.cyan.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_selectedFilter.toUpperCase(), style: const TextStyle(color: AppColors.cyan, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedFilter = "All";
+                                _onSearchChanged();
+                              });
+                            },
+                            child: const Icon(Icons.close, color: AppColors.cyan, size: 14),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-          ),
-        ],
+              ),
+            
+            Expanded(
+              child: _filteredBlueprints.isEmpty 
+                ? const Center(child: Text("NO BLUEPRINTS MATCH YOUR SEARCH", style: TextStyle(color: Colors.white10, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1)))
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: _filteredBlueprints.length,
+                    itemBuilder: (context, index) {
+                      return _buildTemplateCard(_filteredBlueprints[index]);
+                    },
+                  ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildFilterButton() {
+    return PopupMenuButton<String>(
+      onSelected: (value) {
+        setState(() {
+          _selectedFilter = value;
+          _onSearchChanged();
+        });
+      },
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: const Color(0xFF1E293B),
+      offset: const Offset(0, 48),
+      child: Container(
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: _selectedFilter == "All" ? Colors.white.withOpacity(0.04) : AppColors.cyan.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _selectedFilter == "All" ? Colors.white.withOpacity(0.08) : AppColors.cyan.withOpacity(0.3)),
+        ),
+        child: Icon(
+          Icons.tune_outlined, 
+          color: _selectedFilter == "All" ? Colors.white.withOpacity(0.3) : AppColors.cyan, 
+          size: 20
+        ),
+      ),
+      itemBuilder: (context) {
+        return _categories.map((cat) {
+          return PopupMenuItem<String>(
+            value: cat,
+            child: Row(
+              children: [
+                if (_selectedFilter == cat)
+                  const Icon(Icons.check, color: AppColors.cyan, size: 16)
+                else
+                  const SizedBox(width: 28),
+                Text(
+                  cat,
+                  style: TextStyle(
+                    color: _selectedFilter == cat ? Colors.white : Colors.white70,
+                    fontSize: 13,
+                    fontWeight: _selectedFilter == cat ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList();
+      },
     );
   }
 
@@ -363,14 +488,11 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
   Widget _buildTemplateCard(PromptBlueprint blueprint) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.04)),
-        boxShadow: [
-           BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 15, offset: const Offset(0, 8)),
-        ],
+        color: Colors.white.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,26 +502,16 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
             children: [
               Expanded(
                 child: Text(
-                  blueprint.name,
+                  blueprint.name.toUpperCase(),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
-                    fontSize: 16,
-                    letterSpacing: -0.5,
+                    fontSize: 14,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ),
-              Container(
-                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                 decoration: BoxDecoration(
-                    color: AppColors.cyan.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(6),
-                 ),
-                 child: const Text(
-                    "Prompt Blueprint",
-                    style: TextStyle(color: AppColors.cyan, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.5),
-                 ),
-              ),
+              const Icon(Icons.auto_awesome, color: AppColors.cyan, size: 14),
             ],
           ),
            
@@ -411,22 +523,20 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
                 return Row(
                    mainAxisSize: MainAxisSize.min,
                    children: [
-                      Icon(Icons.tag, color: AppColors.purple.withOpacity(0.5), size: 10),
-                      const SizedBox(width: 4),
                       Text(
-                         tag.replaceAll('#', ''),
-                         style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, fontWeight: FontWeight.bold),
+                         tag.replaceAll('#', '').toUpperCase(),
+                         style: TextStyle(color: Colors.white.withOpacity(0.15), fontSize: 9, fontWeight: FontWeight.w900),
                       ),
                    ],
                 );
              }).toList(),
           ),
           
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           
           Text(
              blueprint.prompt,
-             style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12, height: 1.6, fontWeight: FontWeight.w400),
+             style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, height: 1.6, fontWeight: FontWeight.w600),
              maxLines: 4,
              overflow: TextOverflow.ellipsis,
           ),
@@ -435,26 +545,20 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
           
           InkWell(
             onTap: () {
+               HapticFeedback.heavyImpact();
                Navigator.pop(context, blueprint.prompt);
             },
             child: Container(
               width: double.infinity,
-              height: 48,
+              height: 52,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                   colors: [AppColors.cyan, AppColors.cyan.withOpacity(0.7)],
-                   begin: Alignment.topLeft,
-                   end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(color: AppColors.cyan.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4)),
-                ],
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
               ),
               child: const Center(
                 child: Text(
-                  "Use This Prompt Blueprint",
-                  style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                  "SELECT BLUEPRINT",
+                  style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5),
                 ),
               ),
             ),

@@ -58,14 +58,13 @@ class StrategyService {
     }
   }
 
-  Future<void> deployStrategy(dynamic strategyId, int brokerId, {int? userId}) async {
+  Future<Map<String, dynamic>> deployStrategy(String strategyCode) async {
     try {
-      final idToPass = strategyId is String ? (int.tryParse(strategyId) ?? strategyId) : strategyId;
-      await _apiClient.post(ApiEndpoints.deployStrategy, {
-        "strategyid": idToPass,
-        "broker_id": brokerId,
-        if (userId != null) "user_id": userId,
+      final response = await _apiClient.post(ApiEndpoints.backtestDeploy, {
+        "strategy_code": strategyCode,
+        "is_active": 1,
       });
+      return ApiClient.extractMap(response.data);
     } catch (e) {
       throw Exception('Failed to deploy strategy: $e');
     }
@@ -84,21 +83,29 @@ class StrategyService {
     }
   }
 
-  Future<void> undeployStrategy(dynamic strategyId, {int? userId}) async {
+  Future<Map<String, dynamic>> undeployStrategy(String strategyCode) async {
     try {
-      final idToPass = strategyId is String ? (int.tryParse(strategyId) ?? strategyId) : strategyId;
-      await _apiClient.post(ApiEndpoints.undeployStrategy, {
-        "strategyid": idToPass,
-        if (userId != null) "user_id": userId,
+      final response = await _apiClient.post(ApiEndpoints.backtestDeploy, {
+        "strategy_code": strategyCode,
+        "is_active": 0,
       });
+      return ApiClient.extractMap(response.data);
     } catch (e) {
       throw Exception('Failed to undeploy strategy: $e');
     }
   }
 
-  Future<List<BacktestModel>> fetchBacktestList() async {
+  Future<List<BacktestModel>> fetchBacktestList({bool lite = false, String? type}) async {
     try {
-      final Response response = await _apiClient.get(ApiEndpoints.backtestList);
+      final queryParams = <String, String>{};
+      if (lite) queryParams['lite'] = '1';
+      if (type != null) queryParams['type'] = type;
+
+      final String uri = queryParams.isEmpty 
+          ? ApiEndpoints.backtestList 
+          : "${ApiEndpoints.backtestList}?${Uri(queryParameters: queryParams).query}";
+
+      final Response response = await _apiClient.get(uri);
       
       if (response.statusCode == 200 && response.data != null) {
         final List<dynamic> data = ApiClient.extractList(response.data);
@@ -195,11 +202,29 @@ class StrategyService {
     }
   }
 
-  Future<List<dynamic>> fetchBacktestCandles(Map<String, dynamic> queryParams) async {
+  Future<List<dynamic>> fetchBacktestCandles({
+    required String symbol,
+    required String timeframe,
+    required int start,
+    required int end,
+    int limit = 0,
+    int maxOut = 20000,
+  }) async {
     try {
-      // Simplistic query building string representation manually or using Dio
-      // We will let Dio handle Map to query conversion
-      final Response response = await _apiClient.get("${ApiEndpoints.backtestCandles}?${Uri(queryParameters: queryParams).query}");
+      final queryParams = {
+        'symbol': symbol,
+        'timeframe': timeframe,
+        'start': start.toString(),
+        'end': end.toString(),
+        'limit': limit.toString(),
+        'max_out': maxOut.toString(),
+      };
+      
+      final Response response = await _apiClient.get(
+        ApiEndpoints.backtestCandles,
+        queryParameters: queryParams,
+      );
+      
       return ApiClient.extractList(response.data);
     } catch (e) {
       throw Exception('Failed to fetch backtest candles: $e');
@@ -283,10 +308,13 @@ class StrategyService {
 
   Future<void> removeShareAccess(String strategyCode, dynamic userId) async {
     try {
-      await _apiClient.delete(ApiEndpoints.backtestShare, {
-        "strategy_code": strategyCode,
-        "user_id": userId,
-      });
+      await _apiClient.delete(
+        ApiEndpoints.backtestShare,
+        data: {
+          "strategy_code": strategyCode,
+          "user_id": userId,
+        },
+      );
     } catch (e) {
       throw Exception('Failed to remove share access: $e');
     }
@@ -377,7 +405,7 @@ class StrategyService {
     }
   }
 
-  Future<void> setBacktestTradeMode(String strategyCode, String tradeMode) async {
+  Future<void> setBacktestTradeMode(String strategyCode, int tradeMode) async {
     try {
       await _apiClient.post(ApiEndpoints.backtestTradeMode, {
         "strategy_code": strategyCode,
@@ -433,6 +461,16 @@ class StrategyService {
       return ApiClient.extractMap(response.data);
     } catch (e) {
       throw Exception('Failed to check open position: $e');
+    }
+  }
+
+  Future<void> deleteBacktest(String backtestId) async {
+    try {
+      await _apiClient.post(ApiEndpoints.backtestDelete, {
+        "backtest_id": backtestId,
+      });
+    } catch (e) {
+      throw Exception('Failed to delete backtest: $e');
     }
   }
 }

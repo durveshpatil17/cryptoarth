@@ -55,8 +55,6 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
             const SizedBox(height: 24),
             _buildMessageForm(),
             const SizedBox(height: 24),
-            _buildDepartments(),
-            const SizedBox(height: 24),
             _buildFAQ(),
             const SizedBox(height: 40),
             Center(
@@ -192,48 +190,6 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildDepartments() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Row(
-          children: [
-            Icon(Icons.business_center_outlined, color: AppColors.primary, size: 20),
-            SizedBox(width: 8),
-            Text("Contact Departments", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _buildDeptItem("Technical Support", "support@cryptoarth.in", "Platform issues & technical help"),
-        _buildDeptItem("Sales & Onboarding", "sales@cryptoarth.in", "Pricing, demos & account setup"),
-        _buildDeptItem("Partnerships", "admin@cryptoarth.in", "API access & business partnerships"),
-        _buildDeptItem("Security", "cyberarth@cryptoarth.in", "Security concerns & audits"),
-      ],
-    );
-  }
-
-  Widget _buildDeptItem(String title, String email, String desc) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-          const SizedBox(height: 4),
-          Text(email, style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w500)),
-          const SizedBox(height: 4),
-          Text(desc, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
-        ],
-      ),
     );
   }
 

@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 import 'package:cryptoarth/shared/widgets/profile_avatar.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cryptoarth/features/portfolio/providers/portfolio_provider.dart';
-import 'package:cryptoarth/features/portfolio/providers/pnl_provider.dart';
-import 'package:cryptoarth/features/orders/providers/order_provider.dart';
 import 'package:cryptoarth/features/portfolio/providers/watchlist_provider.dart';
 import 'package:cryptoarth/features/broker/providers/broker_balance_provider.dart';
 
-import 'package:cryptoarth/features/orders/providers/trade_history_provider.dart';
 import 'package:cryptoarth/features/portfolio/providers/trading_mode_provider.dart';
 import 'package:cryptoarth/features/strategies/providers/strategy_provider.dart';
+import 'package:cryptoarth/features/strategies/models/strategy_model.dart';
 import 'package:cryptoarth/features/strategies/providers/backtest_provider.dart';
-import 'package:cryptoarth/core/utils/report_generator.dart';
-import 'package:cryptoarth/features/strategies/widgets/strategy_card.dart';
+import 'package:cryptoarth/features/portfolio/models/position_model.dart';
+import 'package:cryptoarth/features/portfolio/models/user_order_details_model.dart';
+import 'package:cryptoarth/features/portfolio/providers/user_order_details_provider.dart';
+import 'package:cryptoarth/shared/widgets/luxury_background.dart';
 
 class PortfolioScreen extends ConsumerStatefulWidget {
   const PortfolioScreen({super.key});
@@ -43,110 +44,109 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
     super.dispose();
   }
 
+
   @override
   Widget build(BuildContext context) {
     final mode = ref.watch(tradingModeProvider);
     
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.digitalVoidBlack,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SvgPicture.asset("assets/images/favicon.svg", height: 22, width: 22),
-            const SizedBox(width: 10),
-            const Text("Portfolio", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          ],
-        ),
-        backgroundColor: AppColors.background,
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.white70),
-          onPressed: () {
-            final ScaffoldState? root = context.findRootAncestorStateOfType<ScaffoldState>();
-            root?.openDrawer();
-          },
-        ),
-        actions: const [
-          SizedBox(width: 8),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(100),
-          child: Column(
-            children: [
-               _buildFilterBar(),
-               Container(
-                height: 42,
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.white.withOpacity(0.05)),
-                ),
-                child: TabBar(
-                  controller: _tabController,
-                  isScrollable: false,
-                  indicator: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: mode == TradingMode.live ? AppColors.purple.withOpacity(0.2) : AppColors.cyan.withOpacity(0.1), 
-                    border: Border.all(color: mode == TradingMode.live ? AppColors.purple.withOpacity(0.5) : AppColors.cyan.withOpacity(0.5)),
-                  ),
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  labelColor: mode == TradingMode.live ? AppColors.purple : AppColors.cyan,
-                  unselectedLabelColor: Colors.white54,
-                  labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-                  padding: const EdgeInsets.all(4),
-                  tabs: const [
-                    Tab(text: "Open"),
-                    Tab(text: "Closed"),
-                  ],
-                ),
-              ),
-            ],
+        leadingWidth: 60,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 20),
+          child: IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white70),
+            onPressed: () {
+              final ScaffoldState? root = context.findRootAncestorStateOfType<ScaffoldState>();
+              root?.openDrawer();
+            },
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
           ),
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildOpenPositionsTab(),
-          _buildClosedPositionsTab(),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'PORTFOLIO',
+              style: TextStyle(
+                fontWeight: FontWeight.w800, 
+                fontSize: 14, 
+                color: Colors.white, 
+                letterSpacing: 2.2,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'MANAGED WEALTH PERFORMANCE',
+              style: TextStyle(fontSize: 8, color: Colors.white24, fontWeight: FontWeight.w700, letterSpacing: 1.2),
+            ),
+          ],
+        ),
+        actions: [
+          SvgPicture.asset("assets/images/favicon.svg", height: 22, width: 22),
+          const SizedBox(width: 16),
         ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(0),
+          child: SizedBox.shrink(),
+        ),
+      ),
+      body: LuxuryBackground(
+        child: Column(
+          children: [
+            const SizedBox(height: 120),
+            _buildHeaderPanel(),
+            const SizedBox(height: 16),
+            Container(
+              height: 48,
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.04),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                indicator: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: mode == TradingMode.live ? Colors.redAccent.withOpacity(0.1) : Colors.white.withOpacity(0.1),
+                  border: Border.all(color: mode == TradingMode.live ? Colors.redAccent.withOpacity(0.3) : Colors.white.withOpacity(0.2)),
+                ),
+                indicatorSize: TabBarIndicatorSize.tab,
+                labelColor: mode == TradingMode.live ? Colors.redAccent : Colors.white,
+                unselectedLabelColor: Colors.white12,
+                labelStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1),
+                dividerColor: Colors.transparent,
+                onTap: (index) => HapticFeedback.lightImpact(),
+                tabs: const [
+                  Tab(text: "OPEN POSITIONS"),
+                  Tab(text: "CLOSED POSITIONS"),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                   _buildOpenPositionsTab(),
+                   _buildClosedPositionsTab(),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildMyStrategiesTab() {
-     return ref.watch(strategyProvider).when(
-       data: (strategies) {
-         if (strategies.isEmpty) {
-           return const Center(child: Text("No strategies found", style: TextStyle(color: Colors.white54)));
-         }
-          return RefreshIndicator(
-            onRefresh: () => ref.read(strategyProvider.notifier).refresh(),
-            color: AppColors.cyan,
-            backgroundColor: AppColors.cardSurface,
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: strategies.length,
-              itemBuilder: (context, index) {
-                final strategy = strategies[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: StrategyCard(
-                    data: strategy, 
-                    isBrokerConnected: true, 
-                    onAction: () {},
-                  ),
-                );
-              },
-            ),
-          );
-       },
-       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
-       error: (e, s) => Center(child: Text("Error: $e", style: const TextStyle(color: Colors.redAccent))),
-     );
-  }
 
 
   Widget _buildModeToggle(BuildContext context) {
@@ -154,11 +154,11 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
     final bool isLive = mode == TradingMode.live;
     
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -178,26 +178,159 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? activeColor.withOpacity(0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: isSelected ? Border.all(color: activeColor.withOpacity(0.5)) : null,
-          boxShadow: isSelected ? [
-            BoxShadow(color: activeColor.withOpacity(0.1), blurRadius: 4, spreadRadius: 0)
-          ] : null,
+          color: isSelected ? activeColor.withOpacity(0.2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? activeColor : Colors.white38,
-            fontSize: 11,
+            color: isSelected ? activeColor : Colors.white24,
+            fontSize: 9,
             fontWeight: FontWeight.w900,
-            letterSpacing: 0.5,
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildHeaderPanel() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildCompactFilterBar(),
+          Row(
+            children: [
+              _buildModeToggle(context),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: () async {
+                  HapticFeedback.mediumImpact();
+                  await Future.wait([
+                    ref.read(portfolioProvider.notifier).refresh(),
+                  ]);
+                  ref.invalidate(userOrderDetailsProvider);
+                },
+                icon: const Icon(Icons.refresh_rounded, size: 20, color: Colors.white30),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactFilterBar() {
+    return Row(
+      children: [
+        // Symbol Filter
+        GestureDetector(
+           onTap: () {
+              ref.read(backtestSymbolsProvider).whenData((symbols) {
+                 final list = ["All", ...symbols.map((e) => e['symbol_name'].toString())];
+                 _showPicker("Symbol", list, _selectedSymbol, (val) => setState(() => _selectedSymbol = val));
+              });
+           },
+           child: Container(
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: AppColors.cardSurface.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.white.withOpacity(0.05)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.filter_list, size: 12, color: Colors.white54),
+                  const SizedBox(width: 6),
+                  Text(_selectedSymbol, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                  const Icon(Icons.keyboard_arrow_down, size: 12, color: Colors.white54),
+                ],
+              ),
+           ),
+        ),
+        const SizedBox(width: 8),
+        // Strategy Filter
+        GestureDetector(
+           onTap: () {
+              ref.read(deployedStrategyListProvider).whenData((strategies) {
+                 final list = ["All Strategies", ...strategies.map((e) => e.strategyName)];
+                 _showPicker("Strategy", list, _selectedStrategy, (val) => setState(() => _selectedStrategy = val));
+              });
+           },
+           child: Container(
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: AppColors.cyan.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.cyan.withOpacity(0.2)),
+              ),
+              child: Row(
+                children: [
+                   Center(
+                      child: Text(
+                         _selectedStrategy, 
+                         style: const TextStyle(color: AppColors.cyan, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.1)
+                      )
+                   ),
+                   const SizedBox(width: 4),
+                   const Icon(Icons.keyboard_arrow_down, size: 12, color: AppColors.cyan),
+                ],
+              ),
+           ),
+        ),
+      ],
+    );
+  }
+
+  void _showPicker(String title, List<String> items, String current, Function(String) onSelect) {
+     showModalBottomSheet(
+        context: context,
+        backgroundColor: AppColors.cardSurface,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        builder: (context) {
+           return Container(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                 mainAxisSize: MainAxisSize.min,
+                 children: [
+                    Text("Select $title", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 20),
+                    Flexible(
+                       child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: items.length,
+                          itemBuilder: (context, idx) {
+                             final s = items[idx];
+                             final bool isSel = s == current;
+                             return ListTile(
+                                dense: true,
+                                title: Text(s, style: TextStyle(color: isSel ? AppColors.cyan : Colors.white70, fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
+                                trailing: isSel ? const Icon(Icons.check_circle, color: AppColors.cyan, size: 18) : null,
+                                onTap: () {
+                                   HapticFeedback.selectionClick();
+                                   onSelect(s);
+                                   if (title == "Strategy") {
+                                      final filter = ref.read(userOrderDetailsFilterProvider);
+                                      ref.read(userOrderDetailsFilterProvider.notifier).state = filter.copyWith(strategy: s == "All Strategies" ? "" : s);
+                                   }
+                                   Navigator.pop(context);
+                                },
+                             );
+                          },
+                       ),
+                    ),
+                 ],
+              ),
+           );
+        },
+     );
   }
 
   Widget _buildFilterBar() {
@@ -286,46 +419,38 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
   Widget _buildOpenPositionsTab() {
     return ref.watch(portfolioProvider).when(
       data: (positions) {
-        // Filter by Symbol
         var filteredPositions = positions;
         if (_selectedSymbol != "All") {
           filteredPositions = filteredPositions.where((p) => p.symbol.toUpperCase().contains(_selectedSymbol.toUpperCase())).toList();
         }
+        if (_selectedStrategy != "All Strategies") {
+          filteredPositions = filteredPositions.where((p) => p.strategyName == _selectedStrategy).toList();
+        }
 
         final totalUnrealizedPnl = filteredPositions.fold<num>(0, (sum, pos) => sum + pos.pnl);
         return RefreshIndicator(
-          onRefresh: () => ref.read(portfolioProvider.notifier).refresh(),
+          onRefresh: () async {
+            HapticFeedback.mediumImpact();
+            await Future.wait([
+              ref.read(portfolioProvider.notifier).refresh(),
+              ref.read(strategyProvider.notifier).refresh(),
+              ref.read(backtestProvider.notifier).refresh(),
+            ]);
+          },
+          color: AppColors.cyan,
+          backgroundColor: AppColors.cardSurface,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // Broker Balance & Realized PnL Header Widget
-                // Live/Paper Toggle and Status
+                // Enhanced Total Unrealized P&L
                 Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardSurface.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.08)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text("Trading Mode", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
-                      _buildModeToggle(context),
-                    ],
-                  ),
-                ),
-
-                // Total Unrealized P&L Header
-                Container(
-                   padding: const EdgeInsets.all(16),
+                   padding: const EdgeInsets.all(20),
                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [AppColors.cyan.withOpacity(0.2), AppColors.background]),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.cyan.withOpacity(0.2)),
+                      color: AppColors.cardSurface,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withOpacity(0.05)),
                    ),
                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -333,18 +458,26 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                               const Text("Total Unrealized P&L", style: TextStyle(color: Colors.white70, fontSize: 11)),
-                               const SizedBox(height: 4),
-                               Text("${totalUnrealizedPnl >= 0 ? '+' : '-'}\$${totalUnrealizedPnl.abs().toStringAsFixed(2)}", style: TextStyle(color: totalUnrealizedPnl >= 0 ? AppColors.green : Colors.redAccent, fontSize: 20, fontWeight: FontWeight.bold)),
+                               Text("TOTAL UNREALIZED P&L", style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                               const SizedBox(height: 8),
+                               Text(
+                                 "${totalUnrealizedPnl >= 0 ? '+' : '-'}\$${totalUnrealizedPnl.abs().toStringAsFixed(2)}", 
+                                 style: TextStyle(
+                                   color: totalUnrealizedPnl >= 0 ? AppColors.green : Colors.redAccent, 
+                                   fontSize: 22, 
+                                   fontWeight: FontWeight.w900,
+                                   fontFeatures: const [FontFeature.tabularFigures()],
+                                 )
+                               ),
                             ],
                          ),
                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                               color: Colors.white.withOpacity(0.1),
-                               borderRadius: BorderRadius.circular(20),
+                               color: AppColors.cyan.withOpacity(0.1),
+                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Text("${filteredPositions.length} Active", style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                            child: Text("${filteredPositions.length} POSITIONS", style: const TextStyle(color: AppColors.cyan, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 1)),
                          ),
                       ],
                    ),
@@ -352,22 +485,12 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
                 const SizedBox(height: 16),
                 
                 if (filteredPositions.isEmpty)
-                   Padding(padding: const EdgeInsets.only(top: 32), child: Center(child: Text(_selectedSymbol != "All" ? "No Positions for $_selectedSymbol" : "No Open Positions", style: const TextStyle(color: Colors.white54)))),
+                   _buildEmptyState("No data available", "Monitor all currently open trading positions based on strategy and symbol, including price, quantity, side, order ID, and execution time."),
 
                 // Position List
                 ...filteredPositions.map((pos) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildPositionCard(
-                    pos.symbol, 
-                    pos.quantity >= 0 ? "LONG" : "SHORT", 
-                    "${pos.pnl >= 0 ? '+' : '-'}\$${pos.pnl.abs().toStringAsFixed(2)}", 
-                    "${pos.pnlPercentage.toStringAsFixed(2)}%", 
-                    pos.quantity.abs().toString(), 
-                    pos.entryPrice.toStringAsFixed(2), 
-                    pos.currentPrice.toStringAsFixed(2), 
-                    "N/A", 
-                     pos.pnl >= 0,
-                  ),
+                  child: _buildEnhancedPositionCard(pos),
                 )).toList(),
               ],
             ),
@@ -379,264 +502,222 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
     );
   }
 
-  Widget _buildPositionCard(String symbol, String side, String pnl, String roe, String size, String entry, String mark, String liq, bool isProfit) {
-     final Color pnlColor = isProfit ? AppColors.green : Colors.redAccent;
-     final Color sideColor = side == "LONG" ? AppColors.green : Colors.redAccent;
+  Widget _buildEmptyState(String title, String subtitle) {
+     return Container(
+        height: 240,
+        width: double.infinity,
+        margin: const EdgeInsets.only(top: 20),
+        decoration: BoxDecoration(
+           color: Colors.white.withOpacity(0.02),
+           borderRadius: BorderRadius.circular(20),
+           border: Border.all(color: Colors.white10),
+        ),
+        child: Column(
+           mainAxisAlignment: MainAxisAlignment.center,
+           children: [
+              Icon(Icons.layers_clear_outlined, size: 40, color: Colors.white.withOpacity(0.1)),
+              const SizedBox(height: 16),
+              Text(title, style: const TextStyle(color: Colors.white38, fontSize: 13, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Text(subtitle, textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withOpacity(0.15), fontSize: 10, height: 1.5)),
+              ),
+           ],
+        ),
+     );
+  }
+
+  Widget _buildEnhancedPositionCard(PositionModel pos) {
+     final bool isBuy = (pos.side?.toUpperCase() == "BUY" || pos.quantity >= 0);
+     final Color sideColor = isBuy ? AppColors.green : Colors.redAccent;
+     final Color pnlColor = pos.pnl >= 0 ? AppColors.green : Colors.redAccent;
      
      return Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-           color: AppColors.cardSurface.withOpacity(0.5),
-           borderRadius: BorderRadius.circular(16),
-           border: Border.all(color: Colors.white.withOpacity(0.08)),
+           color: AppColors.cardSurface,
+           borderRadius: BorderRadius.circular(20),
+           border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
         child: Column(
            children: [
-              // Header
               Row(
                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                  children: [
-                    Row(
+                    Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
                        children: [
-                          Container(
-                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                             decoration: BoxDecoration(
-                                color: sideColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(4),
-                             ),
-                             child: Text(side, style: TextStyle(color: sideColor, fontSize: 10, fontWeight: FontWeight.bold)),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(symbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                          Text(pos.strategyName?.toUpperCase() ?? "MANUAL TRADE", style: const TextStyle(color: AppColors.cyan, fontSize: 8, fontWeight: FontWeight.w900)),
+                          const SizedBox(height: 4),
+                          Text(pos.symbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14)),
                        ],
                     ),
                     Column(
-                       crossAxisAlignment: CrossAxisAlignment.end,
-                       children: [
-                          Text(pnl, style: TextStyle(color: pnlColor, fontWeight: FontWeight.bold, fontSize: 13)),
-                          Text(roe, style: TextStyle(color: pnlColor, fontSize: 10)),
-                       ],
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                           Text(
+                             "${pos.pnl >= 0 ? '+' : '-'}\$${pos.pnl.abs().toStringAsFixed(2)}", 
+                             style: TextStyle(color: pnlColor, fontWeight: FontWeight.w900, fontSize: 14, fontFeatures: const [FontFeature.tabularFigures()])
+                           ),
+                           Text("${pos.pnlPercentage.toStringAsFixed(2)}%", style: TextStyle(color: pnlColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                        ],
                     ),
                  ],
               ),
-              const Divider(color: Colors.white10, height: 16),
-              // Details Grid
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16.0),
+                child: Divider(color: Colors.white10, height: 1),
+              ),
               Row(
                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                  children: [
-                    _buildDetailItem("Size", size),
-                    _buildDetailItem("Entry", entry),
-                    _buildDetailItem("Mark", mark),
-                    _buildDetailItem("Liq. Price", liq, highlight: true),
+                    _buildPosDetail("SIDE", pos.side?.toUpperCase() ?? "-", color: sideColor),
+                    _buildPosDetail("ENTRY", "\$${pos.entryPrice.toStringAsFixed(2)}"),
+                    _buildPosDetail("MARK", "\$${pos.currentPrice.toStringAsFixed(2)}"),
+                    _buildPosDetail("QTY", pos.quantity.toStringAsFixed(2)),
                  ],
               ),
-              const SizedBox(height: 12),
-              // Footer Actions
+              const SizedBox(height: 16),
               Row(
+                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                  children: [
-                    Expanded(
-                       child: OutlinedButton(
-                          onPressed: (){},
-                          style: OutlinedButton.styleFrom(
-                             side: BorderSide(color: Colors.white.withOpacity(0.1)),
-                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                             minimumSize: const Size(0, 32),
-                          ),
-                          child: const Text("TP/SL", style: TextStyle(color: Colors.white70, fontSize: 11)),
-                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                       child: ElevatedButton(
-                          onPressed: (){},
-                          style: ElevatedButton.styleFrom(
-                             backgroundColor: Colors.white.withOpacity(0.1),
-                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                             minimumSize: const Size(0, 32),
-                             elevation: 0,
-                          ),
-                          child: const Text("Close", style: TextStyle(color: Colors.white, fontSize: 11)),
-                       ),
-                    ),
+                    _buildCompactMeta("BROKER", pos.brokerName ?? "COINDCX"),
+                    _buildCompactMeta("ID", pos.orderId ?? "-", flex: 2),
+                    _buildCompactMeta("TIME", pos.dateTime?.split('T').first ?? "-"),
                  ],
               ),
            ],
         ),
+     );
+  }
+
+  Widget _buildPosDetail(String label, String value, {Color? color}) {
+     return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+           Text(label, style: TextStyle(color: Colors.white.withOpacity(0.1), fontSize: 8, fontWeight: FontWeight.w900)),
+           const SizedBox(height: 4),
+           Text(value, style: TextStyle(color: color ?? Colors.white, fontWeight: FontWeight.w700, fontSize: 10)),
+        ],
+     );
+  }
+
+  Widget _buildCompactMeta(String label, String value, {int flex = 1}) {
+     return Expanded(
+       flex: flex,
+       child: Text("$label: $value", style: TextStyle(color: Colors.white.withOpacity(0.15), fontSize: 8, fontWeight: FontWeight.bold)),
      );
   }
 
   // --- CLOSED POSITIONS TAB ---
   Widget _buildClosedPositionsTab() {
-     return ref.watch(tradeHistoryProvider).when(
+     final mode = ref.watch(tradingModeProvider);
+     
+     // Update filter tradeMode when mode changes
+     WidgetsBinding.instance.addPostFrameCallback((_) {
+        final currentFilter = ref.read(userOrderDetailsFilterProvider);
+        final String targetMode = mode == TradingMode.live ? "1" : "0";
+        if (currentFilter.tradeMode != targetMode) {
+           ref.read(userOrderDetailsFilterProvider.notifier).state = currentFilter.copyWith(tradeMode: targetMode);
+        }
+     });
+
+     return ref.watch(userOrderDetailsProvider).when(
        data: (trades) {
-         // Filter by Symbol
          var filteredTrades = trades;
          if (_selectedSymbol != "All") {
            filteredTrades = filteredTrades.where((t) => t.symbol.toUpperCase().contains(_selectedSymbol.toUpperCase())).toList();
          }
 
-         if (filteredTrades.isEmpty) {
-            return Center(child: Text(_selectedSymbol != "All" ? "No history for $_selectedSymbol" : "No closed positions", style: const TextStyle(color: Colors.white54)));
-         }
+          if (filteredTrades.isEmpty) {
+             return _buildEmptyState("No data available", "View all completed trades based on strategy and symbol, including buy/sell price, quantity, execution time, and profit or loss.");
+          }
+
          return RefreshIndicator(
-           onRefresh: () => ref.read(tradeHistoryProvider.notifier).refresh(),
+           onRefresh: () async {
+              HapticFeedback.mediumImpact();
+              ref.invalidate(userOrderDetailsProvider);
+           },
+           color: AppColors.cyan,
+           backgroundColor: AppColors.cardSurface,
            child: ListView.builder(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               itemCount: filteredTrades.length,
               itemBuilder: (context, index) {
                  final trade = filteredTrades[index];
-                 final bool isBuy = trade.quantity > 0;
                  return Padding(
-                   padding: const EdgeInsets.only(bottom: 12.0),
-                   child: _buildClosedPositionCard(
-                      trade.symbol, 
-                      "-", 
-                      "-", 
-                      isBuy ? "LONG" : "SHORT", 
-                      trade.price.toStringAsFixed(2), 
-                      trade.price.toStringAsFixed(2), 
-                      trade.timestamp, 
-                      true 
-                   ),
+                   padding: const EdgeInsets.only(bottom: 16.0),
+                   child: _buildEnhancedClosedPositionCard(trade),
                  );
               },
            ),
          );
        },
        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
-       error: (err, stack) => Center(child: Text("Error: $err", style: const TextStyle(color: Colors.redAccent))),
+       error: (err, stack) => _buildEmptyState("Unable to fetch trades", "Failed to retrieve order history from the server."),
      );
   }
 
-  Widget _buildClosedPositionCard(String symbol, String pnl, String roe, String side, String entry, String exit, String date, bool isProfit) {
+  Widget _buildEnhancedClosedPositionCard(UserOrderDetailsModel trade) {
+     final bool isProfit = trade.profit >= 0;
      final Color pnlColor = isProfit ? AppColors.green : Colors.redAccent;
-     return Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-           color: AppColors.cardSurface.withOpacity(0.5),
-           borderRadius: BorderRadius.circular(16),
-           border: Border.all(color: Colors.white.withOpacity(0.08)),
-        ),
-        child: Column(
-           children: [
-              Row(
-                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                 children: [
-                    Row(
-                       children: [
-                          Text(symbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                          const SizedBox(width: 6),
-                          Container(
-                             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                             decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(4)),
-                             child: Text(side, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 9)),
-                          ),
-                       ],
-                    ),
-                    Text(pnl, style: TextStyle(color: pnlColor, fontWeight: FontWeight.bold, fontSize: 13)),
-                 ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                 children: [
-                    _buildDetailItem("Entry", entry),
-                    _buildDetailItem("Exit", exit),
-                    Expanded(child: _buildDetailItem("Date", date)),
-                    _buildDetailItem("ROE", roe, color: pnlColor),
-                 ],
-              ),
-           ],
-        ),
-     );
-  }
-
-  // --- ORDER BOOK TAB (Integrated) ---
-  Widget _buildOrderBookTab() {
-     return ref.watch(orderProvider).when(
-       data: (orders) {
-         // Filter by Symbol & Strategy (Strategy not yet in model, placeholder)
-         var filteredOrders = orders;
-         if (_selectedSymbol != "All") {
-           filteredOrders = filteredOrders.where((o) => o.symbol.toUpperCase().contains(_selectedSymbol.toUpperCase())).toList();
-         }
-
-         if (filteredOrders.isEmpty) {
-            return Center(child: Text(_selectedSymbol != "All" ? "No orders for $_selectedSymbol" : "No items in order book", style: const TextStyle(color: Colors.white54)));
-         }
-         return RefreshIndicator(
-           onRefresh: () => ref.read(orderProvider.notifier).refresh(),
-           child: ListView.builder(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(12),
-              itemCount: filteredOrders.length,
-              itemBuilder: (context, index) {
-                 final order = filteredOrders[index];
-                 return Padding(
-                   padding: const EdgeInsets.only(bottom: 8.0),
-                   child: _buildOrderCard(
-                      order.symbol, 
-                      order.quantity > 0 ? "BUY" : "SELL", 
-                      order.price.toStringAsFixed(2), 
-                      order.quantity.abs().toString(), 
-                      order.timestamp, 
-                      order.status, 
-                      "AI Base", 
-                      order.quantity > 0 ? "BUY" : "SELL", 
-                      order.status
-                   ),
-                 );
-              },
-           ),
-         );
-       },
-       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
-       error: (err, stack) => Center(child: Text("Error: $err", style: const TextStyle(color: Colors.redAccent))),
-     );
-  }
-
-  Widget _buildOrderCard(String symbol, String sideStr, String price, String qty, String time, String statusStr, String strategy, String sideArg, String statusArg) {
-     final bool isBuy = sideArg == "BUY";
-     final Color sideColor = isBuy ? AppColors.green : Colors.redAccent;
-     Color statusColor = statusArg == "FILLED" ? AppColors.green : (statusArg == "PENDING" ? Colors.orange : Colors.grey);
+     final Color sideColor = trade.side.toUpperCase() == "BUY" ? AppColors.green : Colors.redAccent;
      
      return Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-           color: AppColors.cardSurface.withOpacity(0.5),
-           borderRadius: BorderRadius.circular(16),
-           border: Border.all(color: Colors.white.withOpacity(0.08)),
+           color: AppColors.cardSurface,
+           borderRadius: BorderRadius.circular(20),
+           border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
         child: Column(
            children: [
+              // Strategy Header
               Row(
                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                  children: [
-                    Row(
-                       children: [
-                          Text(symbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                          const SizedBox(width: 8),
-                          Text(sideStr, style: TextStyle(color: sideColor, fontSize: 11, fontWeight: FontWeight.bold)),
-                       ],
-                    ),
-                    Text(time, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10)),
-                 ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                 children: [
-                    _buildDetailItem("Price", price),
-                    _buildDetailItem("Qty", qty),
-                    _buildDetailItem("Strategy", strategy),
                     Column(
-                       crossAxisAlignment: CrossAxisAlignment.end,
+                       crossAxisAlignment: CrossAxisAlignment.start,
                        children: [
-                          Text("Status", style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 9)),
-                          Text(statusStr, style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                          Text(trade.strategyName.toUpperCase(), style: const TextStyle(color: AppColors.cyan, fontSize: 8, fontWeight: FontWeight.w900)),
+                          const SizedBox(height: 4),
+                          Text(trade.symbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14)),
                        ],
                     ),
+                    Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                           Text(
+                             "${trade.profit >= 0 ? '+' : '-'}\$${trade.profit.abs().toStringAsFixed(2)}", 
+                             style: TextStyle(color: pnlColor, fontWeight: FontWeight.w900, fontSize: 14, fontFeatures: const [FontFeature.tabularFigures()])
+                           ),
+                           Text("REALIZED P&L", style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 7, fontWeight: FontWeight.w900)),
+                        ],
+                    ),
+                 ],
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16.0),
+                child: Divider(color: Colors.white10, height: 1),
+              ),
+              // Institutional Info Grid
+              Row(
+                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                 children: [
+                    _buildPosDetail("SIDE", trade.side.toUpperCase(), color: sideColor),
+                    _buildPosDetail("BUY PRICE", "\$${trade.buyPrice.toStringAsFixed(2)}"),
+                    _buildPosDetail("SELL PRICE", "\$${trade.sellPrice.toStringAsFixed(2)}"),
+                    _buildPosDetail("QTY", trade.quantity.toStringAsFixed(2)),
+                 ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                 children: [
+                    _buildCompactMeta("ORDER ID", trade.orderId, flex: 1),
+                    _buildCompactMeta("TIME", trade.datetime.split('T').first, flex: 1),
                  ],
               ),
            ],
@@ -644,209 +725,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> with SingleTi
      );
   }
 
-  // --- P&L REPORT TAB (Integrated) ---
-  Widget _buildPnLReportTab() {
-     return ref.watch(pnlProvider).when(
-       data: (pnl) {
-         return RefreshIndicator(
-           onRefresh: () => ref.read(pnlProvider.notifier).refresh(),
-           child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                 crossAxisAlignment: CrossAxisAlignment.start,
-                 children: [
-                    LayoutBuilder(
-                       builder: (context, constraints) {
-                          final double itemWidth = (constraints.maxWidth - 12) / 2;
-                          return Wrap(
-                             spacing: 12, runSpacing: 12,
-                             children: [
-                                _buildStatCard("Total P&L", "\$${pnl.totalProfit.toStringAsFixed(2)}", pnl.totalProfit >= 0 ? AppColors.green : Colors.redAccent, itemWidth),
-                                _buildStatCard("Today P&L", "\$${pnl.todayProfit.toStringAsFixed(2)}", pnl.todayProfit >= 0 ? AppColors.green : Colors.redAccent, itemWidth),
-                             ],
-                          );
-                       },
-                    ),
-                    Row(
-                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                       children: [
-                          const Text("Performance Breakdown", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                          TextButton.icon(
-                             onPressed: () async {
-                                try {
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading P&L Report...")));
-                                  final url = await ref.read(portfolioServiceProvider).fetchPnlReportPdfUrl();
-                                  if (url != null) {
-                                    // Use ReportGenerator to download from URL
-                                    await ReportGenerator.downloadPdfFromUrl(url, "cryptoarth_pnl_report.pdf");
-                                  }
-                                } catch (e) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to download report: $e"), backgroundColor: Colors.redAccent));
-                                  }
-                                }
-                             },
-                             icon: const Icon(Icons.picture_as_pdf_outlined, size: 16, color: AppColors.cyan),
-                             label: const Text("Download Report", style: TextStyle(color: AppColors.cyan, fontSize: 11, fontWeight: FontWeight.bold)),
-                          ),
-                       ],
-                    ),
-                    const SizedBox(height: 8),
-                    ref.watch(orderProvider).when(
-                      data: (orders) {
-                        final closedOrders = orders.where((o) => o.status.toUpperCase() == 'FILLED' || o.status.toUpperCase() == 'COMPLETED' || o.status.toUpperCase() == 'CLOSED').toList();
-                        if (closedOrders.isEmpty) {
-                           return const Padding(padding: EdgeInsets.all(16), child: Text("No detailed performance history", style: TextStyle(color: Colors.white54, fontSize: 12)));
-                        }
-                        return Column(
-                           children: closedOrders.take(3).map((order) {
-                             final bool isBuy = order.quantity > 0;
-                             return Padding(
-                               padding: const EdgeInsets.only(bottom: 8.0),
-                               child: _buildClosedPositionCard(order.symbol, "-", "-", isBuy ? "LONG" : "SHORT", order.price.toStringAsFixed(2), order.price.toStringAsFixed(2), order.timestamp, true),
-                             );
-                           }).toList(),
-                        );
-                      },
-                      loading: () => const SizedBox.shrink(),
-                      error: (e,s) => const SizedBox.shrink(),
-                    ),
-                 ],
-              ),
-           ),
-         );
-       },
-       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
-       error: (e, s) => Center(child: Text("Error fetching P&L: $e", style: const TextStyle(color: Colors.redAccent))),
-     );
-  }
+  // --- UNUSED TAB BUILDERS (DECOUPLED TO STANDALONE SCREENS) ---
 
-  // --- SHARED HELPERS ---
-  Widget _buildDetailItem(String label, String value, {bool highlight = false, Color? color}) {
-     return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-           Text(label, style: TextStyle(color: highlight ? Colors.amber : Colors.white.withOpacity(0.4), fontSize: 9)),
-           const SizedBox(height: 2),
-           Text(value, style: TextStyle(color: color ?? Colors.white, fontSize: 11, fontWeight: FontWeight.w500)),
-        ],
-     );
-  }
-
-  Widget _buildStatCard(String title, String value, Color color, double width) {
-     return Container(
-        width: width,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(
-           color: AppColors.cardSurface.withOpacity(0.5),
-           borderRadius: BorderRadius.circular(12),
-           border: Border.all(color: Colors.white.withOpacity(0.08)),
-        ),
-        child: Column(
-           crossAxisAlignment: CrossAxisAlignment.start,
-           children: [
-              Text(title, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 10)),
-              const SizedBox(height: 4),
-              Text(value, style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold)),
-           ],
-        ),
-     );
-  }
-  
-  Widget _buildCompactDropdown(String value) {
-     return Container(
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-           color: AppColors.cardSurface, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.white.withOpacity(0.1))
-        ),
-        child: Row(
-           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-           children: [
-              Text(value, style: const TextStyle(color: Colors.white70, fontSize: 11)),
-              const Icon(Icons.keyboard_arrow_down, size: 14, color: Colors.white54),
-           ],
-        ),
-     );
-  }
-
-  // --- WATCHLIST TAB ---
-  Widget _buildWatchlistTab() {
-    return ref.watch(watchlistProvider).when(
-      data: (watchlist) {
-        if (watchlist.isEmpty) {
-          return const Center(child: Text("Provide broker permissions to view watchlist.", style: TextStyle(color: Colors.white54, fontSize: 12)));
-        }
-        return RefreshIndicator(
-          onRefresh: () => ref.read(watchlistProvider.notifier).refresh(),
-          child: ListView.builder(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(12),
-            itemCount: watchlist.length,
-            itemBuilder: (context, index) {
-              final item = watchlist[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildWatchlistCard(item),
-              );
-            },
-          ),
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
-      error: (e, s) => Center(child: Text("Error fetching watchlist: $e", style: const TextStyle(color: Colors.redAccent))),
-    );
-  }
-
-  Widget _buildWatchlistCard(dynamic item) {
-    // We attempt to map standard backend watchlist properties 
-    final String symbol = item['symbol'] ?? item['name'] ?? 'UNKNOWN';
-    final double ltp = num.tryParse(item['ltp']?.toString() ?? '0')?.toDouble() ?? 0.0;
-    final double change = num.tryParse(item['change']?.toString() ?? '0')?.toDouble() ?? 0.0;
-    final double changePct = num.tryParse(item['change_percentage']?.toString() ?? '0')?.toDouble() ?? 0.0;
-    
-    final bool isUp = change >= 0;
-    final Color trendColor = isUp ? AppColors.green : Colors.redAccent;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-         color: AppColors.cardSurface,
-         borderRadius: BorderRadius.circular(12),
-         border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-               CircleAvatar(
-                 radius: 16,
-                 backgroundColor: Colors.white.withOpacity(0.1),
-                 child: Text(symbol.isNotEmpty ? symbol[0] : '?', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-               ),
-               const SizedBox(width: 12),
-               Column(
-                 crossAxisAlignment: CrossAxisAlignment.start,
-                 children: [
-                   Text(symbol, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                   const SizedBox(height: 4),
-                   Text("24H Vol: ${item['volume'] ?? 'N/A'}", style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
-                 ],
-               ),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text('\$${ltp.toStringAsFixed(2)}', style: TextStyle(color: trendColor, fontWeight: FontWeight.bold, fontSize: 14)),
-              const SizedBox(height: 4),
-              Text('${isUp ? '+' : ''}${changePct.toStringAsFixed(2)}%', style: TextStyle(color: trendColor, fontSize: 11)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  // --- END OF CORE PORTFOLIO LOGIC ---
 }

@@ -150,6 +150,16 @@ class ReportGenerator {
     await Printing.sharePdf(bytes: await pdf.save(), filename: '${strategyName.replaceAll(' ', '_')}_backtest_report.pdf');
   }
 
+  static Future<void> generateBacktestPdf(dynamic result) async {
+    // result is expected to be a BacktestModel
+    final String name = result.strategyName ?? result.strategyCode ?? "AI Strategy";
+    final double winRate = (result.winRate ?? 0).toDouble();
+    final double pnl = (result.pnl ?? 0).toDouble();
+    final double drawdown = (result.drawdown ?? 0).toDouble();
+    
+    await downloadBacktestReport(name, winRate, pnl, drawdown);
+  }
+
   static pw.Widget _buildMetricBox(String label, String value, PdfColor color) {
     return pw.Container(
       width: 120,

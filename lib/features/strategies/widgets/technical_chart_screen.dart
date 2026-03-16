@@ -5,6 +5,7 @@ import 'package:cryptoarth/shared/widgets/glass_container.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cryptoarth/features/strategies/providers/backtest_provider.dart';
 import 'package:cryptoarth/features/strategies/providers/strategy_provider.dart';
+import 'package:candlesticks/candlesticks.dart';
 
 class TechnicalChartScreen extends ConsumerStatefulWidget {
   final String strategyCode;
@@ -27,6 +28,7 @@ class _TechnicalChartScreenState extends ConsumerState<TechnicalChartScreen> {
   bool _isLoading = true;
   Map<String, dynamic>? _data;
   Map<String, dynamic>? _chartData;
+  List<Candle> _candles = [];
   
   // Controllers for edit fields
   final TextEditingController _emaFastController = TextEditingController(text: "9");
@@ -65,14 +67,64 @@ class _TechnicalChartScreenState extends ConsumerState<TechnicalChartScreen> {
           _exitController.text = _rawDetails?['exit_conditions']?.toString() ?? '[]';
           _riskController.text = _rawDetails?['risk_parameters']?.toString() ?? '{"stop_loss_percent":2,"take_profit_percent":4}';
           _pineController.text = _rawDetails?['pine_code'] ?? '// @version=5\nstrategy("EMA Cross")';
-          
-          _isLoading = false;
         });
+
+        // Fetch Candles based on provided requirements
+        final String symbol = _rawDetails?['symbol']?.toString() ?? "BTCUSD";
+        final String timeframe = _rawDetails?['timeframe']?.toString() ?? "1H";
+        
+        try {
+          final int endTimestamp = (DateTime.now().millisecondsSinceEpoch / 1000).floor();
+          final int startTimestamp = endTimestamp - (180 * 24 * 60 * 60); // 180 days ago
+          
+          final candleData = await service.fetchBacktestCandles(
+            symbol: symbol,
+            timeframe: timeframe,
+            start: startTimestamp,
+            end: endTimestamp,
+          );
+
+          if (mounted) {
+            setState(() {
+              _candles = candleData.map((e) {
+                // Expected format: [time, open, high, low, close, volume] or map
+                if (e is List && e.length >= 5) {
+                  return Candle(
+                    date: DateTime.fromMillisecondsSinceEpoch((e[0] as num).toInt() * (e[0].toString().length > 10 ? 1 : 1000)),
+                    open: (e[1] as num).toDouble(),
+                    high: (e[2] as num).toDouble(),
+                    low: (e[3] as num).toDouble(),
+                    close: (e[4] as num).toDouble(),
+                    volume: e.length > 5 ? (e[5] as num).toDouble() : 0,
+                  );
+                } else if (e is Map) {
+                  final t = e['time'] ?? e['timestamp'] ?? e['date'] ?? 0;
+                  return Candle(
+                    date: DateTime.fromMillisecondsSinceEpoch((t as num).toInt() * (t.toString().length > 10 ? 1 : 1000)),
+                    open: (e['open'] as num).toDouble(),
+                    high: (e['high'] as num).toDouble(),
+                    low: (e['low'] as num).toDouble(),
+                    close: (e['close'] as num).toDouble(),
+                    volume: (e['volume'] as num?)?.toDouble() ?? 0,
+                  );
+                }
+                return null;
+              }).whereType<Candle>().toList();
+              
+              // Candlesticks usually expects newest first
+              _candles.sort((a, b) => b.date.compareTo(a.date));
+              
+              _isLoading = false;
+            });
+          }
+        } catch (e) {
+          debugPrint("Candle Fetch Error: $e");
+          if (mounted) setState(() => _isLoading = false);
+        }
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        // Fallback for demo if API fails
       }
     }
   }
@@ -358,66 +410,34 @@ class _TechnicalChartScreenState extends ConsumerState<TechnicalChartScreen> {
               ),
               const SizedBox(height: 12),
               Expanded(
-                child: LineChart(
-                  LineChartData(
-                    lineTouchData: LineTouchData(
-                      touchTooltipData: LineTouchTooltipData(
-                        getTooltipColor: (_) => const Color(0xFF1E293B),
-                        getTooltipItems: (touchedSpots) => touchedSpots.map((s) => LineTooltipItem("\$${s.y}", const TextStyle(color: Colors.white))).toList(),
+                child: _candles.isEmpty 
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.auto_graph, color: Colors.white.withOpacity(0.1), size: 64),
+                          const SizedBox(height: 16),
+                          Text("No candle data available", style: TextStyle(color: Colors.white.withOpacity(0.3))),
+                        ],
                       ),
+                    )
+                  : Candlesticks(
+                      candles: _candles,
                     ),
-                    gridData: FlGridData(
-                      show: true,
-                      drawVerticalLine: true,
-                      getDrawingHorizontalLine: (value) => FlLine(color: Colors.white.withOpacity(0.05), strokeWidth: 1),
-                      getDrawingVerticalLine: (value) => FlLine(color: Colors.white.withOpacity(0.05), strokeWidth: 1),
-                    ),
-                    titlesData: FlTitlesData(
-                      leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      rightTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 60,
-                          getTitlesWidget: (v, m) => Text("\$${v.toInt()}", style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10)),
-                        ),
-                      ),
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (v, m) => Text(v.toInt().toString(), style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10)),
-                        ),
-                      ),
-                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    ),
-                    borderData: FlBorderData(show: false),
-                    lineBarsData: [
-                      LineChartBarData(
-                        spots: _getSpotsFromData(_chartData?['fast_ema'] ?? _chartData?['equity'] ?? []),
-                        isCurved: true,
-                        color: AppColors.cyan,
-                        barWidth: 1.5,
-                        dotData: const FlDotData(show: false),
-                        belowBarData: BarAreaData(
-                          show: true,
-                          color: AppColors.cyan.withOpacity(0.05),
-                        ),
-                      ),
-                      if (_chartData?['slow_ema'] != null)
-                        LineChartBarData(
-                          spots: _getSpotsFromData(_chartData?['slow_ema']),
-                          isCurved: true,
-                          color: Colors.orangeAccent,
-                          barWidth: 1.5,
-                          dotData: const FlDotData(show: false),
-                        ),
-                    ],
-                  ),
-                ),
               ),
             ],
           ),
         ),
-        if (_isLoading) const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
+        if (_isLoading) 
+          Center(
+            child: GlassContainer(
+              padding: const EdgeInsets.all(24),
+              borderRadius: 16,
+              color: Colors.black,
+              opacity: 0.5,
+              child: const CircularProgressIndicator(color: AppColors.cyan),
+            ),
+          ),
       ],
     );
   }

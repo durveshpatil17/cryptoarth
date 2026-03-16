@@ -32,7 +32,8 @@ class ApiClient {
       final keys = [
         'ledger', 'data', 'results', 'transactions', 'strategies', 
         'deployed_strategies', 'backtests', 'positions', 'orders',
-        'signals', 'signal_list', 'copy_strategies', 'tutorials', 'tutorial_list'
+        'signals', 'signal_list', 'copy_strategies', 'tutorials', 'tutorial_list',
+        'access_users', 'shared_users'
       ];
       for (var key in keys) {
         if (data.containsKey(key) && data[key] is List) return data[key];
@@ -151,9 +152,21 @@ class ApiClient {
   }
 
   // GET
-  Future<Response> get(String endpoint, {Options? options}) async {
+  Future<Response> get(
+    String endpoint, {
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+    void Function(int, int)? onReceiveProgress,
+  }) async {
     try {
-      return await _dio.get(endpoint, options: options);
+      return await _dio.get(
+        endpoint,
+        queryParameters: queryParameters,
+        options: options,
+        cancelToken: cancelToken,
+        onReceiveProgress: onReceiveProgress,
+      );
     } on DioException catch (e) {
       print("API GET ERROR ENDPOINT → $endpoint");
       if (e.response != null) {
@@ -169,12 +182,24 @@ class ApiClient {
   }
 
   // POST
-  Future<Response> post(String path, Map<String, dynamic> body, {Options? options}) async {
+  Future<Response> post(
+    String path,
+    dynamic body, {
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+    void Function(int, int)? onSendProgress,
+    void Function(int, int)? onReceiveProgress,
+  }) async {
     try {
       final response = await _dio.post(
         path,
         data: body,
+        queryParameters: queryParameters,
         options: options,
+        cancelToken: cancelToken,
+        onSendProgress: onSendProgress,
+        onReceiveProgress: onReceiveProgress,
       );
       return response;
     } on DioException catch (e) {
@@ -193,27 +218,63 @@ class ApiClient {
   }
 
   // PUT
-  Future<Response> put(String endpoint, dynamic data) async {
+  Future<Response> put(
+    String endpoint, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
     try {
-      return await _dio.put(endpoint, data: data);
+      return await _dio.put(
+        endpoint,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+        cancelToken: cancelToken,
+      );
     } catch (e) {
       throw Exception("PUT error: $e");
     }
   }
 
   // PATCH
-  Future<Response> patch(String endpoint, dynamic data) async {
+  Future<Response> patch(
+    String endpoint, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
     try {
-      return await _dio.patch(endpoint, data: data);
+      return await _dio.patch(
+        endpoint,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+        cancelToken: cancelToken,
+      );
     } catch (e) {
       throw Exception("PATCH error: $e");
     }
   }
 
   // DELETE
-  Future<Response> delete(String endpoint, [Map<String, dynamic>? data]) async {
+  Future<Response> delete(
+    String endpoint, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
     try {
-      return await _dio.delete(endpoint, data: data);
+      return await _dio.delete(
+        endpoint,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+        cancelToken: cancelToken,
+      );
     } catch (e) {
       throw Exception("DELETE error: $e");
     }

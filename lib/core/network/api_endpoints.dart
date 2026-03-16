@@ -27,6 +27,7 @@ class ApiEndpoints {
   static const String deployedStrategies = "/auth/strategies/deployed/";
   static const String deployStrategy = "/auth/user/strategies/deploy/";
   static const String undeployStrategy = "/auth/user/strategies/undeploy/";
+  static const String backtestDeploy = "/auth/strategy/backtest/deploy/";
 
   static const String backtestList = "/auth/strategy/backtest/list/";
   static const String backtestDetail = "/auth/strategy/backtest/detail/";
@@ -39,6 +40,7 @@ class ApiEndpoints {
   static const String backtestSymbols = "/auth/backtest-symbols/";
 
   static const String brokerConnect = "/auth/broker/connect/";
+  static const String brokerConnect1 = "/auth/broker/connect1/";
   static const String diagnostic = "/auth/diagnostic/";
   static const String connectCoinDcx = "/auth/connect/coindcx/";
   static const String brokerBalance = "/auth/broker/balance/";
@@ -59,6 +61,7 @@ class ApiEndpoints {
   static const String strategyImprove = "/auth/strategy/improve/";
   static const String strategyDeepThink = "/auth/strategy/deep-think-optimize-v2/";
   static const String strategyDelete = "/auth/strategy/delete/";
+  static const String backtestDelete = "/auth/strategy/backtest/delete/";
   
   // Backtest / Copilot
   static const String copilotChat = "/auth/strategy/copilot/chat/";

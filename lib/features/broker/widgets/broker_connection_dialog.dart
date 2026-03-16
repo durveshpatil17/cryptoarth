@@ -129,12 +129,20 @@ class _BrokerConnectionDialogState extends ConsumerState<BrokerConnectionDialog>
                   onPressed: _isLoading ? null : () async {
                     setState(() => _isLoading = true);
                     try {
+                      final name = _nameController.text.trim();
+                      final apiKey = _apiKeyController.text.trim();
+                      final apiSecret = _apiSecretController.text.trim();
+
+                      if (name.isEmpty || apiKey.isEmpty || apiSecret.isEmpty) {
+                         throw Exception("Please fill all required fields");
+                      }
+
                       if (widget.brokerName == "Delta Exchange") {
-                        await ref.read(brokerProvider.notifier).connectDelta(_apiKeyController.text, _apiSecretController.text);
+                        await ref.read(brokerProvider.notifier).connectDelta(name, apiKey, apiSecret);
                       } else if (widget.brokerName == "CoinDCX") {
-                        await ref.read(brokerProvider.notifier).connectCoinDCX(_apiKeyController.text, _apiSecretController.text);
+                        await ref.read(brokerProvider.notifier).connectCoinDCX(name, apiKey, apiSecret);
                       } else if (widget.brokerName == "Mudrex") {
-                        await ref.read(brokerProvider.notifier).connectMudrex(_apiKeyController.text, _apiSecretController.text);
+                        await ref.read(brokerProvider.notifier).connectMudrex(name, apiKey, apiSecret);
                       }
                       if (mounted) {
                         Navigator.pop(context);

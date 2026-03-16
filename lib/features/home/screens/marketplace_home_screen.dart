@@ -8,6 +8,7 @@ import 'package:cryptoarth/features/strategies/providers/strategy_provider.dart'
 import 'package:cryptoarth/features/strategies/models/strategy_model.dart';
 import 'package:cryptoarth/features/marketplace/screens/marketplace_screen.dart';
 import 'package:cryptoarth/shared/widgets/glass_container.dart';
+import 'package:cryptoarth/shared/widgets/luxury_background.dart';
 import 'package:cryptoarth/features/portfolio/providers/watchlist_provider.dart';
 import 'dart:async';
 
@@ -22,13 +23,22 @@ class MarketplaceHomeScreen extends ConsumerStatefulWidget {
 
 class _MarketplaceHomeScreenState extends ConsumerState<MarketplaceHomeScreen> {
   int _selectedTab = 0; // 0: Pre-defined, 1: My Strategies
-  int _currentPage = 0;
-  static const int _itemsPerPage = 2;
+  int _currentCarouselIndex = 0;
+  final PageController _marketplacePageController = PageController();
 
-  void _deployStrategy(String strategyId) {
-    ref.read(strategyProvider.notifier).deployStrategy(strategyId, 1).then((_) {
+  @override
+  void dispose() {
+    _marketplacePageController.dispose();
+    super.dispose();
+  }
+
+  void _deployStrategy(String strategyCode, bool isLive) {
+    ref.read(strategyProvider.notifier).deployStrategy(strategyCode, isLive: isLive).then((_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Strategy deployed successfully"), backgroundColor: Colors.green),
+        SnackBar(
+          content: Text("Strategy deployed in ${isLive ? 'LIVE' : 'PAPER'} mode"),
+          backgroundColor: isLive ? Colors.orangeAccent : Colors.blueAccent,
+        ),
       );
       _refreshAll();
     }).catchError((e) {
@@ -38,27 +48,33 @@ class _MarketplaceHomeScreenState extends ConsumerState<MarketplaceHomeScreen> {
     });
   }
 
-  void _undeployStrategy(StrategyModel strategy) {
-    String? rawId = strategy.deploymentId;
-    if (rawId == null) {
-      final userStrategies = ref.read(strategyProvider).value ?? [];
-      for (var s in userStrategies) {
-        if (s.id == strategy.id) {
-          rawId = s.deploymentId;
-          break;
-        }
-      }
-    }
-
-    if (rawId == null) {
+  void _switchMode(String strategyCode, bool isLive) {
+    ref.read(strategyProvider.notifier).switchTradeMode(strategyCode, isLive).then((_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Active deployment record not found locally."), backgroundColor: Colors.orange),
+        SnackBar(
+          content: Text("Trade mode switched to ${isLive ? 'LIVE' : 'PAPER'}"),
+          backgroundColor: isLive ? Colors.orangeAccent : Colors.blueAccent,
+          duration: const Duration(seconds: 1),
+        ),
       );
+      _refreshAll();
+    }).catchError((e) {
+       // Silent fail or minimal feedback as it's a toggle
+    });
+  }
+
+  void _undeployStrategy(StrategyModel strategy) {
+    final String code = strategy.strategyCode;
+    
+    if (code.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Strategy code not found. Refreshing..."), backgroundColor: Colors.orange),
+      );
+      _refreshAll();
       return;
     }
 
-    final idToPass = int.tryParse(rawId) ?? rawId;
-    ref.read(strategyProvider.notifier).undeployStrategy(idToPass).then((_) {
+    ref.read(strategyProvider.notifier).undeployStrategy(code).then((_) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Strategy undeployed successfully"), backgroundColor: Colors.green),
       );
@@ -85,29 +101,26 @@ class _MarketplaceHomeScreenState extends ConsumerState<MarketplaceHomeScreen> {
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: _buildTopNav(brokerBalance),
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          _refreshAll();
-          // Also refresh balance explicitly just in case
-          ref.read(brokerBalanceProvider.notifier).refresh();
-        },
-        color: AppColors.cyan,
-        backgroundColor: AppColors.cardSurface,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height - kToolbarHeight - MediaQuery.of(context).padding.top - 80,
-            child: Column(
-              children: [
-                _buildLivePrices(),
-                const SizedBox(height: 12),
-                _buildTabToggle(),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: _buildStrategyList(),
-                ),
-              ],
-            ),
+      body: LuxuryBackground(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            _refreshAll();
+            // Also refresh balance explicitly just in case
+            ref.read(brokerBalanceProvider.notifier).refresh();
+          },
+          color: AppColors.secondary,
+          backgroundColor: AppColors.cardSurface,
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              _buildLivePrices(),
+              const SizedBox(height: 12),
+              _buildTabToggle(),
+              const SizedBox(height: 8),
+              Expanded(
+                child: _buildStrategyList(),
+              ),
+            ],
           ),
         ),
       ),
@@ -116,7 +129,7 @@ class _MarketplaceHomeScreenState extends ConsumerState<MarketplaceHomeScreen> {
 
   Widget _buildTopNav(double balance) {
     return AppBar(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.menu, color: Colors.white70),
@@ -128,18 +141,37 @@ class _MarketplaceHomeScreenState extends ConsumerState<MarketplaceHomeScreen> {
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SvgPicture.asset("assets/images/favicon.svg", height: 22, width: 22),
-          const SizedBox(width: 10),
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.secondary.withOpacity(0.2), width: 1),
+            ),
+            child: SvgPicture.asset("assets/images/favicon.svg", height: 20, width: 20),
+          ),
+          const SizedBox(width: 12),
           const Flexible(
             child: Text(
-              "Marketplace",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              "MARKETPLACE",
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white, 
+                fontWeight: FontWeight.w800, 
+                fontSize: 14, 
+                letterSpacing: 2.2,
+              ),
             ),
           ),
         ],
       ),
-      centerTitle: false,
+      actions: [
+        IconButton(
+          onPressed: () {},
+          icon: const Icon(Icons.hub_outlined, size: 20, color: AppColors.secondary),
+        ),
+        const SizedBox(width: 8),
+      ],
     );
   }
 
@@ -162,35 +194,37 @@ class _MarketplaceHomeScreenState extends ConsumerState<MarketplaceHomeScreen> {
     final bool isPositive = change.startsWith('+');
     return Expanded(
       child: Container(
-        height: 38,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        height: 42,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: AppColors.cardSurface.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(10),
+          color: Colors.white.withOpacity(0.03),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(pair, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 8), overflow: TextOverflow.ellipsis),
-                  Text(price, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
-                ],
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(pair, style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 9, fontWeight: FontWeight.bold)),
+                Text(price, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900)),
+              ],
             ),
-            const SizedBox(width: 4),
-            Text(change, style: TextStyle(color: isPositive ? AppColors.green : Colors.redAccent, fontSize: 9, fontWeight: FontWeight.bold)),
+            Container(
+               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+               decoration: BoxDecoration(
+                 color: (isPositive ? AppColors.green : Colors.redAccent).withOpacity(0.1),
+                 borderRadius: BorderRadius.circular(4),
+               ),
+               child: Text(change, style: TextStyle(color: isPositive ? AppColors.green : Colors.redAccent, fontSize: 9, fontWeight: FontWeight.w900)),
+            ),
           ],
         ),
       ),
     );
   }
-
-
 
   Widget _buildTabToggle() {
     return Padding(
@@ -211,7 +245,10 @@ class _MarketplaceHomeScreenState extends ConsumerState<MarketplaceHomeScreen> {
       onTap: () {
         setState(() {
           _selectedTab = index;
-          _currentPage = 0; // Reset page on tab change
+          _currentCarouselIndex = 0; // Reset page on tab change
+          if (_marketplacePageController.hasClients) {
+             _marketplacePageController.jumpToPage(0);
+          }
         });
       },
       child: Container(
@@ -234,83 +271,89 @@ class _MarketplaceHomeScreenState extends ConsumerState<MarketplaceHomeScreen> {
   }
 
   Widget _buildStrategyList() {
-    final strategiesAsync = _selectedTab == 0 
-        ? ref.watch(dashboardStrategyProvider) 
-        : ref.watch(strategyProvider);
+    final dashboardAsync = ref.watch(dashboardStrategyProvider);
+    final userAsync = ref.watch(strategyProvider);
 
-    return strategiesAsync.when(
-      data: (strategies) {
-        if (strategies.isEmpty) {
-          return Center(child: Text(_selectedTab == 0 ? "No pre-defined strategies" : "You haven't created any strategies yet", style: const TextStyle(color: Colors.white54)));
-        }
+    return dashboardAsync.when(
+      data: (dashboardStrategies) => userAsync.when(
+        data: (userStrategies) {
+          final List<StrategyModel> strategiesToShow;
 
-        final int totalItems = strategies.length;
-        final int totalPages = (totalItems / _itemsPerPage).ceil();
-        final int startIdx = _currentPage * _itemsPerPage;
-        final int endIdx = (startIdx + _itemsPerPage).clamp(0, totalItems);
-        final currentStrategies = strategies.sublist(startIdx, endIdx);
+          if (_selectedTab == 0) {
+            // Pre-defined: Show all from dashboard
+            strategiesToShow = dashboardStrategies;
+          } else {
+            // My Strategies: User ones + Deployed ones from dashboard
+            // Combine and deduplicate by strategyCode
+            final Map<String, StrategyModel> myMap = {};
+            
+            // 1. All user local strategies
+            for (var s in userStrategies) {
+              myMap[s.strategyCode] = s;
+            }
+            
+            // 2. Add deployed marketplace ones if they aren't already there
+            for (var s in dashboardStrategies) {
+              if (s.isDeployed && !myMap.containsKey(s.strategyCode)) {
+                myMap[s.strategyCode] = s;
+              }
+            }
+            
+            strategiesToShow = myMap.values.toList();
+          }
 
-        return Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: currentStrategies.length,
-                itemBuilder: (context, index) {
-                  final strategy = currentStrategies[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12.0),
-                    child: StrategyCard(
-                      data: strategy,
-                      isBrokerConnected: true,
-                      isLive: strategy.isDeployed,
-                      onAction: () {
-                        if (strategy.isDeployed) {
-                          _undeployStrategy(strategy);
-                        } else {
-                          _deployStrategy(strategy.id);
-                        }
-                      },
-                    ),
-                  );
-                },
+          if (strategiesToShow.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 40),
+                child: Text(
+                  _selectedTab == 0 ? "No pre-defined strategies" : "No personal or deployed strategies", 
+                  style: const TextStyle(color: Colors.white54, fontSize: 13)
+                ),
               ),
-            ),
-            if (totalPages > 1) _buildPaginationControls(totalPages),
-          ],
-        );
+            );
+          }
+
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: strategiesToShow.length,
+                  itemBuilder: (context, index) {
+                    final strategy = strategiesToShow[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: StrategyCard(
+                        data: strategy,
+                        isBrokerConnected: true,
+                        isLive: strategy.isDeployed,
+                        onModeAction: (isLive) {
+                          if (strategy.isDeployed) {
+                            _switchMode(strategy.strategyCode, isLive);
+                          }
+                        },
+                        onAction: (isLive) {
+                          if (strategy.isDeployed) {
+                            _undeployStrategy(strategy);
+                          } else {
+                            _deployStrategy(strategy.strategyCode, isLive);
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
       },
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
       error: (err, _) => Center(child: Text("Error: $err", style: const TextStyle(color: Colors.redAccent))),
-    );
-  }
-
-  Widget _buildPaginationControls(int totalPages) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 0, top: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          IconButton(
-            onPressed: _currentPage > 0 ? () => setState(() => _currentPage--) : null,
-            icon: Icon(Icons.arrow_back_ios_new, size: 14, color: _currentPage > 0 ? AppColors.cyan : Colors.white10),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-          const SizedBox(width: 24),
-          Text(
-            "${_currentPage + 1} / $totalPages",
-            style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(width: 24),
-          IconButton(
-            onPressed: (_currentPage + 1) < totalPages ? () => setState(() => _currentPage++) : null,
-            icon: Icon(Icons.arrow_forward_ios, size: 14, color: (_currentPage + 1) < totalPages ? AppColors.cyan : Colors.white10),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
-      ),
+    ),
+    loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
+    error: (err, _) => Center(child: Text("Error: $err", style: const TextStyle(color: Colors.redAccent))),
     );
   }
 }

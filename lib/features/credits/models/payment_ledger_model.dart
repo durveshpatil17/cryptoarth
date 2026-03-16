@@ -5,6 +5,8 @@ class PaymentLedgerModel {
   final String description;
   final String status;
   final String createdAt;
+  final num balanceSnapshot;
+  final num availableSnapshot;
 
   PaymentLedgerModel({
     required this.id,
@@ -13,6 +15,8 @@ class PaymentLedgerModel {
     required this.description,
     required this.status,
     required this.createdAt,
+    this.balanceSnapshot = 0,
+    this.availableSnapshot = 0,
   });
 
   factory PaymentLedgerModel.fromJson(Map<String, dynamic> json) {
@@ -23,6 +27,8 @@ class PaymentLedgerModel {
       description: json['description']?.toString() ?? '',
       status: json['status']?.toString() ?? json['payment_status']?.toString() ?? 'Completed',
       createdAt: json['created_at']?.toString() ?? json['debit_datetime']?.toString() ?? json['recharge_datetime']?.toString() ?? '',
+      balanceSnapshot: num.tryParse(json['balance']?.toString() ?? json['total_balance']?.toString() ?? json['snapshot_total']?.toString() ?? '') ?? 0,
+      availableSnapshot: num.tryParse(json['available_balance']?.toString() ?? json['available_credits']?.toString() ?? json['snapshot_available']?.toString() ?? '') ?? 0,
     );
   }
 

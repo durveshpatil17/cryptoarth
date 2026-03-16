@@ -1,13 +1,15 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 import 'package:cryptoarth/shared/widgets/custom_button.dart';
 import 'package:cryptoarth/shared/widgets/custom_text_field.dart';
 import 'package:cryptoarth/features/auth/screens/otp_verification_screen.dart';
 import 'package:cryptoarth/features/auth/screens/login_screen.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cryptoarth/features/auth/providers/auth_provider.dart';
+import 'package:cryptoarth/shared/widgets/luxury_background.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -24,34 +26,58 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   
   bool _agreedToTerms = false;
 
+  bool _isValidEmail(String email) {
+    return RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(email);
+  }
+
   void _sendOtp() async {
     final firstName = firstNameController.text.trim();
     final lastName = lastNameController.text.trim();
     final email = emailController.text.trim();
     final mobile = mobileController.text.trim();
 
-    if (firstName.isEmpty || lastName.isEmpty || email.isEmpty || mobile.isEmpty) {
+    if (firstName.isEmpty || lastName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill all fields")),
+        const SnackBar(content: Text("Please enter your name"), backgroundColor: Colors.redAccent),
       );
       return;
     }
 
-    if (mobile.length != 10) {
+    if (email.isEmpty || !_isValidEmail(email)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter valid 10-digit mobile number")),
+        const SnackBar(content: Text("Please enter a valid email address"), backgroundColor: Colors.redAccent),
+      );
+      return;
+    }
+
+    if (mobile.isEmpty || mobile.length != 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter valid 10-digit mobile number"), backgroundColor: Colors.redAccent),
       );
       return;
     }
     
     if (!_agreedToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please agree to our terms & conditions")),
+        const SnackBar(content: Text("Please agree to our terms & conditions"), backgroundColor: Colors.redAccent),
       );
       return;
     }
 
     try {
+      final exists = await ref.read(authProvider.notifier).checkUserExists(mobile);
+      if (exists) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Mobile number already registered. Please Login."),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+        return;
+      }
+
       await ref.read(authProvider.notifier).sendOtp(mobile);
       if (!mounted) return;
       
@@ -77,255 +103,237 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     }
   }
 
+  Widget _buildBlinkingDot(Color color) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.2, end: 1.0),
+      duration: const Duration(seconds: 1),
+      builder: (context, value, child) {
+        return Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color.withOpacity(value),
+            boxShadow: [
+              BoxShadow(color: color.withOpacity(value * 0.5), blurRadius: 4),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.digitalVoidBlack,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textSecondary),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white38, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          "Back to Home",
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
-        ),
-        titleSpacing: 0,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 10),
+      body: LuxuryBackground(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 10),
 
-              /// Badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: const Color(0xFF10B981).withOpacity(0.2)),
+                /// Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildBlinkingDot(AppColors.secondary),
+                      const SizedBox(width: 8),
+                      const Text(
+                        "REGISTRATION PROTOCOL",
+                        style: TextStyle(
+                          color: AppColors.secondary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 9,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
+
+                const SizedBox(height: 32),
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.secondary.withOpacity(0.2), width: 1),
+                  ),
+                  child: SvgPicture.asset("assets/images/favicon.svg", height: 60, width: 60),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  "CREATE PROTOCOL",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                    shadows: [
+                      Shadow(color: AppColors.secondary.withOpacity(0.5), blurRadius: 10),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                Text(
+                  "UNLEASH INSTITUTIONAL ALGORITHMS",
+                  style: TextStyle(
+                    color: AppColors.secondary.withOpacity(0.5),
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2.5,
+                  ),
+                ),
+
+                const SizedBox(height: 40),
+
+                /// Name Fields in a Row
+                Row(
                   children: [
-                    Icon(Icons.rocket_launch, color: Color(0xFF10B981), size: 14),
-                    SizedBox(width: 8),
-                    Text(
-                      "CREATE ACCOUNT",
-                      style: TextStyle(
-                        color: Color(0xFF10B981),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
-                        letterSpacing: 1,
+                    Expanded(
+                      child: CustomTextField(
+                        label: "First Name",
+                        hint: "PHOENIX",
+                        icon: Icons.person_outline,
+                        controller: firstNameController,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: CustomTextField(
+                        label: "Last Name",
+                        hint: "ALPHA",
+                        icon: Icons.person_outline,
+                        controller: lastNameController,
                       ),
                     ),
                   ],
                 ),
-              ),
+                
+                const SizedBox(height: 20),
 
-              const SizedBox(height: 24),
-              SvgPicture.asset("assets/images/favicon.svg", height: 50, width: 50),
-              const SizedBox(height: 16),
-              const Text(
-                "Join Crypto Arth Pro",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+                /// Email Field
+                CustomTextField(
+                  label: "Email Address",
+                  hint: "ops@cryptoarth.in",
+                  icon: Icons.email_outlined,
+                  keyboardType: TextInputType.emailAddress,
+                  controller: emailController,
                 ),
-              ),
 
-              const SizedBox(height: 8),
+                const SizedBox(height: 20),
 
-              const Text(
-                "Create your trading account in minutes",
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 14,
+                /// Mobile Field
+                CustomTextField(
+                  label: "Mobile Number",
+                  hint: "Enter 10-digit number",
+                  prefixText: "+91",
+                  icon: Icons.phone_android,
+                  keyboardType: TextInputType.phone,
+                  controller: mobileController,
+                  maxLength: 10,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 ),
-              ),
 
-              const SizedBox(height: 40),
-
-              /// Name Fields in a Row
-              Row(
-                children: [
-                   Expanded(
-                     child: CustomTextField(
-                      label: "First Name",
-                      hint: "John",
-                      icon: Icons.person_outline,
-                      controller: firstNameController,
-                    ),
-                   ),
-                   const SizedBox(width: 16),
-                   Expanded(
-                     child: CustomTextField(
-                      label: "Last Name",
-                      hint: "Doe",
-                      icon: Icons.person_outline,
-                      controller: lastNameController,
-                    ),
-                   ),
-                ],
-              ),
-              
-              const SizedBox(height: 20),
-
-              /// Email Field
-              CustomTextField(
-                label: "Email Address",
-                hint: "trading@example.com",
-                icon: Icons.email_outlined,
-                keyboardType: TextInputType.emailAddress,
-                controller: emailController,
-              ),
-
-              const SizedBox(height: 20),
-
-              /// Mobile Field
-              CustomTextField(
-                label: "Mobile Number",
-                hint: "Enter 10-digit number",
-                prefixText: "+91",
-                icon: Icons.phone_android,
-                keyboardType: TextInputType.phone,
-                controller: mobileController,
-              ),
-
-              const SizedBox(height: 24),
-              
-              /// Terms Checkbox
-              Row(
-                 crossAxisAlignment: CrossAxisAlignment.start,
-                 children: [
-                   SizedBox(
-                     height: 24,
-                     width: 24,
-                     child: Checkbox(
-                       value: _agreedToTerms, 
-                       onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
-                       activeColor: AppColors.primary,
-                       side: const BorderSide(color: Colors.white24),
-                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                     ),
-                   ),
-                   const SizedBox(width: 12),
-                   const Expanded(
-                     child: Text.rich(
-                       TextSpan(
-                         text: "I agree to the ",
-                         style: TextStyle(color: Colors.white54, fontSize: 13),
-                         children: [
-                           TextSpan(text: "Terms of Service", style: TextStyle(color: Color(0xFF10B981))),
-                           TextSpan(text: " and "),
-                           TextSpan(text: "Privacy Policy", style: TextStyle(color: Color(0xFF10B981))),
-                           TextSpan(text: ". I understand that Crypto Arth provides trading technology only and I am responsible for all trading decisions."),
-                         ]
-                       ),
-                       style: TextStyle(height: 1.4),
-                     ),
-                   )
-                 ],
-              ),
-
-              const SizedBox(height: 32),
-
-              /// Signup Button
-              authState.isLoading 
-                ? const Center(child: CircularProgressIndicator(color: AppColors.primary)) 
-                : CustomButton(
-                    text: "SEND OTP & CONTINUE",
-                    icon: Icons.bolt,
-                    onPressed: _sendOtp,
-                  ),
-
-              const SizedBox(height: 24),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    "Already have an account?",
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => LoginScreen()));
-                    },
-                    child: const Text(
-                      "Sign In with OTP",
-                      style: TextStyle(
-                        color: Color(0xFF10B981),
-                        fontWeight: FontWeight.bold,
+                const SizedBox(height: 24),
+                
+                /// Terms Checkbox
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: Checkbox(
+                        value: _agreedToTerms, 
+                        onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
+                        activeColor: AppColors.eliteEmerald,
+                        side: const BorderSide(color: Colors.white24),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                       ),
                     ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 40),
-              
-              // Bottom Card Placeholder for "PASSWORDLESS AUTHENTICATION"
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                decoration: BoxDecoration(
-                  color: AppColors.cardSurface.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withOpacity(0.05)),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.shield_outlined, color: Color(0xFF10B981), size: 16),
-                        const SizedBox(width: 8),
-                         Text(
-                          "PASSWORDLESS AUTHENTICATION",
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10,
-                            letterSpacing: 1,
-                          ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          text: "I agree to the ",
+                          style: TextStyle(color: Colors.white54, fontSize: 13),
+                          children: [
+                            TextSpan(text: "Terms of Service", style: TextStyle(color: AppColors.eliteEmerald)),
+                            TextSpan(text: " and "),
+                            TextSpan(text: "Privacy Policy", style: TextStyle(color: AppColors.eliteEmerald)),
+                            TextSpan(text: ". I understand that Crypto Arth provides trading technology only."),
+                          ]
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildBadgeItem(Icons.phone_android, "Mobile OTP Login"),
-                        _buildBadgeItem(Icons.no_encryption_gmailerrorred, "No Passwords"),
-                        _buildBadgeItem(Icons.flash_on, "Instant Access"),
-                      ],
+                        style: TextStyle(height: 1.4),
+                      ),
                     )
                   ],
                 ),
-              ),
-              const SizedBox(height: 40),
-            ],
+
+                const SizedBox(height: 32),
+
+                /// Signup Button
+                authState.isLoading 
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary)) 
+                  : CustomButton(
+                      text: "INITIALIZE PROTOCOL",
+                      icon: Icons.bolt,
+                      onPressed: _sendOtp,
+                    ),
+
+                const SizedBox(height: 32),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Already have an account?",
+                      style: TextStyle(color: Colors.white.withOpacity(0.4)),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+                      },
+                      child: const Text(
+                        "Sign In",
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildBadgeItem(IconData icon, String label) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.orange.withOpacity(0.7), size: 12),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 9)),
-      ],
     );
   }
 }

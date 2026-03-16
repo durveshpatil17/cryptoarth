@@ -18,58 +18,38 @@ class BrokerNotifier extends AsyncNotifier<List<BrokerModel>> {
     return await service.testBrokerConnection(apiKey, apiSecret, broker);
   }
 
-  Future<void> connectDelta(String apiKey, String apiSecret) async {
+  Future<void> connect(String name, String apiKey, String apiSecret, String broker) async {
     final service = ref.read(brokerServiceProvider);
-    await service.connectDeltaBroker(apiKey, apiSecret);
+    await service.connectBroker(
+      apiKey: apiKey, 
+      apiSecret: apiSecret, 
+      broker: broker, // e.g. "DeltaExchange", "Coindcx"
+      name: name,
+    );
     
     final newBroker = BrokerModel(
-      brokerName: "Delta Exchange", 
+      brokerName: name, 
       isConnected: true, 
       apiKey: apiKey, 
       createdAt: DateTime.now().toIso8601String()
     );
     
     final currentList = state.value ?? [];
-    // Avoid duplicates
     if (!currentList.any((b) => b.brokerName == newBroker.brokerName)) {
       state = AsyncValue.data([...currentList, newBroker]);
     }
   }
 
-  Future<void> connectCoinDCX(String apiKey, String apiSecret) async {
-    final service = ref.read(brokerServiceProvider);
-    await service.connectCoinDCX(apiKey, apiSecret);
-    
-    final newBroker = BrokerModel(
-      brokerName: "CoinDCX", 
-      isConnected: true, 
-      apiKey: apiKey, 
-      createdAt: DateTime.now().toIso8601String()
-    );
-    
-    final currentList = state.value ?? [];
-     // Avoid duplicates
-    if (!currentList.any((b) => b.brokerName == newBroker.brokerName)) {
-      state = AsyncValue.data([...currentList, newBroker]);
-    }
+  Future<void> connectDelta(String name, String apiKey, String apiSecret) async {
+    await connect(name, apiKey, apiSecret, "DeltaExchange");
   }
 
-  // Support for Mudrex (Mock or actual if endpoint added)
-  Future<void> connectMudrex(String apiKey, String apiSecret) async {
-    // Assuming backend handles it or we mock for now
-    await Future.delayed(const Duration(seconds: 1)); 
-    
-    final newBroker = BrokerModel(
-      brokerName: "Mudrex", 
-      isConnected: true, 
-      apiKey: apiKey, 
-      createdAt: DateTime.now().toIso8601String()
-    );
-    
-    final currentList = state.value ?? [];
-    if (!currentList.any((b) => b.brokerName == newBroker.brokerName)) {
-      state = AsyncValue.data([...currentList, newBroker]);
-    }
+  Future<void> connectCoinDCX(String name, String apiKey, String apiSecret) async {
+    await connect(name, apiKey, apiSecret, "Coindcx");
+  }
+
+  Future<void> connectMudrex(String name, String apiKey, String apiSecret) async {
+    await connect(name, apiKey, apiSecret, "Mudrex");
   }
 
   void disconnect(String brokerName) {

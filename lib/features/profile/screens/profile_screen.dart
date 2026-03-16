@@ -10,6 +10,8 @@ import 'package:cryptoarth/features/settings/screens/profile_settings_screen.dar
 import 'package:cryptoarth/features/tutorials/screens/tutorial_ai_screen.dart';
 import 'package:cryptoarth/features/tutorials/screens/tutorials_list_screen.dart';
 import 'package:cryptoarth/features/profile/screens/contact_us_screen.dart';
+import 'package:cryptoarth/features/profile/screens/webhook_screen.dart';
+import 'package:cryptoarth/shared/widgets/luxury_background.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -20,15 +22,26 @@ class ProfileScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SvgPicture.asset("assets/images/favicon.svg", height: 22, width: 22),
-            const SizedBox(width: 10),
-            const Text("My Profile", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const Text(
+              "MY PROFILE",
+              style: TextStyle(
+                color: Colors.white, 
+                fontWeight: FontWeight.w800, 
+                fontSize: 14, 
+                letterSpacing: 2.2,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'BIOMETRIC & ACCOUNT SETTINGS',
+              style: TextStyle(fontSize: 8, color: Colors.white24, fontWeight: FontWeight.w700, letterSpacing: 1.2),
+            ),
           ],
         ),
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.menu, color: Colors.white70),
@@ -38,7 +51,8 @@ class ProfileScreen extends ConsumerWidget {
           },
         ),
       ),
-      body: SingleChildScrollView(
+      body: LuxuryBackground(
+        child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,7 +68,7 @@ class ProfileScreen extends ConsumerWidget {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileSettingsScreen()));
             }),
             _buildOption(Icons.webhook_outlined, "Webhook", Colors.orangeAccent, () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Webhook settings coming soon")));
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const WebhookScreen()));
             }),
             
             const SizedBox(height: 24),
@@ -88,6 +102,7 @@ class ProfileScreen extends ConsumerWidget {
           ],
         ),
       ),
+    ),
     );
   }
 

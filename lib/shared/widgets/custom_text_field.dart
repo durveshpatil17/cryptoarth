@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cryptoarth/shared/theme/app_colors.dart';
 
-class CustomTextField extends StatelessWidget {
+class CustomTextField extends StatefulWidget {
   final String label;
   final String hint;
   final String? prefixText;
@@ -12,6 +12,7 @@ class CustomTextField extends StatelessWidget {
   final List<TextInputFormatter>? inputFormatters;
   final int? maxLength;
   final int maxLines;
+  final bool readOnly;
   final IconData? icon;
 
   const CustomTextField({
@@ -25,89 +26,110 @@ class CustomTextField extends StatelessWidget {
     this.inputFormatters,
     this.maxLength,
     this.maxLines = 1,
+    this.readOnly = false,
     this.icon,
   });
+
+  @override
+  State<CustomTextField> createState() => _CustomTextFieldState();
+}
+
+class _CustomTextFieldState extends State<CustomTextField> {
+  bool _isFocused = false;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            if (icon != null) ...[
-              Icon(icon, color: AppColors.textSecondary, size: 16),
-              const SizedBox(width: 8),
-            ],
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Row(
+            children: [
+              if (widget.icon != null) ...[
+                Icon(widget.icon, color: _isFocused ? AppColors.primary : Colors.white38, size: 12),
+                const SizedBox(width: 8),
+              ],
+              Text(
+                widget.label.toUpperCase(),
+                style: TextStyle(
+                  color: _isFocused ? AppColors.primary : Colors.white24,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.8,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        const SizedBox(height: 12),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (prefixText != null) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.1),
-                  ),
-                ),
-                child: Text(
-                  prefixText!,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+        const SizedBox(height: 10),
+        Focus(
+          onFocusChange: (hasFocus) => setState(() => _isFocused = hasFocus),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(_isFocused ? 0.05 : 0.03),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: _isFocused ? AppColors.primary.withOpacity(0.4) : Colors.white.withOpacity(0.05),
+                width: 1,
               ),
-              const SizedBox(width: 12),
-            ],
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.primary.withOpacity(0.5),
-                  ),
-                ),
-                child: TextField(
-                  controller: controller,
-                  keyboardType: keyboardType,
-                  obscureText: obscureText,
-                  inputFormatters: inputFormatters,
-                  maxLength: maxLength,
-                  maxLines: maxLines,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: hint,
-                    counterText: "",
-                    hintStyle: TextStyle(
-                      color: AppColors.textSecondary.withOpacity(0.5),
-                      fontSize: 15,
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  ),
-                ),
-              ),
+              boxShadow: _isFocused ? [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.05), 
+                  blurRadius: 20, 
+                  offset: const Offset(0, 4)
+                )
+              ] : [],
             ),
-          ],
+            child: Row(
+              children: [
+                if (widget.prefixText != null) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16),
+                    child: Text(
+                      widget.prefixText!,
+                      style: TextStyle(
+                        color: _isFocused ? AppColors.primary : Colors.white38,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+                Expanded(
+                  child: TextField(
+                    controller: widget.controller,
+                    keyboardType: widget.keyboardType,
+                    obscureText: widget.obscureText,
+                    readOnly: widget.readOnly,
+                    inputFormatters: widget.inputFormatters,
+                    maxLength: widget.maxLength,
+                    maxLines: widget.maxLines,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.5,
+                    ),
+                    cursorColor: AppColors.primary,
+                    decoration: InputDecoration(
+                      hintText: widget.hint.toUpperCase(),
+                      counterText: "",
+                      hintStyle: TextStyle(
+                        color: Colors.white.withOpacity(0.1),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.5,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );

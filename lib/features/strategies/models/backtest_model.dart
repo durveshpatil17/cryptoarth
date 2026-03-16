@@ -10,6 +10,7 @@ class BacktestModel {
   final String? userName;
   final String? ownerId;
   final bool isOwner;
+  final String strategyName;
 
   BacktestModel({
     this.id,
@@ -23,6 +24,7 @@ class BacktestModel {
     this.userName,
     this.ownerId,
     this.isOwner = false,
+    required this.strategyName,
   });
 
   factory BacktestModel.fromJson(Map<String, dynamic> json) {
@@ -38,6 +40,7 @@ class BacktestModel {
       userName: json['user_name']?.toString() ?? json['username']?.toString() ?? json['owner_name']?.toString(),
       ownerId: json['owner_id']?.toString() ?? json['user_id']?.toString(),
       isOwner: json['is_owner'] == true || json['is_owner'] == 1 || json['is_owner'] == '1',
+      strategyName: json['strategy_name']?.toString() ?? json['strategy_code']?.toString() ?? 'AI Strategy',
     );
   }
 
@@ -48,6 +51,7 @@ class BacktestModel {
       'status': status,
       'pnl': pnl,
       'win_rate': winRate,
+      'strategy_name': strategyName,
       'drawdown': drawdown,
       'total_trades': totalTrades,
     };

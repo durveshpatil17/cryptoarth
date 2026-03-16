@@ -7,25 +7,24 @@ import 'package:cryptoarth/features/broker/models/broker_model.dart';
 class BrokerService {
   final ApiClient _apiClient = ApiClient();
 
-  Future<void> connectDeltaBroker(String apiKey, String apiSecret) async {
+  Future<void> connectBroker({
+    required String apiKey,
+    required String apiSecret,
+    required String broker,
+    required String name,
+    bool disableIp = false,
+  }) async {
     try {
-      await _apiClient.post(ApiEndpoints.brokerConnect, {
+      await _apiClient.post(ApiEndpoints.brokerConnect1, {
         "api_key": apiKey,
         "api_secret": apiSecret,
+        "broker": broker,
+        "datetime": DateTime.now().toUtc().toIso8601String(),
+        "disable_ip": disableIp,
+        "name": name,
       });
     } catch (e) {
-      throw Exception('Failed to connect Delta Exchange: $e');
-    }
-  }
-
-  Future<void> connectCoinDCX(String apiKey, String apiSecret) async {
-    try {
-      await _apiClient.post(ApiEndpoints.connectCoinDcx, {
-        "api_key": apiKey,
-        "api_secret": apiSecret,
-      });
-    } catch (e) {
-      throw Exception('Failed to connect CoinDCX: $e');
+      throw Exception('Failed to connect $broker: $e');
     }
   }
 

@@ -63,14 +63,17 @@ class _StrategyDetailedReportState extends ConsumerState<StrategyDetailedReport>
       return const Center(child: CircularProgressIndicator(color: AppColors.cyan));
     }
 
+    final isDark = AppColors.isDarkMode(context);
+    final cardColor = AppColors.getCardSurface(context);
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: GlassContainer(
         width: double.infinity,
-        borderRadius: 20,
-        color: const Color(0xFF0F172A), // Dark slate like screenshot
-        opacity: 0.95,
+        borderRadius: 24,
+        color: cardColor,
+        opacity: isDark ? 0.95 : 1.0,
         child: Column(
           children: [
             // Header
@@ -103,6 +106,9 @@ class _StrategyDetailedReportState extends ConsumerState<StrategyDetailedReport>
 
   Widget _buildHeader() {
     bool isMobile = MediaQuery.of(context).size.width < 600;
+    final textColor = AppColors.getTextPrimary(context);
+    final isDark = AppColors.isDarkMode(context);
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Row(
@@ -111,10 +117,11 @@ class _StrategyDetailedReportState extends ConsumerState<StrategyDetailedReport>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFF8B5CF6).withOpacity(0.2),
-              borderRadius: BorderRadius.circular(10),
+              color: AppColors.gold.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 0.5),
             ),
-            child: const Icon(Icons.bar_chart, color: Color(0xFF8B5CF6), size: 24),
+            child: const Icon(Icons.analytics_outlined, color: AppColors.gold, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -123,7 +130,7 @@ class _StrategyDetailedReportState extends ConsumerState<StrategyDetailedReport>
               children: [
                 Text(
                   _data?['strategy_name'] ?? "BTCUSD Strategy",
-                  style: TextStyle(color: Colors.white, fontSize: isMobile ? 16 : 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: textColor, fontSize: isMobile ? 16 : 18, fontWeight: FontWeight.w900, letterSpacing: 0.5),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -133,8 +140,8 @@ class _StrategyDetailedReportState extends ConsumerState<StrategyDetailedReport>
                   runSpacing: 4,
                   children: [
                     Text(
-                      widget.strategyCode,
-                      style: const TextStyle(color: AppColors.cyan, fontSize: 11, fontWeight: FontWeight.bold),
+                      widget.strategyCode.toUpperCase(),
+                      style: const TextStyle(color: AppColors.cyan, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
                     ),
                     _buildTag("BTCUSD"),
                     _buildTag("15MIN"),
@@ -143,15 +150,15 @@ class _StrategyDetailedReportState extends ConsumerState<StrategyDetailedReport>
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  "Commission: 0.05% (maker)",
-                  style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10),
+                  "Commission: 0.05% (Maker Fee Model)",
+                  style: TextStyle(color: AppColors.getTextSecondary(context).withOpacity(0.7), fontSize: 9, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
           ),
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: Icon(Icons.close, color: Colors.white.withOpacity(0.5), size: 20),
+            icon: Icon(Icons.close, color: textColor.withOpacity(0.3), size: 20),
           ),
         ],
       ),
@@ -159,45 +166,51 @@ class _StrategyDetailedReportState extends ConsumerState<StrategyDetailedReport>
   }
 
   Widget _buildTag(String text) {
+    final isDark = AppColors.isDarkMode(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(4),
+        color: AppColors.getBackground(context).withOpacity(0.5),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.white.withOpacity(isDark ? 0.05 : 0.1)),
       ),
       child: Text(
         text,
-        style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.bold),
+        style: TextStyle(color: AppColors.getTextSecondary(context), fontSize: 9, fontWeight: FontWeight.w900),
       ),
     );
   }
 
   Widget _buildTabBar() {
+    final isDark = AppColors.isDarkMode(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05))),
+        border: Border(bottom: BorderSide(color: Colors.white.withOpacity(isDark ? 0.03 : 0.08))),
       ),
       child: TabBar(
         controller: _tabController,
         isScrollable: true,
-        labelColor: AppColors.cyan,
-        unselectedLabelColor: Colors.white.withOpacity(0.4),
-        indicatorColor: AppColors.cyan,
-        indicatorWeight: 3,
+        labelColor: AppColors.gold,
+        unselectedLabelColor: AppColors.getTextSecondary(context).withOpacity(0.5),
+        indicatorColor: AppColors.gold,
+        indicatorWeight: 2,
         dividerColor: Colors.transparent,
+        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+        unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
         tabs: const [
-          Tab(text: "Overview"),
-          Tab(text: "Statistics"),
-          Tab(text: "Equity"),
-          Tab(text: "Year/Month"),
-          Tab(text: "Trades"),
+          Tab(text: "OVERVIEW"),
+          Tab(text: "STATISTICS"),
+          Tab(text: "EQUITY"),
+          Tab(text: "YEAR/MONTH"),
+          Tab(text: "TRADES"),
         ],
       ),
     );
   }
 
   Widget _buildOverviewTab() {
+    final isDark = AppColors.isDarkMode(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -214,7 +227,7 @@ class _StrategyDetailedReportState extends ConsumerState<StrategyDetailedReport>
               children: [
                 _buildCompactStatCard("Total Return", "${_data?['total_pnl']?.toStringAsFixed(2) ?? '0'}%", (_data?['total_pnl'] ?? 0) >= 0 ? AppColors.green : Colors.redAccent, w),
                 _buildCompactStatCard("Win Rate", "${_data?['win_rate']?.toStringAsFixed(2) ?? '0'}%", AppColors.cyan, w),
-                _buildCompactStatCard("Total Trades", "${_data?['total_trades'] ?? '0'}", Colors.white, w),
+                _buildCompactStatCard("Total Trades", "${_data?['total_trades'] ?? '0'}", AppColors.getTextPrimary(context), w),
                 _buildCompactStatCard("Max Drawdown", "${_data?['max_drawdown']?.toStringAsFixed(2) ?? '0'}%", Colors.orangeAccent, w),
               ],
             );
@@ -276,14 +289,14 @@ class _StrategyDetailedReportState extends ConsumerState<StrategyDetailedReport>
           }),
           const SizedBox(height: 24),
           
-          // Backtest Configuration Section
           _buildSectionHeader(Icons.settings_outlined, "Backtest Configuration"),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E293B), // Darker slate
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.getBackground(context).withOpacity(0.5),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withOpacity(isDark ? 0.05 : 0.1)),
             ),
             child: LayoutBuilder(builder: (context, constraints) {
               bool isMobile = constraints.maxWidth < 600;
@@ -602,12 +615,12 @@ class _StrategyDetailedReportState extends ConsumerState<StrategyDetailedReport>
               LineChartData(
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (_) => const Color(0xFF1E293B),
+                    getTooltipColor: (_) => AppColors.getCardSurface(context),
                     getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                       return touchedBarSpots.map((barSpot) {
                         return LineTooltipItem(
                           'Trade #${barSpot.x.toInt()}\nBalance : \$${barSpot.y.toStringAsFixed(2)}',
-                          const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                          TextStyle(color: AppColors.getTextPrimary(context), fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5),
                         );
                       }).toList();
                     },
@@ -616,8 +629,8 @@ class _StrategyDetailedReportState extends ConsumerState<StrategyDetailedReport>
                   getTouchedSpotIndicator: (LineChartBarData barData, List<int> spotIndexes) {
                     return spotIndexes.map((index) {
                       return TouchedSpotIndicatorData(
-                        FlLine(color: Colors.white.withOpacity(0.5), strokeWidth: 1, dashArray: [4, 4]),
-                        FlDotData(show: true, getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(radius: 4, color: Colors.redAccent, strokeWidth: 1, strokeColor: Colors.white)),
+                        FlLine(color: AppColors.gold.withOpacity(0.5), strokeWidth: 1, dashArray: [4, 4]),
+                        FlDotData(show: true, getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(radius: 5, color: Colors.orangeAccent, strokeWidth: 2, strokeColor: Colors.white)),
                       );
                     }).toList();
                   },
@@ -658,14 +671,14 @@ class _StrategyDetailedReportState extends ConsumerState<StrategyDetailedReport>
                   LineChartBarData(
                     spots: _getSpotsFromData(_data?['equity_curve'] ?? []),
                     isCurved: true,
-                    color: Colors.redAccent,
-                    barWidth: 2,
+                    color: AppColors.gold,
+                    barWidth: 3,
                     isStrokeCapRound: true,
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
                       gradient: LinearGradient(
-                        colors: [Colors.redAccent.withOpacity(0.2), Colors.transparent],
+                        colors: [AppColors.gold.withOpacity(0.2), Colors.transparent],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                       ),
@@ -703,51 +716,68 @@ class _StrategyDetailedReportState extends ConsumerState<StrategyDetailedReport>
   Widget _buildSectionHeader(IconData icon, String title) {
     return Row(
       children: [
-        Icon(icon, color: AppColors.cyan, size: 18),
+        Icon(icon, color: AppColors.gold, size: 16),
         const SizedBox(width: 8),
-        Text(title, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+        Text(
+          title.toUpperCase(), 
+          style: TextStyle(
+            color: AppColors.getTextPrimary(context).withOpacity(0.9), 
+            fontSize: 12, 
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.0,
+          )
+        ),
       ],
     );
   }
 
   Widget _buildCompactStatCard(String label, String value, Color color, double width) {
+    final isDark = AppColors.isDarkMode(context);
     return Container(
       width: width,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        color: AppColors.getBackground(context).withOpacity(0.4),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(isDark ? 0.05 : 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10)),
-          const SizedBox(height: 4),
-          Text(value, style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(label.toUpperCase(), style: TextStyle(color: AppColors.getTextSecondary(context).withOpacity(0.6), fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+          const SizedBox(height: 6),
+          Text(value, style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.w900, fontFeatures: const [FontFeature.tabularFigures()])),
         ],
       ),
     );
   }
 
   Widget _buildWideStatCard(String label, String value, Color color, IconData icon) {
+    final isDark = AppColors.isDarkMode(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        color: AppColors.getBackground(context).withOpacity(0.4),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(isDark ? 0.05 : 0.1)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color.withOpacity(0.5), size: 16),
-          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 16),
+          ),
+          const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10)),
+              Text(label.toUpperCase(), style: TextStyle(color: AppColors.getTextSecondary(context).withOpacity(0.6), fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
               const SizedBox(height: 4),
-              Text(value, style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(value, style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.w900, fontFeatures: const [FontFeature.tabularFigures()])),
             ],
           ),
         ],
@@ -759,9 +789,9 @@ class _StrategyDetailedReportState extends ConsumerState<StrategyDetailedReport>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10)),
+        Text(label.toUpperCase(), style: TextStyle(color: AppColors.getTextSecondary(context).withOpacity(0.6), fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
         const SizedBox(height: 4),
-        Text(value, style: TextStyle(color: color ?? Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+        Text(value, style: TextStyle(color: color ?? AppColors.getTextPrimary(context), fontSize: 15, fontWeight: FontWeight.w900, fontFeatures: const [FontFeature.tabularFigures()])),
       ],
     );
   }
@@ -938,17 +968,17 @@ class _StrategyDetailedReportState extends ConsumerState<StrategyDetailedReport>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-             Text("Less", style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10)),
+             Text("Less", style: TextStyle(color: AppColors.getTextSecondary(context).withOpacity(0.4), fontSize: 10, fontWeight: FontWeight.bold)),
              Row(
                children: [
-                 _buildHeatmapLegend(Colors.white.withOpacity(0.1)),
-                 _buildHeatmapLegend(Colors.redAccent.withOpacity(0.3)),
-                 _buildHeatmapLegend(Colors.redAccent.withOpacity(0.6)),
-                 _buildHeatmapLegend(AppColors.green.withOpacity(0.3)),
-                 _buildHeatmapLegend(AppColors.green.withOpacity(0.6)),
+                 _buildHeatmapLegend(Colors.white.withOpacity(0.05)),
+                 _buildHeatmapLegend(Colors.redAccent.withOpacity(0.2)),
+                 _buildHeatmapLegend(Colors.redAccent.withOpacity(0.4)),
+                 _buildHeatmapLegend(AppColors.green.withOpacity(0.2)),
+                 _buildHeatmapLegend(AppColors.green.withOpacity(0.4)),
                ],
              ),
-             Text("More", style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10)),
+             Text("More", style: TextStyle(color: AppColors.getTextSecondary(context).withOpacity(0.4), fontSize: 10, fontWeight: FontWeight.bold)),
           ],
         )
       ],
@@ -968,15 +998,20 @@ class _StrategyDetailedReportState extends ConsumerState<StrategyDetailedReport>
       padding: const EdgeInsets.all(20),
       child: SizedBox(
         width: double.infinity,
+        height: 48,
         child: ElevatedButton(
           onPressed: () => Navigator.pop(context),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF8B5CF6),
+            backgroundColor: AppColors.gold,
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(vertical: 0),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
-          child: const Text("Close Report", style: TextStyle(fontWeight: FontWeight.bold)),
+          child: const Text(
+            "CLOSE REPORT", 
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1.5)
+          ),
         ),
       ),
     );

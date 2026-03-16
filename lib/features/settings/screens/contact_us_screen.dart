@@ -211,27 +211,9 @@ class ContactUsScreen extends StatelessWidget {
 
             const SizedBox(height: 48),
 
-            // Contact Departments
-            const Row(
-              children: [
-                Icon(Icons.business, color: Colors.blueAccent, size: 24),
-                SizedBox(width: 12),
-                Text(
-                  "Contact Departments",
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildDepartmentCard("Technical Support", "support@cryptoarth.in", "Platform issues & technical help", AppColors.green),
-            const SizedBox(height: 12),
-            _buildDepartmentCard("Sales & Onboarding", "sales@cryptoarth.in", "Pricing, demos & account setup", Colors.orangeAccent),
-            const SizedBox(height: 12),
-            _buildDepartmentCard("Partnerships", "admin@cryptoarth.in", "API access & business partnerships", Colors.pinkAccent),
-            const SizedBox(height: 12),
-            _buildDepartmentCard("Security", "cyberarth@cryptoarth.in", "Security concerns & audits", AppColors.cyan),
-
             const SizedBox(height: 48),
+
+            // FAQ Section
 
             // FAQ Section
             const Row(

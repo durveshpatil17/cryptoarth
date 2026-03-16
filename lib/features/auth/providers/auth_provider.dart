@@ -87,6 +87,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<bool> checkUserExists(String phone) async {
+    return await _authService.checkPhone(phone);
+  }
+
   Future<void> setLandingSeen() async {
     await PersistentStorage.markLandingSeen();
     state = state.copyWith(hasSeenLanding: true);
@@ -175,8 +179,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout([BuildContext? context]) async {
+    final hasSeenLanding = state.hasSeenLanding;
     await TokenStorage.deleteToken();
-    state = AuthState(); // Reset
+    state = AuthState(hasSeenLanding: hasSeenLanding); // Preserve landing preference
     if (context != null && context.mounted) {
       Navigator.pushAndRemoveUntil(
         context,

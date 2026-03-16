@@ -136,7 +136,7 @@ class _CreditsStoreScreenState extends ConsumerState<CreditsStoreScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text("Add Credits", style: TextStyle(color: Colors.white)),
+        title: const Text("Add Credits", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),

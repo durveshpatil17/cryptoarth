@@ -4,7 +4,8 @@
         android:label="@string/app_name"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:hardwareAccelerated="true">
+        android:hardwareAccelerated="true"
+        android:enableOnBackInvokedCallback="true">
 
         <!-- DISABLE IMPPELLER (Fix emulator crash on Mac + Android Emulator) -->
         <meta-data

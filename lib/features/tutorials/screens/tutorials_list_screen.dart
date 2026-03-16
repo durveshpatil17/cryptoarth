@@ -4,6 +4,7 @@ import 'package:cryptoarth/shared/theme/app_colors.dart';
 import 'package:cryptoarth/shared/widgets/glass_container.dart';
 import '../services/tutorial_service.dart';
 import 'tutorial_detail_screen.dart';
+import 'package:cryptoarth/shared/widgets/luxury_background.dart';
 
 final tutorialsProvider = FutureProvider<List<dynamic>>((ref) async {
   final service = ref.read(tutorialServiceProvider);
@@ -22,16 +23,33 @@ class TutorialsListScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          "Video Tutorials",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "VIDEO TUTORIALS",
+              style: TextStyle(
+                color: Colors.white, 
+                fontWeight: FontWeight.w900, 
+                fontSize: 14, 
+                letterSpacing: 2,
+                shadows: [Shadow(color: AppColors.secondary, blurRadius: 10)],
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'TRAINING & EDUCATIONAL CONTENT',
+              style: TextStyle(fontSize: 8, color: AppColors.secondary.withOpacity(0.5), fontWeight: FontWeight.w900, letterSpacing: 1.5),
+            ),
+          ],
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white70, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: tutorialsAsync.when(
+      body: LuxuryBackground(
+        child: tutorialsAsync.when(
         data: (tutorials) {
           if (tutorials.isEmpty) {
             return const Center(
@@ -50,6 +68,7 @@ class TutorialsListScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
         error: (err, _) => Center(child: Text("Error: $err", style: const TextStyle(color: Colors.redAccent))),
       ),
+     ),
     );
   }
 

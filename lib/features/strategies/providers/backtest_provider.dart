@@ -8,9 +8,9 @@ class BacktestNotifier extends AsyncNotifier<List<BacktestModel>> {
     return _fetchBacktestList();
   }
 
-  Future<List<BacktestModel>> _fetchBacktestList() async {
+  Future<List<BacktestModel>> _fetchBacktestList({bool lite = true, String? type = 'my-strategy'}) async {
     final service = ref.read(strategyServiceProvider);
-    return await service.fetchBacktestList();
+    return await service.fetchBacktestList(lite: lite, type: type);
   }
 
   Future<void> refresh() async {
@@ -113,7 +113,7 @@ class BacktestNotifier extends AsyncNotifier<List<BacktestModel>> {
     return await service.validateBacktest(strategyCode);
   }
 
-  Future<void> setBacktestTradeMode(String strategyCode, String tradeMode) async {
+  Future<void> setBacktestTradeMode(String strategyCode, int tradeMode) async {
     final service = ref.read(strategyServiceProvider);
     await service.setBacktestTradeMode(strategyCode, tradeMode);
     refresh();
@@ -127,6 +127,13 @@ class BacktestNotifier extends AsyncNotifier<List<BacktestModel>> {
   Future<void> syncDeepThink() async {
     final service = ref.read(strategyServiceProvider);
     await service.syncDeepThink();
+    refresh();
+  }
+
+  Future<void> deleteBacktest(String? id) async {
+    if (id == null) return;
+    final service = ref.read(strategyServiceProvider);
+    await service.deleteBacktest(id);
     refresh();
   }
 }

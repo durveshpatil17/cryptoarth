@@ -28,9 +28,9 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   final List<Widget> _screens = [
+    const HomeScreen(),
     const MarketplaceHomeScreen(),
     const PortfolioScreen(),
-    const HomeScreen(),
     const OrdersScreen(),
     const ProfileScreen(),
   ];
